@@ -1,0 +1,916 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRCS - Property Revenue Collection System | La Nkwantanang - Madina Municipal Assembly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/static/assets/images/logo/LaNMMA.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/static/assets/images/logo/LaNMMA.png" />
+    <meta name="msapplication-TileImage" content="/static/assets/images/logo/LaNMMA.png" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0dae48;
+            --primary-dark: #0a8d3a;
+            --primary-light: #4dd97a;
+            --secondary: #ffff07;
+            --secondary-dark: #d4d400;
+            --accent: #0dae48;
+            --text-dark: #1a1a1a;
+            --text-light: #6b7280;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Poppins', sans-serif;
+            background-color: #ffffff;
+            color: var(--text-dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Modern Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        
+        /* Gradient Text */
+        .gradient-text {
+            background: linear-gradient(135deg, #0dae48 0%, #ffff07 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        /* Glassmorphism Header */
+        header {
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255, 255, 255, 0.85);
+            border-bottom: 1px solid rgba(13, 174, 72, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        header.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* Modern Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #0dae48 0%, #0a8d3a 100%);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(13, 174, 72, 0.25);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(13, 174, 72, 0.35);
+            background: linear-gradient(135deg, #0a8d3a 0%, #0dae48 100%);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffff07 0%, #d4d400 100%);
+            color: #1a1a1a;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(255, 255, 7, 0.25);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 255, 7, 0.35);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url(/static/assets/images/hero.jpg);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(13, 174, 72, 0.85) 0%, rgba(10, 141, 58, 0.9) 50%, rgba(0, 0, 0, 0.7) 100%);
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            max-width: 900px;
+            padding: 0 24px;
+        }
+        
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: white;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .hero-subtitle {
+            font-size: clamp(1.125rem, 2vw, 1.5rem);
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 40px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+        
+        /* Modern Cards */
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(13, 174, 72, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #0dae48, #ffff07);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(13, 174, 72, 0.15);
+        }
+        
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, rgba(13, 174, 72, 0.1), rgba(255, 255, 7, 0.1));
+            color: #0dae48;
+            font-size: 28px;
+        }
+        
+        /* Section Styling */
+        .section {
+            padding: 100px 0;
+            position: relative;
+        }
+        
+        .section-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 16px;
+            color: var(--text-dark);
+        }
+        
+        .section-subtitle {
+            font-size: 1.25rem;
+            text-align: center;
+            color: var(--text-light);
+            max-width: 700px;
+            margin: 0 auto 64px;
+        }
+        
+        /* Process Timeline */
+        .process-timeline {
+            position: relative;
+            /* padding: 40px 0; */
+        }
+        
+        .process-step {
+            position: relative;
+            padding: 32px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 32px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #0dae48;
+        }
+        
+        .process-step:hover {
+            transform: translateX(8px);
+            box-shadow: 0 8px 30px rgba(13, 174, 72, 0.15);
+        }
+        
+        .process-number {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0dae48, #0a8d3a);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 32px;
+            margin-top: 64px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 40px 24px;
+            background: linear-gradient(135deg, rgba(13, 174, 72, 0.05), rgba(255, 255, 7, 0.05));
+            border-radius: 20px;
+            border: 1px solid rgba(13, 174, 72, 0.1);
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0dae48, #ffff07);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #0dae48 0%, #0a8d3a 100%);
+            border-radius: 32px;
+            padding: 80px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 7, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 80px 0 40px;
+        }
+        
+        .footer-link {
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+        }
+        
+        .footer-link:hover {
+            color: #0dae48;
+            transform: translateX(4px);
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .scroll-reveal.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Mobile Menu */
+        .mobile-menu {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu {
+                display: block;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            .section {
+                padding: 60px 0;
+            }
+        }
+        
+        /* Navigation Links */
+        .nav-link {
+            position: relative;
+            color: var(--text-dark);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #0dae48, #ffff07);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 100%;
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: #0dae48;
+        }
+        
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .badge-primary {
+            background: rgba(13, 174, 72, 0.1);
+            color: #0dae48;
+        }
+        
+        .badge-secondary {
+            background: rgba(255, 255, 7, 0.2);
+            color: #d4d400;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header id="header" class="fixed w-full z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="logo-container">
+                    <img src="/static/assets/images/logo/LaNMMA.png" alt="La Nkwantanang - Madina Municipal Assembly" class="h-12 w-auto">
+                </div>
+
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="#home" class="nav-link active">Home</a>
+                    <a href="#modules" class="nav-link">Modules</a>
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#process" class="nav-link">Process</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                </nav>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="/revenue-dashboard/" class="btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+        <div class="hero-bg"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content fade-in-up">
+            <h1 class="hero-title">
+                Modern Property Revenue<br>
+                <span class="gradient-text">Collection System</span>
+            </h1>
+            <p class="hero-subtitle">
+                A comprehensive digital platform for efficient property tax assessment, billing, and revenue collection. 
+                Empowering La Nkwantanang - Madina Municipal Assembly with cutting-edge technology.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#features" class="btn-primary">
+                    <span>Explore Features</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+                <a href="/dashboard/" class="btn-outline">
+                    <span>Access Dashboard</span>
+                    <i class="fas fa-external-link-alt"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Modules Section -->
+    <section id="modules" class="section bg-gray-50">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title scroll-reveal">System Modules</h2>
+            <p class="section-subtitle scroll-reveal">
+                Specialized modules designed for comprehensive property revenue management
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="feature-card scroll-reveal">
+                    <div class="feature-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">Property Assessment</h3>
+                    <p class="text-gray-600 mb-4">
+                        Comprehensive property registration, valuation, and classification system with automated valuation models and GIS mapping.
+                    </p>
+                    <div class="flex items-center text-sm">
+                        <span class="badge badge-primary">Automated Valuation</span>
+                    </div>
+                </div>
+                
+                <div class="feature-card scroll-reveal">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">Billing & Invoicing</h3>
+                    <p class="text-gray-600 mb-4">
+                        Automated bill generation, distribution, and payment tracking with customizable billing cycles and reminder systems.
+                    </p>
+                    <div class="flex items-center text-sm">
+                        <span class="badge badge-secondary">Smart Billing</span>
+                    </div>
+                </div>
+                
+                <div class="feature-card scroll-reveal">
+                    <div class="feature-icon">
+                        <i class="fas fa-money-check-alt"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">Payment Processing</h3>
+                    <p class="text-gray-600 mb-4">
+                        Multiple payment channels with real-time reconciliation including mobile money, bank transfers, and cash payments.
+                    </p>
+                    <div class="flex items-center text-sm">
+                        <span class="badge badge-primary">Multi-Channel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Features Section -->
+    <section id="features" class="section bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title scroll-reveal">System Features</h2>
+            <p class="section-subtitle scroll-reveal">
+                PRCS consolidates property data, billing, and revenue collection across all administrative areas
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Property Registry -->
+                <div class="feature-card scroll-reveal">
+                    <div class="relative h-48 overflow-hidden rounded-xl mb-4">
+                        <img src="/static/assets/images/geotag.png" alt="Property Registry" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="badge badge-primary">Core Feature</span>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Property Registry</h3>
+                    <p class="text-gray-600 mb-4">
+                        Complete digital registry of all properties with ownership details, location data, and valuation information.
+                    </p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Coverage: <span class="text-primary font-bold">100% Digital</span></span>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                    </div>
+                </div>
+                
+                <!-- Tax Assessment -->
+                <div class="feature-card scroll-reveal">
+                    <div class="relative h-48 overflow-hidden rounded-xl mb-4">
+                        <img src="/static/assets/images/tax.webp" alt="Tax Assessment" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="badge badge-secondary">Assessment</span>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Tax Assessment</h3>
+                    <p class="text-gray-600 mb-4">
+                        Automated tax calculation based on property value, location, and usage with customizable rate structures.
+                    </p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Accuracy: <span class="text-secondary font-bold">99.9%</span></span>
+                        <i class="fas fa-arrow-right text-secondary"></i>
+                    </div>
+                </div>
+                
+                <!-- Payment History -->
+                <div class="feature-card scroll-reveal">
+                    <div class="relative h-48 overflow-hidden rounded-xl mb-4">
+                        <img src="/static/assets/images/hist.avif" alt="Payment History" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="badge badge-primary">Tracking</span>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Payment History</h3>
+                    <p class="text-gray-600 mb-4">
+                        Complete audit trail of all payments, arrears, and reconciliation activities for transparent revenue management.
+                    </p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Records: <span class="text-primary font-bold">Full History</span></span>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                    </div>
+                </div>
+                
+                <!-- Revenue Analytics -->
+                <div class="feature-card scroll-reveal">
+                    <div class="relative h-48 overflow-hidden rounded-xl mb-4">
+                        <img src="/static/assets/images/analytics.png" alt="Revenue Analytics" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="badge badge-primary">Insights</span>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Revenue Analytics</h3>
+                    <p class="text-gray-600 mb-4">
+                        Comprehensive dashboards with revenue trends, collection efficiency, and predictive forecasting.
+                    </p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Reports: <span class="text-primary font-bold">Real-time</span></span>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                    </div>
+                </div>
+                
+                <!-- Compliance Monitoring -->
+                <div class="feature-card scroll-reveal">
+                    <div class="relative h-48 overflow-hidden rounded-xl mb-4">
+                        <img src="/static/assets/images/alert.jpeg" alt="Compliance Monitoring" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="badge badge-secondary">Alerts</span>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Compliance Monitoring</h3>
+                    <p class="text-gray-600 mb-4">
+                        Automated alerts for overdue payments, compliance issues, and revenue collection targets.
+                    </p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Delivery: <span class="text-secondary font-bold">Instant</span></span>
+                        <i class="fas fa-arrow-right text-secondary"></i>
+                    </div>
+                </div>
+                
+                <!-- AI-Powered Insights -->
+                <div class="feature-card scroll-reveal bg-gradient-to-br from-primary to-primary-dark text-white">
+                    <div class="relative h-48 overflow-hidden rounded-xl mb-4">
+                        <img src="/static/assets/images/login_landing.png" alt="Compliance Monitoring" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="badge badge-secondary">Login</span>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">AI-Powered Insights</h3>
+                    <p class="text-white/90 mb-6">
+                        Predictive analytics for revenue forecasting and compliance risk assessment powered by advanced machine learning.
+                    </p>
+                    <a href="/dashboard/" class="btn-secondary">
+                        <span>Dashboard</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Collection Process Section -->
+    <section id="process" class="section bg-gray-50">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title scroll-reveal">Collection Process</h2>
+            <p class="section-subtitle scroll-reveal">
+                Streamlined workflow from property registration to revenue collection
+            </p>
+            
+            <div class="process-timeline" style="display: flex;justify-content: space-between;gap: 10px;">
+                <div class="process-step scroll-reveal">
+                    <div class="process-number">1</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Property Registration</h3>
+                    <p class="text-gray-600">Complete digital registration of all properties with ownership details and location data.</p>
+                </div>
+                
+                <div class="process-step scroll-reveal">
+                    <div class="process-number">2</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Tax Assessment</h3>
+                    <p class="text-gray-600">Automated valuation and tax calculation based on property characteristics and location.</p>
+                </div>
+                
+                <div class="process-step scroll-reveal">
+                    <div class="process-number">3</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Bill Generation</h3>
+                    <p class="text-gray-600">Automated generation and distribution of tax bills through multiple channels.</p>
+                </div>
+                
+                <div class="process-step scroll-reveal">
+                    <div class="process-number">4</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Payment Collection</h3>
+                    <p class="text-gray-600">Multiple payment channels including mobile money, bank transfers, and cash collection points.</p>
+                </div>
+                
+                <div class="process-step scroll-reveal">
+                    <div class="process-number">5</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Revenue Management</h3>
+                    <p class="text-gray-600">Real-time reconciliation, reporting, and revenue distribution to relevant authorities.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="section">
+        <div class="container mx-auto px-6">
+            <div class="cta-section scroll-reveal">
+                <div style="position: relative; z-index: 10;">
+                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Transform Your Revenue Collection?</h2>
+                    <p class="text-white/90 text-lg mb-8 max-w-2xl mx-auto">
+                        Join municipalities and local governments across Africa who trust PRCS to improve transparency, efficiency, and revenue collection capabilities.
+                    </p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <a href="#" class="btn-secondary">
+                            <span>Request Demo</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                        <a href="#" class="btn-outline">
+                            <span>Contact Sales</span>
+                            <i class="fas fa-phone-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-gray-900">
+        <div class="container mx-auto px-6 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+                <div>
+                    <img src="/static/assets/images/logo/LaNMMA.png" alt="La Nkwantanang - Madina Municipal Assembly" class="h-12 mb-6">
+                    <p class="text-gray-400 mb-6">
+                        A Comprehensive Digital Platform for Property Tax Assessment, Billing, and Revenue Collection.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-primary transition-colors text-xl">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-primary transition-colors text-xl">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-primary transition-colors text-xl">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Quick Links</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#home" class="footer-link">Home</a></li>
+                        <li><a href="#features" class="footer-link">Features</a></li>
+                        <li><a href="#modules" class="footer-link">Modules</a></li>
+                        <li><a href="#process" class="footer-link">Process</a></li>
+                        <li><a href="#contact" class="footer-link">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Resources</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="footer-link">Documentation</a></li>
+                        <li><a href="#" class="footer-link">API Reference</a></li>
+                        <li><a href="#" class="footer-link">Case Studies</a></li>
+                        <li><a href="#" class="footer-link">Support Center</a></li>
+                        <li><a href="#" class="footer-link">Blog</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Contact Us</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-map-marker-alt mr-3 text-primary"></i>
+                            <span>La Nkwantanang - Madina, Ghana</span>
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-phone-alt mr-3 text-primary"></i>
+                            <span>+233 XX XXX XXXX</span>
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-envelope mr-3 text-primary"></i>
+                            <span>info@lanmma.gov.gh</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">
+                    © 2025 La Nkwantanang - Madina Municipal Assembly. All rights reserved.
+                </p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-primary text-sm transition-colors">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-primary text-sm transition-colors">Terms of Service</a>
+                    <a href="#" class="text-gray-400 hover:text-primary text-sm transition-colors">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Header scroll effect
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Scroll reveal animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Active navigation link
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.scrollY >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

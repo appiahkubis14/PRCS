@@ -1,0 +1,710 @@
+{% extends "main/base.html" %}
+
+{% load i18n static %}
+{% load tz %}
+{# to use timezone aware filters #}
+{% load humanize %}
+{# to use naturaltime filter #}
+{% load custom_filters %}
+
+
+{% block header %}
+    {% include 'partials/header.html' %}
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #0dae48;
+        --primary-dark: #0a8d3a;
+        --secondary: #ffff07;
+        --success: #0dae48;
+        --info: #36b9cc;
+        --warning: #f6c23e;
+        --danger: #e74a3b;
+        --light: #f8f9fc;
+        --dark: #5a5c69;
+        --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        --transition: all 0.15s ease;
+    }
+    
+    .welcome-container {
+        background: linear-gradient(to bottom, #f8f9fc 0%, #fff 100%);
+        min-height: calc(100vh - 120px);
+        padding: 1.5rem 0;
+    }
+    
+    .welcome-card {
+        border-radius: 0.35rem;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+        border: 1px solid #e3e6f0;
+        overflow: hidden;
+        background: #fff;
+    }
+    
+    .welcome-card:hover {
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+        transform: translateY(-3px);
+    }
+    
+    .card-header-custom {
+        border-bottom: 1px solid #e3e6f0;
+        padding: 0.75rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: 1b4e06;
+        background: transparent;
+    }
+    
+    .profile-img-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+    }
+    
+    .profile-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+    
+    .profile-status {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--success);
+        border: 2px solid #fff;
+    }
+    
+    .greeting-text {
+        font-size: 1.5rem;
+        font-weight: 400;
+        margin-bottom: 0.25rem;
+        color: var(--dark);
+    }
+    
+    .time-date {
+        font-size: 0.85rem;
+        color: var(--secondary);
+        font-weight: 400;
+    }
+    
+    .stat-card {
+        text-align: center;
+        padding: 1.25rem;
+        border-radius: 0.35rem;
+        background: #fff;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+        height: 100%;
+        border: 1px solid #e3e6f0;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    
+    .permission-item {
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 0.35rem;
+        background: #f8f9fc;
+        border-left: 3px solid var(--primary);
+        transition: var(--transition);
+        font-size: 0.9rem;
+    }
+    
+    .permission-item:hover {
+        background: #eaecf4;
+        transform: translateX(3px);
+    }
+    
+    .group-badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 0.35rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+        background: #0dae48;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .quick-action {
+        text-align: center;
+        padding: 1.25rem 0.75rem;
+        border-radius: 0.35rem;
+        background: #fff;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+        height: 100%;
+        border: 1px solid #e3e6f0;
+        cursor: pointer;
+    }
+    
+    .quick-action:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+        background: var(--primary);
+        color: #fff;
+    }
+    
+    .quick-action:hover .action-icon,
+    .quick-action:hover h6,
+    .quick-action:hover small {
+        color: #fff !important;
+    }
+    
+    .action-icon {
+        font-size: 1.75rem;
+        margin-bottom: 0.75rem;
+        color: var(--primary);
+    }
+    
+    .quick-action h6 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--dark);
+    }
+    
+    .quick-action small {
+        font-size: 0.75rem;
+        color: var(--secondary);
+    }
+    
+    /* Animation classes */
+    .animate-fade-in {
+        animation: fadeIn 0.6s ease forwards;
+    }
+    
+    .animate-slide-in {
+        animation: slideIn 0.8s ease forwards;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    
+    /* Scrollbar styling */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #d1d9e6 #f8f9fc;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f8f9fc;
+        border-radius: 10px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #d1d9e6;
+        border-radius: 10px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #b7bcc5;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .greeting-text {
+            font-size: 1.25rem;
+        }
+        
+        .profile-img-container {
+            width: 90px;
+            height: 90px;
+            margin-top: 1rem;
+        }
+    }
+
+    /* Enhanced Welcome Card Styles */
+.welcome-message {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #5a5c69;
+    background: #f8f9fe;
+    padding: 1rem;
+    border-radius: 0.35rem;
+    border-left: 4px solid 1b4e06;
+}
+
+.welcome-stats .stat-badge {
+    background: #f8f9fc;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.35rem;
+    font-size: 0.85rem;
+}
+
+.stat-badge .badge {
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.system-status {
+    background: #f8f9fc;
+    padding: 0.75rem;
+    border-radius: 0.35rem;
+}
+
+.profile-section {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fe 0%, #fff 100%);
+    border-radius: 0.5rem;
+    border: 1px solid #e3e6f0;
+}
+
+.member-since {
+    padding-top: 0.5rem;
+    border-top: 1px dashed #e3e6f0;
+    margin-top: 0.5rem;
+}
+
+/* Animation for the welcome card elements */
+.welcome-content > * {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.welcome-content .welcome-message {
+    animation-delay: 0.1s;
+}
+
+.welcome-content .welcome-stats {
+    animation-delay: 0.2s;
+}
+
+.welcome-content .system-status {
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments for welcome card */
+@media (max-width: 768px) {
+    .welcome-message {
+        font-size: 0.9rem;
+        padding: 0.75rem;
+    }
+    
+    .welcome-stats {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+    
+    .profile-section {
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+}
+</style>
+
+<div class="container-fluid py-1">
+    
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="welcome-card p-4 animate-fade-in">
+            <!-- <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-door-open fa-2x text-warning me-3"></i>
+                        <div>
+                            <h1 class="greeting-text mb-1"><strong>Welcome back, {{ user.get_full_name|default:user.username }}</strong>!</h1>
+                            <p class="time-date mb-0">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                {% now "l, F j, Y" %} 
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-clock me-1"></i>
+                                {% now "g:i A" %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="welcome-content">
+                        <p class="welcome-message mb-3">
+                            <i class="fas fa-quote-left text-warning me-2"></i>
+                            We're glad to have you back. Your last login was 
+                            <strong>
+                                {% if user.last_login %}
+                                    {{ user.last_login|timesince }} ago
+                                {% else %}
+                                    your first time
+                                {% endif %}
+                            </strong>. 
+                            You have <strong>{{ permissions|length }} active permissions</strong> and belong to 
+                            <strong>{{ user.groups.count }} user group{{ user.groups.count|pluralize }}</strong>.
+                        </p>
+                        
+                        <div class="welcome-stats d-flex flex-wrap gap-3 mb-3">
+                            <div class="stat-badge d-flex align-items-center">
+                                <span class="badge bg-warning me-2">
+                                    <i class="fas fa-user-check"></i>
+                                </span>
+                                <span>Status: <strong>Active</strong></span>
+                            </div>
+                            <div class="stat-badge d-flex align-items-center">
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-shield-alt"></i>
+                                </span>
+                                <span>Role: <strong>
+                                    {% if user.groups.all %}
+                                        {{ user.groups.all.0.name }}
+                                    {% else %}
+                                        Standard User
+                                    {% endif %}
+                                </strong></span>
+                            </div>
+                            <div class="stat-badge d-flex align-items-center">
+                                <span class="badge bg-info me-2">
+                                    <i class="fas fa-bell"></i>
+                                </span>
+                                <span>Notifications: <strong>0 Unread</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="system-status">
+                            <p class="mb-2 small text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                System Status: <span class="text-primary"><strong>All Systems Operational</strong></span>
+                            </p>
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 text-center">
+                    <div class="profile-section position-relative">
+                        <div class="profile-img-container mb-3">
+                            <img src="data:image/png;base64,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" alt="Profile" class="profile-img rounded-circle">
+                            <div class="profile-status"></div>
+                        </div>
+                        <h5 class="mb-1">{{ user.get_full_name|default:user.username }}</h5>
+                        <p class="text-muted small mb-2">
+                            {% if user.groups.all %}
+                                {{ user.groups.all.0.name }}
+                            {% else %}
+                                System User
+                            {% endif %}
+                        </p>
+                        <div class="member-since">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-plus me-1"></i>
+                                Member since {{ user.date_joined|date:"F Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+            
+            <!-- Quick Tips Section -->
+            <!-- <div class="row mt-4 pt-3 border-top">
+                <div class="col-12">
+                    <h6 class="mb-3 text-warning">
+                        <i class="fas fa-lightbulb me-2"></i>Quick Tips
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-sync-alt text-success me-2"></i>
+                                <small>Remember to sync data regularly</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-lock text-warning me-2"></i>
+                                <small>Keep your password secure</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-bell text-info me-2"></i>
+                                <small>Check notifications frequently</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-question-circle text-warning me-2"></i>
+                                <small>Contact support if needed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+        </div>
+    </div>
+</div>
+        <br>
+        <br>
+        <div class="row mb-2">
+            <div class="col-xl-3 col-md-6 mb-4 animate-fade-in delay-1">
+                <div class="stat-card">
+                    <div class="stat-number">{{ user.groups.count }}</div>
+                    <div class="stat-label" style="color: #012970;">User Groups</div>
+                    <div class="mt-2">
+                        <small class="text-success"><i class="fas fa-arrow-up"></i> Assigned</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4 animate-fade-in delay-2">
+                <div class="stat-card">
+                    <div class="stat-number">{{ permissions|length }}</div>
+                    <div class="stat-label">Permissions</div>
+                    <div class="mt-2">
+                        <small class="text-info"><i class="fas fa-check-circle"></i> Active</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4 animate-fade-in delay-3">
+                <div class="stat-card">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">Notifications</div>
+                    <div class="mt-2">
+                        <small class="text-secondary"><i class="fas fa-bell"></i> Unread</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4 animate-fade-in delay-4">
+                <div class="stat-card">
+                    <div class="stat-number">
+                        {% if user.last_login %}
+                            {{ user.last_login|timesince }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">Last Login</div>
+                    <div class="mt-2">
+                        <small style="color: #012970;"><i class="fas fa-clock"></i> Ago</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-lg-8 mb-4">
+                <!-- Permissions Card -->
+                <div class="welcome-card mb-4 animate-slide-in delay-2">
+                    <div class="card-header-custom py-3">
+                        <i class="fas fa-key me-2"></i>System Permissions
+                    </div>
+                    <div class="card-body">
+                        <div class="custom-scrollbar" style="max-height: 468px; overflow-y: auto;">
+                            {% if permissions %}
+                                {% for perm in permissions %}
+                                    <div class="permission-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {% if "add" in perm|lower %}
+                                                <i class="fas fa-plus-circle text-success me-2"></i>
+                                            {% elif "change" in perm|lower %}
+                                                <i class="fas fa-edit text-warning me-2"></i>
+                                            {% elif "delete" in perm|lower %}
+                                                <i class="fas fa-trash-alt text-danger me-2"></i>
+                                            {% elif "view" in perm|lower %}
+                                                <i class="fas fa-eye text-info me-2"></i>
+                                            {% else %}
+                                                <i class="fas fa-check-circle text-secondary me-2"></i>
+                                            {% endif %}
+                                            {{ perm }}
+                                        </div>
+                                        <i class="fas fa-check text-success"></i>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-lock-open fa-2x text-muted mb-3"></i>
+                                    <p class="text-muted mb-0">No specific permissions assigned</p>
+                                    <small class="text-info">Contact administrator for access rights</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-lg-4 mb-4">
+                <!-- Groups Card -->
+                <div class="welcome-card mb-4 animate-slide-in delay-3">
+                    <div class="card-header-custom py-3">
+                        <i class="fas fa-users me-2"></i>User Groups
+                    </div>
+                    <br>
+                    <div class="card-body">
+                        {% if user.groups.all %}
+                            <div class="d-flex flex-wrap">
+                                {% for group in user.groups.all %}
+                                    <span class="group-badge">
+                                        <i class="fas fa-users me-1"></i> {{ group.name }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-user-times fa-2x text-muted mb-3"></i>
+                                <p class="text-muted mb-0">Not assigned to any groups</p>
+                                <small class="text-info">Contact administrator for group assignment</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="welcome-card mb-4 animate-slide-in delay-4">
+                    <div class="card-header-custom py-3">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </div>
+                    <br>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="quick-action">
+                                    <div class="action-icon">
+                                        <i class="fas fa-user-cog"></i>
+                                    </div>
+                                    <h6>Profile</h6>
+                                    <small>Update details</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="quick-action">
+                                    <div class="action-icon">
+                                        <i class="fas fa-cog"></i>
+                                    </div>
+                                    <h6>Settings</h6>
+                                    <small>Preferences</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="quick-action">
+                                    <div class="action-icon">
+                                        <i class="fas fa-question-circle"></i>
+                                    </div>
+                                    <h6>Help</h6>
+                                    <small>Documentation</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-6 mb-3">
+                                <a href="{% url 'logout' %}" style="text-decoration: none; color: inherit;">
+                                 <div class="quick-action">
+                                    <div class="action-icon">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </div>
+                                    <h6>Logout</h6>
+                                    <small>Exit system</small>
+                                </div>
+                            </a>
+                               
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update the current date and time
+    function updateDateTime() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        // document.querySelector('.time-date').textContent = now.toLocaleDateString('en-US', options);
+    }
+    
+    // Update immediately and then every minute
+    updateDateTime();
+    setInterval(updateDateTime, 60000);
+    
+    // Add animation on scroll
+    document.addEventListener('DOMContentLoaded', function() {
+        const animatedElements = document.querySelectorAll('.animate-fade-in, .animate-slide-in');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.visibility = 'visible';
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        animatedElements.forEach(el => {
+            el.style.visibility = 'hidden';
+            observer.observe(el);
+        });
+        
+        // Add click handlers for quick actions
+        document.querySelectorAll('.quick-action').forEach(action => {
+            action.addEventListener('click', function() {
+                const actionText = this.querySelector('h6').textContent;
+                console.log(`Quick action clicked: ${actionText}`);
+                // Add actual navigation/functionality here
+            });
+        });
+    });
+</script>
+
+{% endblock %}

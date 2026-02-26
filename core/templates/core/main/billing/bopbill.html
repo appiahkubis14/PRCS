@@ -1,0 +1,468 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Operating Permit Receipt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .main-content {
+            margin-left: 0px!important; 
+        }
+
+        #download-btn {
+            margin-bottom: 20px;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Progress Bar Styles */
+        #progress-container {
+            display: none;
+            width: 400px;
+            margin: 0 auto 20px;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #progress-container.show {
+            display: block;
+        }
+
+        .progress-label {
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .progress-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 1;
+        }
+
+        .progress-status {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        /* FIXED A5 LANDSCAPE (210mm x 147mm) */
+        #all-receipts-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .receipt-container {
+            background-color: #f7e1a0; /* Cream/Yellow background */
+            width: 210mm;
+            height: 147mm;
+            border: 2px solid #555;
+            display: flex;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        @media print {
+            .receipt-container {
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Main Section */
+        .main-content {
+            flex: 3.2;
+            padding: 12px;
+            border-right: 2px solid #555;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Area */
+        .header {
+            text-align: center;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .logo-left { position: absolute; left: 0; top: 0; width: 70px; }
+        .logo-right { position: absolute; right: 0; top: 0; width: 70px; }
+
+        .header h1 { font-size: 15px; margin: 0; text-transform: uppercase; }
+        .header h2 { font-size: 13px; margin: 1px 0; }
+        .permit-title { font-weight: bold; font-size: 14px; margin-top: 5px; }
+        .category-text { font-size: 11px; font-weight: bold; }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            background-color: #fff;
+        }
+
+        .data-table td {
+            border: 1px solid #888;
+            padding: 4px 8px 4px 12px;
+            font-size: 10.5px;
+            height: 20px;
+        }
+
+        .label-cell { background-color: #e8d08c; font-weight: bold; width: 20%; }
+        .value-cell { width: 30%; font-weight: bold; }
+
+        /* Notice & Footer */
+        .notice {
+            margin-top: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            line-height: 1.3;
+            border-top: 2px solid #555;
+            padding-top: 8px;
+        }
+
+        .footer-tag { 
+            text-align: right; 
+            font-size: 10px; 
+            font-style: italic; 
+            margin-top: auto;
+            padding-bottom: 2px;
+        }
+
+        /* Sidebar Section */
+        .sidebar {
+            flex: 1;
+            padding: 12px;
+            font-size: 10.5px;
+        }
+
+        .sidebar-header {
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            border-bottom: 1.5px solid #555;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-item { margin-bottom: 8px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <button id="download-btn">Download Receipt</button>
+
+    <div id="progress-container">
+        <div class="progress-label">Generating PDF...</div>
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+            <div class="progress-percentage" id="progress-percentage">0%</div>
+        </div>
+        <div class="progress-status" id="progress-status">Preparing receipts...</div>
+    </div>
+
+    <div id="all-receipts-container">
+    {% for bop_easy_collectible in bop_easy_collectibles %}
+    <div class="receipt-container">
+        <div class="main-content">
+            <div class="header">
+                <img class="logo-left" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Coat_of_arms_of_Ghana.svg/1200px-Coat_of_arms_of_Ghana.svg.png">
+                <img class="logo-right" src="/static/assets/images/logo/LaNMMA.png">
+                <h1>LA-NKWANTANANG|MADINA</h1>
+                <h1>MUNICIPAL ASSEMBLY</h1>
+                <h2>P.O. BOX MD 130</h2>
+                <div class="permit-title">BUSINESS OPERATING PERMIT (BOP)</div>
+                <div class="category-text">{{ bop_easy_collectible.business.business_category|default:"BUSINESS" }}</div>
+                <div class="category-text">{{ bop_easy_collectible.business.business_class|default:"" }}</div>
+                <div class="category-text">{{ bop_easy_collectible.billing_year }}</div>
+            </div>
+
+            <table class="data-table">
+                <tr>
+                    <td class="label-cell">Bill No:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.bill_number }}</td>
+                    <td class="label-cell">Business Category:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.business.business_category|default:"N/A" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Bill Date:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.generated_date|date:"Y-m-d" }}</td>
+                    <td class="label-cell">Account Number:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.business.account_number }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Tax Amount (GHS):</td>
+                    <td class="value-cell">{{ bop_easy_collectible.tax_amount|intcomma }}</td>
+                    <td class="label-cell">Business Name:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.business.business_name }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Penalty Amount (GHS):</td>
+                    <td class="value-cell">{{ bop_easy_collectible.penalty_amount|intcomma }}</td>
+                    <td class="label-cell">Owner Name:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.business.owner_name|default:"N/A" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Discount Amount (GHS):</td>
+                    <td class="value-cell">{{ bop_easy_collectible.discount_amount|intcomma }}</td>
+                    <td class="label-cell">Structure ID:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.business.structure_id|default:"N/A" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Total Amount Due (GHS):</td>
+                    <td class="value-cell">{{ bop_easy_collectible.total_amount|intcomma }}</td>
+                    <td class="label-cell">Location:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.business.location|default:"N/A" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Bill Due Date:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.due_date|date:"Y-m-d" }}</td>
+                    <td class="label-cell">Billing Year:</td>
+                    <td class="value-cell">{{ bop_easy_collectible.billing_year }}</td>
+                </tr>
+            </table>
+
+            <div class="notice">
+                To Notice that if the rate above specified be not paid to the Finance Officer or any Rate Collector appointed by the Assembly on or before the bill due date, proceedings will be taken for the purpose of exacting Sale or Entry into possession such Rate and the expenses incurred thereof.
+            </div>
+            <div class="footer-tag">Powered By SKT Live</div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                LA-NKWANTANANG|MADINA<br>
+                MUNICIPAL ASSEMBLY<br>
+                BUSINESS OPERATING PERMIT BILL (BOP)<br>
+                {{ bop_easy_collectible.billing_year }}
+            </div>
+            <div class="sidebar-item">
+                <strong>{{ bop_easy_collectible.business.business_name|upper }}</strong><br>
+                <strong>{{ bop_easy_collectible.business.account_number }}</strong>
+            </div>
+            <div class="sidebar-item">
+                Bill Date: {{ bop_easy_collectible.generated_date|date:"Y-m-d" }}<br>
+                Bill No: {{ bop_easy_collectible.bill_number }}
+            </div>
+            <div class="sidebar-item">
+                Category: {{ bop_easy_collectible.business.business_category|default:"N/A" }}
+            </div>
+            <div class="sidebar-item">
+                Location: {{ bop_easy_collectible.business.location|default:"N/A" }}
+            </div>
+            <div class="sidebar-item">
+                Account: {{ bop_easy_collectible.business.account_number }}
+            </div>
+            <div class="sidebar-item" style="font-weight:bold; font-size:12px; border-top: 1px dashed #555; padding-top:8px; margin-top:15px;">
+                Total Amt Due(GHS): {{ bop_easy_collectible.total_amount|intcomma }}
+            </div>
+        </div>
+    </div>
+   
+    {% endfor %}
+    </div>
+
+    <script>
+        // Helper function to wait for images to load
+        function loadImages(element) {
+            return new Promise((resolve) => {
+                const images = element.querySelectorAll('img');
+                if (images.length === 0) {
+                    resolve();
+                    return;
+                }
+                
+                let loaded = 0;
+                const total = images.length;
+                
+                const checkComplete = () => {
+                    loaded++;
+                    if (loaded === total) resolve();
+                };
+                
+                images.forEach(img => {
+                    if (img.complete) {
+                        checkComplete();
+                    } else {
+                        img.onload = checkComplete;
+                        img.onerror = checkComplete;
+                    }
+                });
+            });
+        }
+
+        // Function to update progress
+        function updateProgress(percentage, status) {
+            const progressFill = document.getElementById('progress-bar-fill');
+            const progressPercentage = document.getElementById('progress-percentage');
+            const progressStatus = document.getElementById('progress-status');
+            
+            progressFill.style.width = percentage + '%';
+            progressPercentage.textContent = Math.round(percentage) + '%';
+            progressStatus.textContent = status;
+        }
+
+        document.getElementById('download-btn').addEventListener('click', async function () {
+            const button = this;
+            const originalText = button.textContent;
+            const progressContainer = document.getElementById('progress-container');
+            
+            // Show progress bar
+            button.disabled = true;
+            button.textContent = 'Generating PDF...';
+            progressContainer.classList.add('show');
+            updateProgress(0, 'Initializing...');
+
+            try {
+                const container = document.getElementById('all-receipts-container');
+                const receipts = container.querySelectorAll('.receipt-container');
+                
+                if (receipts.length === 0) {
+                    alert('No receipts to download');
+                    progressContainer.classList.remove('show');
+                    button.disabled = false;
+                    button.textContent = originalText;
+                    return;
+                }
+
+                const totalReceipts = receipts.length;
+
+                // Wait for all images to load
+                updateProgress(5, 'Loading images...');
+                let loadedCount = 0;
+                for (let receipt of receipts) {
+                    await loadImages(receipt);
+                    loadedCount++;
+                    const progress = 5 + (loadedCount / totalReceipts) * 15; // 5-20% for image loading
+                    updateProgress(progress, `Loading images... (${loadedCount}/${totalReceipts})`);
+                }
+
+                // Wait a moment for any rendering to complete
+                updateProgress(20, 'Preparing PDF...');
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // 1/3 of A4, horizontal: 210mm × 99mm (width × height). jsPDF landscape swaps format, so pass [99, 210].
+                const PAGE_W_MM = 210;
+                const PAGE_H_MM = 99;
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    unit: 'mm',
+                    orientation: 'l',
+                    format: [PAGE_H_MM, PAGE_W_MM]
+                });
+
+                // Process each receipt (one receipt per page)
+                for (let i = 0; i < receipts.length; i++) {
+                    const receipt = receipts[i];
+                    const receiptNum = i + 1;
+                    
+                    if (i > 0) {
+                        pdf.addPage([PAGE_H_MM, PAGE_W_MM], 'l');
+                    }
+                    
+                    // Update progress for converting receipt to canvas
+                    const progressBefore = 20 + (i / totalReceipts) * 70;
+                    updateProgress(progressBefore, `Converting receipt ${receiptNum} of ${totalReceipts} to image...`);
+                    
+                    const canvas = await html2canvas(receipt, {
+                        scale: 2,
+                        useCORS: true,
+                        logging: false,
+                        letterRendering: true,
+                        allowTaint: true,
+                        backgroundColor: '#f7e1a0',
+                        windowWidth: 794,
+                        windowHeight: 559
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                    // Fill entire page with receipt (no white space)
+                    pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_W_MM, PAGE_H_MM);
+                    
+                    const progressAfter = 20 + ((i + 1) / totalReceipts) * 70;
+                    updateProgress(progressAfter, `Added receipt ${receiptNum} of ${totalReceipts} to PDF...`);
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                // Finalizing
+                updateProgress(95, 'Finalizing PDF...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Save the PDF
+                updateProgress(100, 'Downloading PDF...');
+                pdf.save('BOP_Receipts_All.pdf');
+                
+                // Show completion message
+                updateProgress(100, 'PDF generated successfully!');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Hide progress bar after a short delay
+                progressContainer.classList.remove('show');
+
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                updateProgress(0, 'Error generating PDF. Please try again.');
+                alert('Error generating PDF: ' + error.message);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                progressContainer.classList.remove('show');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        });
+        
+        // Auto-download if flag is set
+        {% if auto_download %}
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.getElementById('download-btn').click();
+            }, 500);
+        });
+        {% endif %}
+    </script>
+</body>
+</html>

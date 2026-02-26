@@ -1,0 +1,2755 @@
+<!-- templates/billing/generation.html -->
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Header Section -->
+  <!-- <div class="row mb-4">
+    <div class="col-12">
+      <div class="page-header d-flex align-items-center justify-content-between">
+        <div>
+          <h2 class="page-title mb-1">Bill Generation</h2>
+          <p class="text-muted mb-0">Generate and manage business operating permit bills</p>
+        </div>
+        <div class="header-actions">
+          <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+            <i class="fas fa-calendar-alt me-2"></i>{{ current_year|default:2024 }} Billing Year
+          </span>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- Main Control Card -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card control-card">
+        <div class="card-body p-4">
+          <!-- Business Selection Section -->
+          <div class="row g-4">
+            <!-- Left Column - Business Selection -->
+            <div class="col-xl-5 col-lg-12">
+              <div class="selection-panel h-100">
+                <div class="panel-header mb-3">
+                  <div class="d-flex align-items-center">
+                    <div class="icon-wrapper bg-primary bg-opacity-10 rounded-3 p-2 me-3">
+                      <i class="fas fa-building text-primary fs-5"></i>
+                    </div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Select Businesses</h6>
+                      <p class="text-muted small mb-0">Choose one or multiple businesses for billing</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="panel-content">
+                  <!-- Custom dropdown container -->
+                  <div class="business-select-wrapper">
+                    <select name="business_id" class="business-multiselect" id="businessSelect" multiple="multiple" style="width: 100%;">
+                      <option value="">-- Select Business --</option>
+                    </select>
+                  </div>
+                  
+                  <div class="selection-actions mt-3 d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBusinesses">
+                      <i class="fas fa-check-circle me-1"></i> Select All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBusinesses">
+                      <i class="fas fa-times-circle me-1"></i> Deselect All
+                    </button>
+                    <div class="ms-auto">
+                      <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" id="selectedBusinessesCount">
+                        <i class="fas fa-check-circle me-1"></i>0 selected
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Middle Column - Filters -->
+            <div class="col-xl-4 col-lg-6">
+              <div class="filter-panel h-100">
+                <div class="panel-header mb-3">
+                  <div class="d-flex align-items-center">
+                    <div class="icon-wrapper bg-info bg-opacity-10 rounded-3 p-2 me-3">
+                      <i class="fas fa-sliders-h text-info fs-5"></i>
+                    </div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Filter Options</h6>
+                      <p class="text-muted small mb-0">Narrow down by division and block</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="panel-content">
+                  <div class="filter-group">
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-uppercase text-muted mb-2">
+                        <i class="fas fa-building me-1"></i>Division
+                      </label>
+                      <select class="form-select modern-select" id="divisionSelect">
+                        <option value="">All Divisions</option>
+                      </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-uppercase text-muted mb-2">
+                        <i class="fas fa-cubes me-1"></i>Block
+                      </label>
+                      <select class="form-select modern-select" id="blockSelect">
+                        <option value="">All Blocks</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label class="form-label small fw-semibold text-uppercase text-muted mb-2">
+                        <i class="fas fa-calendar me-1"></i>Billing Year
+                      </label>
+                      <select class="form-select modern-select" id="billingYearSelect" required>
+                        <option value="">Select Year</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column - Actions -->
+            <div class="col-xl-3 col-lg-6">
+              <div class="action-panel h-100">
+                <div class="panel-header mb-3">
+                  <div class="d-flex align-items-center">
+                    <div class="icon-wrapper bg-success bg-opacity-10 rounded-3 p-2 me-3">
+                      <i class="fas fa-bolt text-success fs-5"></i>
+                    </div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Quick Actions</h6>
+                      <p class="text-muted small mb-0">Generate and download bills</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="panel-content">
+                  <div class="action-buttons d-grid gap-3">
+                    <button class="btn btn-primary btn-lg generate-btn" id="generateBillBtn">
+                      <i class="fas fa-file-invoice me-2"></i>
+                      <span>Generate Bills</span>
+                    </button>
+                    <button class="btn btn-outline-primary btn-lg download-btn" id="download-btn">
+                      <i class="fas fa-download me-2"></i>
+                      <span>Download Bills</span>
+                    </button>
+                    <button class="btn btn-outline-secondary btn-lg view-btn" id="viewBillsBtn">
+                      <i class="fas fa-eye me-2"></i>
+                      <span>View Bills</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bills Table Section -->
+ <!-- Bills Table Section - Replace the existing table section with this -->
+<div class="row">
+  <div class="col-12">
+    <div class="card table-card">
+      <div class="card-header bg-white" style="display: flex;justify-content: space-between;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h5 class="card-title mb-1">
+      <i class="fas fa-file-invoice text-primary me-2"></i>
+      Generated Bills
+    </h5>
+    <!-- <p class="text-muted small mb-0">View and manage all generated bills</p> -->
+  </div>
+  
+  <!-- Search Box - Middle -->
+  <div class="search-box" style="flex: 1; max-width: 400px; min-width: 250px;">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text bg-white border-end-0">
+        <i class="fas fa-search text-muted"></i>
+      </span>
+      <input type="text" 
+             class="form-control border-start-0" 
+             id="billSearchInput" 
+             placeholder="Search bills...">
+      <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Actions - Right -->
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <div class="view-toggle btn-group" role="group">
+      <button type="button" class="btn btn-sm btn-outline-primary active" id="gridViewBtn">
+        <i class="fas fa-th-large"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="listViewBtn">
+        <i class="fas fa-list"></i>
+      </button>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary refresh-btn" onclick="loadBopsBills()">
+      <i class="fas fa-sync-alt me-1"></i> Refresh
+    </button>
+  </div>
+</div>
+
+<!-- Search Stats Row (moved outside the flex container) -->
+<div class="search-stats d-flex justify-content-between align-items-center mt-3 px-2">
+  <div class="results-count">
+    <span id="visibleBillsCount">0</span> bills visible
+    <span id="totalBillsCount" class="text-muted ms-1">(0 total)</span>
+  </div>
+  <div id="searchTermDisplay" class="text-muted small"></div>
+</div>
+      </div>
+      <div class="card-body p-3">
+        <!-- Search Stats -->
+        <div class="search-stats d-flex justify-content-between align-items-center mb-3 px-2">
+          <div class="results-count">
+            <span id="visibleBillsCount">0</span> bills visible
+            <span id="totalBillsCount" class="text-muted ms-1">(0 total)</span>
+          </div>
+          <div id="searchTermDisplay" class="text-muted small"></div>
+        </div>
+        
+        <!-- Bills Container - Will be populated with either grid or list view -->
+        <div id="billsTableContainer" class="bills-container">
+          <!-- Bills will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add this template for bill cards (will be used by JavaScript) -->
+<template id="billCardTemplate">
+  <div class="bill-card">
+    <div class="bill-card-header">
+      <div class="bill-status-wrapper">
+        <span class="bill-status-badge"></span>
+      </div>
+      <div class="bill-actions">
+        <button class="btn-action view-bill" title="View Details">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn-action edit-bill" title="Edit Bill">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn-action delete-bill" title="Delete Bill">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div class="bill-card-body">
+      <div class="bill-number-section">
+        <span class="bill-number-label">Bill Number</span>
+        <h6 class="bill-number"></h6>
+      </div>
+      
+      <div class="bill-details-grid">
+        <div class="detail-item">
+          <span class="detail-label">Property ID</span>
+          <span class="detail-value property-id"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Owner</span>
+          <span class="detail-value owner-name"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Billing Cycle</span>
+          <span class="detail-value billing-cycle"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Due Date</span>
+          <span class="detail-value due-date"></span>
+        </div>
+      </div>
+      
+      <div class="bill-amounts">
+        <div class="amount-row">
+          <span>Tax Amount:</span>
+          <span class="tax-amount"></span>
+        </div>
+        <div class="amount-row">
+          <span>Penalty:</span>
+          <span class="penalty-amount"></span>
+        </div>
+        <div class="amount-row">
+          <span>Discount:</span>
+          <span class="discount-amount"></span>
+        </div>
+        <div class="amount-row total">
+          <span>Total Amount:</span>
+          <span class="total-amount"></span>
+        </div>
+      </div>
+      
+      <div class="bill-footer">
+        <div class="generated-info">
+          <i class="fas fa-calendar-alt me-1"></i>
+          <span class="generated-date"></span>
+        </div>
+        <div class="created-by">
+          <i class="fas fa-user me-1"></i>
+          <span class="creator"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- Add this template for list view (alternative) -->
+<template id="billListItemTemplate">
+  <div class="bill-list-item">
+    <div class="list-item-status">
+      <span class="status-badge"></span>
+    </div>
+    <div class="list-item-info">
+      <div class="info-row">
+        <span class="bill-number"></span>
+        <span class="property-info"></span>
+      </div>
+      <div class="info-row">
+        <span class="owner-info"></span>
+        <span class="cycle-info"></span>
+      </div>
+    </div>
+    <div class="list-item-amount">
+      <span class="amount"></span>
+    </div>
+    <div class="list-item-actions">
+      <button class="btn-action view-bill" title="View Details"><i class="fas fa-eye"></i></button>
+      <button class="btn-action edit-bill" title="Edit Bill"><i class="fas fa-edit"></i></button>
+      <button class="btn-action delete-bill" title="Delete Bill"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>
+</template>
+</div>
+
+<!-- Modals (unchanged) -->
+<!-- Generate Bill Modal -->
+<div class="modal fade" id="generateBillModal" tabindex="-1" aria-labelledby="generateBillModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateBillModalLabel">Generate New Bill</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" id="generateBillForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Property*</label>
+              <select name="property_id" class="form-select" id="propertySelect" required>
+                <option value="">-- Select Property --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Billing Cycle*</label>
+              <select name="billing_cycle_id" class="form-select" id="billingCycleSelect" required>
+                <option value="">-- Select Billing Cycle --</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <button type="button" class="btn btn-outline-secondary" id="calculateTaxBtn">
+                <i class="fas fa-calculator"></i> Calculate Tax
+              </button>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Assessed Value (₵)</label>
+              <input type="text" id="assessedValue" class="form-control" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tax Rate (%)</label>
+              <input type="text" id="taxRate" class="form-control" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tax Amount (₵)*</label>
+              <input type="number" name="tax_amount" id="taxAmount" class="form-control" required step="0.01" min="0" readonly>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Penalty Amount (₵)</label>
+              <input type="number" name="penalty_amount" id="penaltyAmount" class="form-control" value="0" step="0.01" min="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Discount Amount (₵)</label>
+              <input type="number" name="discount_amount" id="discountAmount" class="form-control" value="0" step="0.01" min="0">
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label class="form-label">Total Amount (₵)</label>
+              <input type="text" id="totalAmount" class="form-control bg-light" readonly>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="form-control" rows="3" placeholder="Additional notes..."></textarea>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-file-invoice"></i> Generate Bill
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Generate Modal -->
+<div class="modal fade" id="bulkGenerateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Bulk Generate Bills</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="bulkGenerateForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Billing Cycle*</label>
+              <select name="billing_cycle_id" class="form-select" id="bulkBillingCycleSelect" required>
+                <option value="">-- Select Billing Cycle --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Properties to Bill</label>
+              <button type="button" class="btn btn-outline-primary w-100" id="selectPropertiesBtn">
+                <i class="fas fa-list"></i> Select Properties
+              </button>
+              <small class="form-text text-muted" id="selectedPropertiesCount">0 properties selected</small>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <div id="selectedPropertiesList" class="border p-3" style="max-height: 200px; overflow-y: auto; display: none;">
+                <!-- Selected properties will be listed here -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-bolt"></i> Generate Bills
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Properties Selection Modal -->
+<div class="modal fade" id="propertiesSelectionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Select Properties for Billing</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table id="propertiesSelectionTable" class="table table-sm table-striped">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAllProperties"></th>
+                <th>PROPERTY ID</th>
+                <th>ADDRESS</th>
+                <th>ZONE</th>
+                <th>PROPERTY TYPE</th>
+                <th>ASSESSED VALUE (₵)</th>
+                <th>OWNER</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Properties will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmPropertiesSelection">Confirm Selection</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Bill Modal -->
+<div class="modal fade" id="viewBillModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Bill Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="billDetailsContent">
+        <!-- Bill details will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Bill Modal -->
+<div class="modal fade" id="editBillModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Bill</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editBillForm">
+          {% csrf_token %}
+          <input type="hidden" name="bill_id" id="editBillId">
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Bill Number</label>
+              <input type="text" id="editBillNumber" class="form-control" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-control" id="editBillStatus" required>
+                <option value="draft">Draft</option>
+                <option value="generated">Generated</option>
+                <option value="sent">Sent</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Tax Amount (₵)</label>
+              <input type="text" id="editTaxAmount" class="form-control" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Penalty Amount (₵)</label>
+              <input type="number" name="penalty_amount" id="editPenaltyAmount" class="form-control" step="0.01" min="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Discount Amount (₵)</label>
+              <input type="number" name="discount_amount" id="editDiscountAmount" class="form-control" step="0.01" min="0">
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label class="form-label">Total Amount (₵)</label>
+              <input type="text" id="editTotalAmount" class="form-control bg-light" readonly>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" id="editBillNotes" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Message Container -->
+<div id="messageContainer" class="mt-3"></div>
+
+<!-- Hidden iframe for downloads -->
+<iframe id="bop-download-iframe" style="display:none;"></iframe>
+
+<!-- Scripts -->
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function () {
+  // ==================== STATE MANAGEMENT ====================
+  let currentViewMode = 'grid'; // 'grid' or 'list'
+  let selectedProperties = [];
+  let allProperties = [];
+
+  // ==================== INITIALIZATION ====================
+  function initializePage() {
+    initializeSelect2();
+    loadBillingYears();
+    loadDivisions();
+    setupEventListeners();
+    // Load initial bills after a short delay
+    setTimeout(loadBopsBills, 500);
+  }
+
+  // ==================== SELECT2 INITIALIZATION ====================
+  function initializeSelect2() {
+    $('#businessSelect').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select business(es)...',
+      allowClear: true,
+      width: '100%',
+      multiple: true,
+      closeOnSelect: false,
+      dropdownParent: $('.business-select-wrapper'),
+      dropdownCssClass: 'business-dropdown',
+      ajax: {
+        url: '/api/bops/list/',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+          return {
+            search: params.term || '',
+            page: params.page || 1
+          };
+        },
+        processResults: function (data, params) {
+          params.page = params.page || 1;
+          
+          if (!data.success || !data.bops || !Array.isArray(data.bops)) {
+            return { results: [] };
+          }
+          
+          const results = data.bops.map(function(bop) {
+            const businessName = bop.business_name || bop.display_text || bop.account_number || 'Business';
+            return {
+              id: bop.id,
+              text: businessName,
+              account_number: bop.account_number,
+              business_name: bop.business_name,
+              block: bop.block,
+              division: bop.division
+            };
+          });
+          
+          return {
+            results: results,
+            pagination: {
+              more: (params.page * 30) < (data.total || 0)
+            }
+          };
+        },
+        cache: true
+      },
+      minimumInputLength: 0,
+      templateResult: formatBusinessResult,
+      templateSelection: formatBusinessSelection
+    });
+
+    $('#businessSelect').on('change', function() {
+      updateSelectedBusinessesCount();
+    });
+  }
+
+  function formatBusinessResult(business) {
+    if (business.loading) {
+      return $('<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div>');
+    }
+    
+    const $container = $('<div class="business-option">');
+    const businessName = business.business_name || business.text || 'Business';
+    const accountNumber = business.account_number || '';
+    
+    $container.html(`
+      <div class="d-flex align-items-center">
+        <div class="business-icon me-2">
+          <i class="fas fa-building text-primary"></i>
+        </div>
+        <div>
+          <div class="fw-semibold">${businessName}</div>
+          ${accountNumber ? `<small class="text-muted">${accountNumber}</small>` : ''}
+        </div>
+      </div>
+    `);
+    
+    return $container;
+  }
+
+  function formatBusinessSelection(business) {
+    if (!business.id) return business.text;
+    const businessName = business.business_name || business.text || 'Business';
+    return $('<span class="selected-business">' + businessName + '</span>');
+  }
+
+  // ==================== UI UTILITIES ====================
+  function formatCurrency(amount) {
+    return amount ? '₵' + parseFloat(amount).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) : '₵0.00';
+  }
+
+  function getStatusClass(status) {
+    const classes = {
+      'draft': { bg: 'secondary', icon: 'fa-file' },
+      'generated': { bg: 'info', icon: 'fa-file-invoice' },
+      'sent': { bg: 'primary', icon: 'fa-paper-plane' },
+      'paid': { bg: 'success', icon: 'fa-check-circle' },
+      'overdue': { bg: 'danger', icon: 'fa-exclamation-triangle' },
+      'cancelled': { bg: 'dark', icon: 'fa-ban' }
+    };
+    return classes[status] || { bg: 'secondary', icon: 'fa-file' };
+  }
+
+  function showMessage(type, message) {
+    $("#messageContainer").html(`
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `);
+    setTimeout(() => {
+      $(".alert").fadeOut("slow");
+    }, 5000);
+  }
+
+  function getCSRFToken() {
+    let cookieValue = null;
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith("csrftoken=")) {
+        cookieValue = cookie.substring("csrftoken=".length);
+        break;
+      }
+    }
+    return cookieValue;
+  }
+
+  // Apply CSRF Token to AJAX Requests
+  $.ajaxSetup({
+    beforeSend: function (xhr, settings) {
+      if (!this.crossDomain && settings.type !== "GET") {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
+    },
+  });
+
+  function updateSelectedBusinessesCount() {
+    const selected = $('#businessSelect').val();
+    const count = selected ? selected.length : 0;
+    $('#selectedBusinessesCount').html(`<i class="fas fa-check-circle me-1"></i>${count} selected`);
+  }
+
+  function getBillingYear() {
+    const select = $('#billingYearSelect');
+    const selectedYear = select.val();
+    return selectedYear && selectedYear !== '' ? parseInt(selectedYear) : new Date().getFullYear();
+  }
+
+  // ==================== DATA LOADING ====================
+  function loadBillingYears() {
+    $.ajax({
+      url: '/api/bops-bills/years/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const select = $('#billingYearSelect');
+          select.empty().append('<option value="">Select Year</option>');
+          
+          const currentYear = new Date().getFullYear();
+          
+          response.years.forEach(year => {
+            select.append(`<option value="${year}" ${year === currentYear ? 'selected' : ''}>${year}</option>`);
+          });
+        }
+      },
+      error: function() {
+        const select = $('#billingYearSelect');
+        const currentYear = new Date().getFullYear();
+        select.empty().append(`<option value="${currentYear}" selected>${currentYear}</option>`);
+      }
+    });
+  }
+
+  function loadDivisions() {
+    const divisionSelect = $('#divisionSelect');
+    divisionSelect.empty().append('<option value="">All Divisions</option>');
+
+    $.ajax({
+      url: '/api/bops-bills/divisions/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success && Array.isArray(response.divisions)) {
+          response.divisions.forEach(function(division) {
+            divisionSelect.append(`<option value="${division}">${division}</option>`);
+          });
+        }
+      },
+      error: function() {
+        console.error('Error loading divisions');
+      }
+    });
+  }
+
+  // function loadBlocksForDivision(division) {
+  //   const blockSelect = $('#blockSelect');
+  //   blockSelect.empty().append('<option value="">All Blocks</option>');
+
+  //   if (!division || division.trim() === '') {
+  //     return;
+  //   }
+
+  //   $.ajax({
+  //     url: '/api/bops-bills/blocks-by-division/',
+  //     type: 'GET',
+  //     data: { division: division.trim() },
+  //     success: function(response) {
+  //       if (response.success && Array.isArray(response.blocks)) {
+  //         response.blocks.forEach(function(block) {
+  //           blockSelect.append(`<option value="${block}">${block}</option>`);
+  //         });
+  //       }
+  //     },
+  //     error: function() {
+  //       console.error('Error loading blocks');
+  //     }
+  //   });
+  // }
+
+   // Load Blocks into #blockSelect based on selected division
+  function loadBlocksForDivision(division) {
+    const blockSelect = $('#blockSelect');
+    if (!blockSelect.length) return;
+    
+    blockSelect.empty().append('<option value="">-- Select Block --</option>');
+
+    if (!division || String(division).trim() === '') {
+      return;
+    }
+
+    division = String(division).trim();
+    
+    $.ajax({
+      url: '/api/bops-bills/blocks-by-division/',
+      type: 'GET',
+      data: { division: division },
+      dataType: 'json',
+      success: function(response) {
+        if (response && response.success && Array.isArray(response.blocks)) {
+          response.blocks.forEach(function(block) {
+            blockSelect.append($('<option></option>').val(block).text(block));
+          });
+        }
+      },
+      error: function(xhr, status, err) {
+        console.error('Error loading blocks for blockSelect:', status, err, xhr.responseText);
+      }
+    });
+  }
+  
+
+  // ==================== BILL RENDERING ====================
+  // function loadBopsBills() {
+  //   const billingYear = getBillingYear();
+  //   const selectedBlock = $('#blockSelect').val() || '';
+  //   const selectedDivision = $('#divisionSelect').val() || '';
+  //   const selectedBusinesses = $('#businessSelect').val() || [];
+    
+  //   let queryParams = `billing_year=${billingYear}`;
+  //   if (selectedBlock) {
+  //     queryParams += `&block=${encodeURIComponent(selectedBlock)}`;
+  //   }
+  //   if (selectedDivision) {
+  //     queryParams += `&division=${encodeURIComponent(selectedDivision)}`;
+  //   }
+  //   if (selectedBusinesses && selectedBusinesses.length > 0) {
+  //     queryParams += `&business_ids=${selectedBusinesses.join(',')}`;
+  //   }
+    
+  //   $('#billsTableContainer').html(`
+  //     <div class="loading-state">
+  //       <div class="spinner-border text-primary" role="status">
+  //         <span class="visually-hidden">Loading...</span>
+  //       </div>
+  //       <p class="text-muted mt-2">Loading bills...</p>
+  //     </div>
+  //   `);
+    
+  //   $.ajax({
+  //     url: `/api/bops-bills/list/?${queryParams}`,
+  //     type: 'GET',
+  //     success: function(response) {
+  //       if (response.success && response.bills && response.bills.length > 0) {
+  //         if (currentViewMode === 'grid') {
+  //           renderBillsGrid(response.bills);
+  //         } else {
+  //           renderBillsList(response.bills);
+  //         }
+  //       } else {
+  //         renderEmptyState();
+  //       }
+  //     },
+  //     error: function(xhr) {
+  //       console.error('Error loading bills:', xhr);
+  //       $('#billsTableContainer').html(`
+  //         <div class="error-state">
+  //           <div class="error-icon">
+  //             <i class="fas fa-exclamation-triangle text-danger"></i>
+  //           </div>
+  //           <h5>Error Loading Bills</h5>
+  //           <p class="text-muted">There was a problem loading the bills. Please try again.</p>
+  //           <button class="btn btn-outline-primary" onclick="loadBopsBills()">
+  //             <i class="fas fa-sync-alt me-2"></i>Retry
+  //           </button>
+  //         </div>
+  //       `);
+  //     }
+  //   });
+  // }
+
+
+  // no show the actual template but shrink it a bit to cover 2 in a row
+function loadBopsBills() {
+    const billingYear = getBillingYear();
+    const selectedBlock = $('#blockSelect').val() || '';
+    const selectedDivision = $('#divisionSelect').val() || '';
+    const selectedBusinesses = $('#businessSelect').val() || [];
+    
+    // Build query parameters
+    let queryParams = `billing_year=${billingYear}`;
+    if (selectedBlock) {
+      queryParams += `&block=${encodeURIComponent(selectedBlock)}`;
+    }
+    if (selectedDivision) {
+      queryParams += `&division=${encodeURIComponent(selectedDivision)}`;
+    }
+    if (selectedBusinesses && selectedBusinesses.length > 0) {
+      queryParams += `&business_ids=${selectedBusinesses.join(',')}`;
+    }
+    
+    // Show loading indicator
+    $('#billsTableContainer').html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Loading bills...</div>');
+    
+    $.ajax({
+      url: `/bopeasycollectible/?${queryParams}`,
+      type: 'GET',
+      success: function(response) {
+        $('#billsTableContainer').html(response);
+      },
+      error: function(xhr, status, error) {
+        console.error('Error loading bills:', error);
+        $('#billsTableContainer').html(
+          '<div class="alert alert-danger">Error loading bills. Please try again.</div>'
+        );
+      }
+    });
+  }
+
+
+
+  function renderBillsGrid(bills) {
+    const container = $('#billsTableContainer');
+    container.empty();
+    
+    // Create fixed 2-column grid container
+    const gridContainer = $('<div class="bills-grid-container"></div>');
+    
+    bills.forEach((bill) => {
+      const template = document.getElementById('billCardTemplate');
+      const card = $(template.content.cloneNode(true));
+      
+      // Set status badge
+      const status = getStatusClass(bill.status);
+      card.find('.bill-status-badge')
+        .addClass(`bg-${status.bg}`)
+        .html(`<i class="fas ${status.icon} me-1"></i>${bill.status.toUpperCase()}`);
+      
+      // Set bill number
+      card.find('.bill-number').text(bill.bill_number || 'N/A');
+      
+      // Set details
+      card.find('.property-id').text(bill.property_id || 'N/A');
+      card.find('.owner-name').text(bill.owner_name || 'N/A');
+      card.find('.billing-cycle').text(bill.billing_cycle || 'N/A');
+      card.find('.due-date').text(bill.due_date || 'N/A');
+      
+      // Set amounts
+      card.find('.tax-amount').text(formatCurrency(bill.tax_amount));
+      card.find('.penalty-amount').text(formatCurrency(bill.penalty_amount));
+      card.find('.discount-amount').text(formatCurrency(bill.discount_amount));
+      card.find('.total-amount').text(formatCurrency(bill.total_amount));
+      
+      // Set footer
+      card.find('.generated-date').text(bill.generated_date || 'N/A');
+      card.find('.creator').text(bill.created_by || 'N/A');
+      
+      // Set data attributes
+      const billCard = card.find('.bill-card');
+      billCard.attr('data-bill-id', bill.id);
+      
+      // Add click handler for enlarging
+      billCard.on('click', function(e) {
+        if (!$(e.target).closest('.btn-action').length) {
+          enlargeBill(bill.id);
+        }
+      });
+      
+      // Action buttons (stop propagation to prevent card click)
+      card.find('.view-bill').on('click', (e) => {
+        e.stopPropagation();
+        viewBill(bill.id);
+      });
+      
+      card.find('.edit-bill').on('click', (e) => {
+        e.stopPropagation();
+        editBill(bill.id);
+      });
+      
+      card.find('.delete-bill').on('click', (e) => {
+        e.stopPropagation();
+        deleteBill(bill.id);
+      });
+      
+      gridContainer.append(card);
+    });
+    
+    container.append(gridContainer);
+  }
+
+  function renderBillsList(bills) {
+    const container = $('#billsTableContainer');
+    container.empty();
+    
+    const listContainer = $('<div class="bills-list-container"></div>');
+    
+    bills.forEach(bill => {
+      const template = document.getElementById('billListItemTemplate');
+      const item = $(template.content.cloneNode(true));
+      
+      const status = getStatusClass(bill.status);
+      
+      item.find('.status-badge')
+        .addClass(`bg-${status.bg}`)
+        .html(`<i class="fas ${status.icon} me-1"></i>${bill.status.toUpperCase()}`);
+      
+      item.find('.bill-number').text(bill.bill_number || 'N/A');
+      item.find('.property-info').text(`${bill.property_id || 'N/A'} - ${bill.address || ''}`);
+      item.find('.owner-info').html(`<i class="fas fa-user me-1"></i>${bill.owner_name || 'N/A'}`);
+      item.find('.cycle-info').html(`<i class="fas fa-calendar me-1"></i>${bill.billing_cycle || 'N/A'}`);
+      item.find('.amount').text(formatCurrency(bill.total_amount));
+      
+      item.find('.bill-list-item').attr('data-bill-id', bill.id);
+      
+      item.find('.view-bill').on('click', () => viewBill(bill.id));
+      item.find('.edit-bill').on('click', () => editBill(bill.id));
+      item.find('.delete-bill').on('click', () => deleteBill(bill.id));
+      
+      listContainer.append(item);
+    });
+    
+    container.append(listContainer);
+  }
+
+  function renderEmptyState() {
+    $('#billsTableContainer').html(`
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="fas fa-file-invoice"></i>
+        </div>
+        <h5>No Bills Found</h5>
+        <p class="text-muted">No bills match your current filters. Try adjusting your selection or generate new bills.</p>
+        <button class="btn btn-primary" onclick="$('#generateBillBtn').click()">
+          <i class="fas fa-bolt me-2"></i>Generate Bills
+        </button>
+      </div>
+    `);
+  }
+
+  // ==================== BILL ACTIONS ====================
+  function enlargeBill(billId) {
+    Swal.fire({
+      title: 'Loading Bill Details...',
+      html: 'Please wait',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    
+    $.ajax({
+      url: `/api/bills/${billId}/`,
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const bill = response.bill;
+          Swal.close();
+          
+          Swal.fire({
+            title: `
+              <div class="enlarged-bill-header">
+                <span class="bill-number-lg">${bill.bill_number || 'N/A'}</span>
+                <span class="badge bg-${getStatusClass(bill.status).bg} status-badge-lg">
+                  <i class="fas ${getStatusClass(bill.status).icon} me-1"></i>${(bill.status || 'N/A').toUpperCase()}
+                </span>
+              </div>
+            `,
+            html: `
+              <div class="enlarged-bill-container">
+                <!-- Property & Owner Section -->
+                <div class="enlarged-section">
+                  <h6 class="section-title">
+                    <i class="fas fa-building text-primary me-2"></i>Property Information
+                  </h6>
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <span class="info-label">Property ID</span>
+                      <span class="info-value">${bill.property_id || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Address</span>
+                      <span class="info-value">${bill.address || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Owner</span>
+                      <span class="info-value">${bill.owner_name || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Owner Type</span>
+                      <span class="info-value">${bill.owner_type || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Billing Cycle Section -->
+                <div class="enlarged-section">
+                  <h6 class="section-title">
+                    <i class="fas fa-calendar-alt text-info me-2"></i>Billing Information
+                  </h6>
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <span class="info-label">Billing Cycle</span>
+                      <span class="info-value">${bill.billing_cycle || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Generated Date</span>
+                      <span class="info-value">${bill.generated_date || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Due Date</span>
+                      <span class="info-value">${bill.due_date || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Generated By</span>
+                      <span class="info-value">${bill.created_by || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Amount Section -->
+                <div class="enlarged-section amount-section">
+                  <h6 class="section-title">
+                    <i class="fas fa-money-bill-wave text-success me-2"></i>Amount Details
+                  </h6>
+                  <div class="amount-details">
+                    <div class="amount-row">
+                      <span>Tax Amount:</span>
+                      <span class="amount-value">${formatCurrency(bill.tax_amount)}</span>
+                    </div>
+                    <div class="amount-row">
+                      <span>Penalty Amount:</span>
+                      <span class="amount-value">${formatCurrency(bill.penalty_amount)}</span>
+                    </div>
+                    <div class="amount-row">
+                      <span>Discount Amount:</span>
+                      <span class="amount-value">-${formatCurrency(bill.discount_amount)}</span>
+                    </div>
+                    <div class="amount-row total-row">
+                      <span>Total Amount:</span>
+                      <span class="total-value">${formatCurrency(bill.total_amount)}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                ${bill.notes ? `
+                <div class="enlarged-section">
+                  <h6 class="section-title">
+                    <i class="fas fa-sticky-note text-warning me-2"></i>Notes
+                  </h6>
+                  <p class="notes-text">${bill.notes}</p>
+                </div>
+                ` : ''}
+              </div>
+            `,
+            showCloseButton: true,
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: 'Close',
+            showDenyButton: true,
+            denyButtonText: '<i class="fas fa-edit me-1"></i>Edit',
+            showConfirmButton: true,
+            confirmButtonText: '<i class="fas fa-download me-1"></i>Download',
+            customClass: {
+              popup: 'enlarged-bill-popup',
+              header: 'enlarged-bill-popup-header',
+              title: 'enlarged-bill-title',
+              htmlContainer: 'enlarged-bill-content'
+            }
+          }).then((result) => {
+            if (result.isDenied) {
+              editBill(billId);
+            } else if (result.isConfirmed) {
+              downloadSingleBill(billId);
+            }
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error || 'Failed to load bill details'
+          });
+        }
+      },
+      error: function() {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load bill details. Please try again.'
+        });
+      }
+    });
+  }
+
+  function downloadSingleBill(billId) {
+    Swal.fire({
+      title: 'Downloading Bill...',
+      html: 'Please wait',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    
+    const iframe = document.getElementById('bop-download-iframe');
+    iframe.src = `/api/bills/${billId}/download/`;
+    
+    setTimeout(() => {
+      Swal.close();
+      Swal.fire({
+        icon: 'success',
+        title: 'Download Started',
+        text: 'Your bill download has been initiated.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }, 1000);
+  }
+
+  function viewBill(billId) {
+    enlargeBill(billId);
+  }
+
+  function editBill(billId) {
+    // Placeholder for edit functionality
+    console.log('Edit bill:', billId);
+    showMessage('info', `Edit functionality for bill #${billId} will be implemented`);
+  }
+
+  function deleteBill(billId) {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#0dae48',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: `/api/bills/${billId}/delete/`,
+          type: 'POST',
+          success: function(response) {
+            if (response.success) {
+              Swal.fire(
+                'Deleted!',
+                'The bill has been deleted.',
+                'success'
+              );
+              loadBopsBills();
+            } else {
+              Swal.fire(
+                'Error!',
+                response.error || 'Failed to delete bill',
+                'error'
+              );
+            }
+          },
+          error: function() {
+            Swal.fire(
+              'Error!',
+              'Failed to delete bill. Please try again.',
+              'error'
+            );
+          }
+        });
+      }
+    });
+  }
+
+  // ==================== BILL GENERATION ====================
+  function generateBillsForBusinesses(businessIds, businessCount) {
+    if (!businessIds || !Array.isArray(businessIds) || businessIds.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Input',
+        text: 'No valid businesses provided for bill generation.',
+        confirmButtonColor: '#0dae48'
+      });
+      return;
+    }
+    
+    const validBusinessIds = businessIds
+      .map(id => parseInt(id))
+      .filter(id => !isNaN(id) && id > 0);
+    
+    if (validBusinessIds.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Business IDs',
+        text: 'No valid business IDs to generate bills for.',
+        confirmButtonColor: '#0dae48'
+      });
+      return;
+    }
+    
+    const billingYear = getBillingYear();
+    
+    Swal.fire({
+      title: 'Generate Bills?',
+      html: `Generate bills for <strong>${validBusinessIds.length}</strong> business(es) for the year <strong>${billingYear}</strong>?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Generate!',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#0dae48'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Generating Bills...',
+          html: 'Please wait...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+        const dueDateStr = dueDate.toISOString().split('T')[0];
+        
+        const formData = {
+          business_ids: validBusinessIds,
+          billing_year: billingYear,
+          due_date: dueDateStr,
+          tax_amount: 0,
+          penalty_amount: 0,
+          discount_amount: 0,
+          notes: `Bulk generated for ${validBusinessIds.length} businesses`
+        };
+        
+        $.ajax({
+          url: '/api/bops-bills/generate/',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(formData),
+          success: function(response) {
+            if (response.success) {
+              let message = `<strong>${response.message}</strong>`;
+              
+              if (response.errors && response.errors.length > 0) {
+                message += `<br><br><strong>Errors (${response.errors.length}):</strong><br>`;
+                message += response.errors.slice(0, 5).join('<br>');
+                if (response.errors.length > 5) {
+                  message += `<br>... and ${response.errors.length - 5} more`;
+                }
+              }
+              
+              Swal.fire({
+                icon: 'success',
+                title: 'Bills Generated!',
+                html: message,
+                confirmButtonColor: '#0dae48'
+              }).then(() => {
+                loadBopsBills();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                html: response.error,
+                confirmButtonColor: '#0dae48'
+              });
+            }
+          },
+          error: function(xhr) {
+            let errorMsg = 'Error generating bills';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            }
+            
+            Swal.fire({
+              icon: 'error',
+              title: 'Error Generating Bills',
+              text: errorMsg,
+              confirmButtonColor: '#0dae48'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // ==================== EVENT LISTENERS ====================
+  function setupEventListeners() {
+    // Select All Businesses
+    $('#selectAllBusinesses').on('click', function() {
+      $.ajax({
+        url: '/api/bops/list/',
+        type: 'GET',
+        data: { search: '', page_size: 1000 },
+        success: function(response) {
+          if (response.success && response.bops.length > 0) {
+            const allIds = response.bops.map(bop => bop.id.toString());
+            
+            const select = $('#businessSelect');
+            select.empty();
+            
+            response.bops.forEach(function(bop) {
+              const option = new Option(
+                bop.business_name || bop.display_text || bop.account_number || 'Business',
+                bop.id,
+                true,
+                true
+              );
+              select.append(option);
+            });
+            
+            select.trigger('change');
+            updateSelectedBusinessesCount();
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Success',
+              text: `Selected all ${response.bops.length} businesses`,
+              timer: 2000,
+              showConfirmButton: false
+            });
+          }
+        },
+        error: function() {
+          showMessage('danger', 'Error loading all businesses');
+        }
+      });
+    });
+
+    // Deselect All Businesses
+    $('#deselectAllBusinesses').on('click', function() {
+      $('#businessSelect').val(null).trigger('change');
+      updateSelectedBusinessesCount();
+      
+      Swal.fire({
+        icon: 'info',
+        title: 'Deselected',
+        text: 'All businesses have been deselected',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    });
+
+    // Generate Bills Button
+    $('#generateBillBtn').on('click', function() {
+      const selectedBusinesses = $('#businessSelect').val();
+      const billingYear = getBillingYear();
+      const selectedBlock = $('#blockSelect').val();
+      const selectedDivision = $('#divisionSelect').val();
+      
+      if (!selectedBusinesses || selectedBusinesses.length === 0) {
+        Swal.fire({
+          title: 'Loading All Businesses...',
+          html: 'Please wait...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        $.ajax({
+          url: '/api/bops/list/',
+          type: 'GET',
+          data: { search: '', page_size: 1000 },
+          success: function(response) {
+            Swal.close();
+            
+            if (response.success && response.bops.length > 0) {
+              let filteredBops = response.bops;
+              if (selectedBlock) {
+                filteredBops = filteredBops.filter(bop => bop.block === selectedBlock);
+              }
+              if (selectedDivision) {
+                filteredBops = filteredBops.filter(bop => bop.division === selectedDivision);
+              }
+
+              const allBusinessIds = filteredBops.map(bop => parseInt(bop.id)).filter(id => !isNaN(id));
+              
+              if (allBusinessIds.length === 0) {
+                Swal.fire({
+                  icon: 'warning',
+                  title: 'No Businesses Found',
+                  text: 'No businesses match the selected filters.',
+                  confirmButtonColor: '#0dae48'
+                });
+                return;
+              }
+              
+              Swal.fire({
+                title: 'Generate Bills for All?',
+                html: `Generate bills for <strong>${allBusinessIds.length}</strong> filtered business(es) for the year <strong>${billingYear}</strong>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Generate!',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#0dae48'
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  generateBillsForBusinesses(allBusinessIds, allBusinessIds.length);
+                }
+              });
+            } else {
+              Swal.fire({
+                icon: 'warning',
+                title: 'No Businesses Found',
+                text: 'No businesses available to generate bills for.',
+                confirmButtonColor: '#0dae48'
+              });
+            }
+          },
+          error: function() {
+            Swal.close();
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Failed to load businesses.',
+              confirmButtonColor: '#0dae48'
+            });
+          }
+        });
+      } else {
+        generateBillsForBusinesses(selectedBusinesses, selectedBusinesses.length);
+      }
+    });
+
+    // Download Bills Button
+    $('#download-btn').on('click', function() {
+      const billingYear = getBillingYear();
+      const selectedBlock = $('#blockSelect').val() || '';
+      const selectedDivision = $('#divisionSelect').val() || '';
+      const selectedBusinesses = $('#businessSelect').val() || [];
+      
+      let queryParams = `billing_year=${billingYear}&download=1`;
+      if (selectedBlock) queryParams += `&block=${encodeURIComponent(selectedBlock)}`;
+      if (selectedDivision) queryParams += `&division=${encodeURIComponent(selectedDivision)}`;
+      if (selectedBusinesses && selectedBusinesses.length > 0) {
+        queryParams += `&business_ids=${selectedBusinesses.join(',')}`;
+      }
+      
+      $('#bop-download-iframe').attr('src', `/bopeasycollectible/?${queryParams}`);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Download Started',
+        text: 'Your bill download has been initiated.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    });
+
+    // View Bills Button
+    $('#viewBillsBtn').on('click', function() {
+      loadBopsBills();
+    });
+
+    // View Toggle
+    $('#gridViewBtn').on('click', function() {
+      $(this).addClass('active');
+      $('#listViewBtn').removeClass('active');
+      currentViewMode = 'grid';
+      loadBopsBills();
+    });
+
+    $('#listViewBtn').on('click', function() {
+      $(this).addClass('active');
+      $('#gridViewBtn').removeClass('active');
+      currentViewMode = 'list';
+      loadBopsBills();
+    });
+
+    // Division change handler
+    $('#divisionSelect').on('change', function() {
+      loadBlocksForDivision($(this).val());
+    });
+
+    // Refresh button
+    $('.refresh-btn').on('click', function() {
+      loadBopsBills();
+    });
+  }
+
+  // ==================== START APPLICATION ====================
+  initializePage();
+});
+</script>
+<style>
+/* ==================== MODERN PROFESSIONAL STYLING ==================== */
+
+/* Page Header */
+.page-header {
+  padding: 1.5rem 0;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Control Card */
+.control-card {
+  border: none;
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.control-card:hover {
+  box-shadow: 0 15px 50px rgba(13, 174, 72, 0.12);
+}
+
+/* Panel Styles */
+.selection-panel,
+.filter-panel,
+.action-panel {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.selection-panel:hover,
+.filter-panel:hover,
+.action-panel:hover {
+  background: white;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+.panel-header .icon-wrapper {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==================== SELECT2 CUSTOM STYLING ==================== */
+.business-select-wrapper {
+  position: relative;
+  width: 100%;
+  z-index: 1000;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option.select2-results__option--selected, .select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option[aria-selected=true]:not(.select2-results__option--highlighted) {
+  background: linear-gradient(135deg, rgba(13, 174, 72, 0.15) 0%, rgba(255, 255, 7, 0.15) 100%) !important;
+  color: #0dae48 !important;
+  font-weight: 500;
+}
+
+.select2-container--bootstrap-5 .select2-selection {
+  border: 2px solid #e9ecef !important;
+  border-radius: 12px !important;
+  min-height: 48px !important;
+  padding: 4px !important;
+  transition: all 0.3s ease;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection {
+  border-color: #0dae48 !important;
+  box-shadow: 0 0 0 4px rgba(13, 174, 72, 0.1) !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown {
+  border: 2px solid #0dae48 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  margin-top: 4px !important;
+  overflow: hidden !important;
+  z-index: 1050 !important;
+}
+
+.business-dropdown {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  width: auto !important;
+  min-width: 100% !important;
+}
+
+.select2-container--bootstrap-5 .select2-results__options {
+  /* max-height: 300px !important; */
+  max-width: 650px !important;
+  width: 400px !important;
+  /* min-width: 100% !important; */
+  overflow-y: auto !important;
+}
+
+.select2-container--bootstrap-5 .select2-results__option {
+  padding: 10px 16px !important;
+  transition: all 0.2s ease;
+}
+
+.select2-container--bootstrap-5 .select2-results__option:hover {
+  background: linear-gradient(135deg, rgba(13, 174, 72, 0.08) 0%, rgba(255, 255, 7, 0.08) 100%) !important;
+}
+
+.select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+  background: linear-gradient(135deg, rgba(13, 174, 72, 0.15) 0%, rgba(255, 255, 7, 0.15) 100%) !important;
+  color: #0dae48 !important;
+  font-weight: 500;
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  padding: 4px 10px !important;
+  margin: 2px !important;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(13, 174, 72, 0.3);
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+  color: white !important;
+  margin-right: 4px;
+  transition: all 0.2s ease;
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+  color: #ffff07 !important;
+  transform: scale(1.1);
+}
+
+/* ==================== MODERN FORM SELECTS ==================== */
+.modern-select {
+  border: 2px solid #e9ecef !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+  background-color: white !important;
+  cursor: pointer !important;
+}
+
+.modern-select:hover {
+  border-color: #0dae48 !important;
+  background-color: #f8fafc !important;
+}
+
+.modern-select:focus {
+  border-color: #0dae48 !important;
+  box-shadow: 0 0 0 4px rgba(13, 174, 72, 0.1) !important;
+}
+
+/* ==================== ACTION BUTTONS ==================== */
+.generate-btn,
+.download-btn,
+.view-btn {
+  border-radius: 14px !important;
+  padding: 14px !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(13, 174, 72, 0.3) !important;
+}
+
+.generate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(13, 174, 72, 0.4) !important;
+}
+
+.generate-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 7, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.generate-btn:hover::after {
+  left: 100%;
+}
+
+.download-btn {
+  border: 2px solid #0dae48 !important;
+  color: #0dae48 !important;
+  background: white !important;
+}
+
+.download-btn:hover {
+  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
+  color: white !important;
+  border-color: transparent !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(13, 174, 72, 0.2) !important;
+}
+
+.view-btn {
+  border: 2px solid #6c757d !important;
+  color: #6c757d !important;
+  background: white !important;
+}
+
+.view-btn:hover {
+  background: #6c757d !important;
+  color: white !important;
+  border-color: transparent !important;
+  transform: translateY(-2px);
+}
+
+/* ==================== TABLE CARD ==================== */
+.table-card {
+  border: none;
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.table-card .card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.refresh-btn {
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+  background: #0dae48 !important;
+  color: white !important;
+  border-color: #0dae48 !important;
+}
+
+/* ==================== SELECTION ACTIONS ==================== */
+.selection-actions .btn {
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.selection-actions .btn-outline-primary {
+  border-color: #0dae48;
+  color: #0dae48;
+}
+
+.selection-actions .btn-outline-primary:hover {
+  background: #0dae48;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 174, 72, 0.3);
+}
+
+.selection-actions .btn-outline-secondary:hover {
+  background: #6c757d;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* ==================== BADGE STYLING ==================== */
+.badge.bg-primary.bg-opacity-10 {
+  background: rgba(13, 174, 72, 0.1) !important;
+  border-radius: 30px;
+  font-size: 0.9rem;
+}
+
+/* ==================== MESSAGE CONTAINER ==================== */
+#messageContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 300px;
+}
+
+.alert {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ==================== BILLS GRID LAYOUT - 2 PER ROW (FIXED) ==================== */
+.bills-grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.bill-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(13, 174, 72, 0.1);
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.bill-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0dae48 0%, #ffff07 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.bill-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(13, 174, 72, 0.15);
+  border-color: rgba(13, 174, 72, 0.3);
+}
+
+.bill-card:hover::before {
+  opacity: 1;
+}
+
+.bill-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(13, 174, 72, 0.02) 0%, rgba(255, 255, 7, 0.02) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.bill-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bill-actions {
+  display: flex;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.btn-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: white;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+}
+
+.btn-action.view-bill:hover {
+  background: #0dae48;
+  color: white;
+}
+
+.btn-action.edit-bill:hover {
+  background: #ffc107;
+  color: white;
+}
+
+.btn-action.delete-bill:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.bill-card-body {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.bill-number-section {
+  margin-bottom: 1.25rem;
+}
+
+.bill-number-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6c757d;
+  letter-spacing: 0.5px;
+}
+
+.bill-number {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0dae48;
+  margin: 0.25rem 0 0 0;
+}
+
+.bill-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #6c757d;
+  letter-spacing: 0.3px;
+  margin-bottom: 0.25rem;
+}
+
+.detail-value {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.bill-amounts {
+  background: linear-gradient(135deg, rgba(13, 174, 72, 0.03) 0%, rgba(255, 255, 7, 0.03) 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.amount-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
+}
+
+.amount-row:last-child {
+  border-bottom: none;
+}
+
+.amount-row.total {
+  font-weight: 600;
+  color: #0dae48;
+  font-size: 1rem;
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid rgba(13, 174, 72, 0.2);
+}
+
+.bill-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 0.8rem;
+  color: #6c757d;
+  background: #f8fafc;
+}
+
+/* ==================== LIST VIEW STYLES ==================== */
+.bills-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bill-list-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid rgba(13, 174, 72, 0.1);
+  transition: all 0.3s ease;
+}
+
+.bill-list-item:hover {
+  transform: translateX(4px);
+  border-color: #0dae48;
+  box-shadow: 0 4px 12px rgba(13, 174, 72, 0.1);
+}
+
+.list-item-status {
+  width: 120px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 30px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.list-item-info {
+  flex: 1;
+  margin-left: 1.5rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.info-row:first-child .bill-number {
+  font-weight: 600;
+  color: #0dae48;
+  font-size: 0.95rem;
+}
+
+.info-row:first-child .property-info {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.info-row:last-child {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.info-row:last-child span {
+  display: flex;
+  align-items: center;
+}
+
+.list-item-amount {
+  margin: 0 2rem;
+  font-weight: 600;
+  color: #0dae48;
+  font-size: 1.1rem;
+  min-width: 100px;
+  text-align: right;
+}
+
+.list-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ==================== VIEW TOGGLE ==================== */
+.view-toggle .btn {
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+}
+
+.view-toggle .btn.active {
+  background: #0dae48;
+  color: white;
+  border-color: #0dae48;
+}
+
+/* ==================== LOADING, EMPTY, AND ERROR STATES ==================== */
+.loading-state,
+.empty-state,
+.error-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed rgba(13, 174, 72, 0.2);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-icon,
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #0dae48;
+  opacity: 0.5;
+}
+
+.error-icon {
+  color: #dc3545;
+}
+
+.error-state {
+  border-color: #dc3545;
+}
+
+/* ==================== ENLARGED BILL MODAL STYLES ==================== */
+.enlarged-bill-popup {
+  width: 800px !important;
+  max-width: 90vw !important;
+  padding: 0 !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.enlarged-bill-popup-header {
+  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%);
+  padding: 1.5rem !important;
+  margin: 0 !important;
+}
+
+.enlarged-bill-title {
+  color: white !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.enlarged-bill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.bill-number-lg {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.status-badge-lg {
+  font-size: 1rem !important;
+  padding: 0.5rem 1.5rem !important;
+  border-radius: 30px !important;
+}
+
+.enlarged-bill-content {
+  padding: 2rem !important;
+  margin: 0 !important;
+}
+
+.enlarged-bill-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.enlarged-section {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6c757d;
+  letter-spacing: 0.3px;
+}
+
+.info-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.amount-section {
+  background: linear-gradient(135deg, rgba(13, 174, 72, 0.05) 0%, rgba(255, 255, 7, 0.05) 100%);
+}
+
+.amount-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.amount-row:last-child {
+  border-bottom: none;
+}
+
+.amount-value {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.total-row {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(13, 174, 72, 0.2);
+  font-weight: 600;
+}
+
+.total-value {
+  font-size: 1.25rem;
+  color: #0dae48;
+  font-weight: 700;
+}
+
+.notes-text {
+  color: #2c3e50;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+}
+
+/* ==================== SWEET ALERT CUSTOMIZATION ==================== */
+.swal2-popup {
+  border-radius: 20px !important;
+  padding: 2rem !important;
+}
+
+.swal2-title {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+}
+
+.swal2-confirm {
+  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
+  border-radius: 12px !important;
+  padding: 10px 30px !important;
+  font-weight: 500 !important;
+}
+
+.swal2-cancel {
+  border-radius: 12px !important;
+  padding: 10px 30px !important;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 1200px) {
+  .selection-panel,
+  .filter-panel,
+  .action-panel {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .bills-grid-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .bill-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .list-item-status {
+    width: auto;
+  }
+  
+  .list-item-info {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .list-item-amount {
+    margin: 0;
+    text-align: left;
+    width: 100%;
+  }
+  
+  .list-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .action-buttons {
+    gap: 1rem;
+  }
+  
+  #messageContainer {
+    left: 20px;
+    right: 20px;
+    min-width: auto;
+  }
+  
+  .bill-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .bill-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .bill-details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .enlarged-bill-popup {
+    width: 95vw !important;
+  }
+  
+  .enlarged-section {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .selection-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .selection-actions .btn {
+    width: 100%;
+  }
+  
+  .view-toggle {
+    margin-top: 0.5rem;
+  }
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+.spinner-border.text-primary {
+  color: #0dae48 !important;
+}
+
+.text-primary {
+  color: #0dae48 !important;
+}
+
+.bg-primary {
+  background-color: #0dae48 !important;
+}
+
+.btn-primary {
+  background-color: #0dae48 !important;
+  border-color: #0dae48 !important;
+}
+
+.btn-primary:hover {
+  background-color: #089c3d !important;
+  border-color: #089c3d !important;
+}
+
+.btn-outline-primary {
+  color: #0dae48 !important;
+  border-color: #0dae48 !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0dae48 !important;
+  color: white !important;
+}
+
+/* Search Box Styling */
+.search-box {
+  min-width: 250px;
+}
+
+.search-box .input-group {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.search-box .input-group-text {
+  border: 1px solid #e9ecef;
+  background: white;
+  padding: 0.5rem 0.75rem;
+}
+
+.search-box .form-control {
+  border: 1px solid #e9ecef;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.search-box .form-control:focus {
+  border-color: #0dae48;
+  box-shadow: none;
+}
+
+.search-box .btn-outline-secondary {
+  border: 1px solid #e9ecef;
+  border-left: none;
+  background: white;
+}
+
+.search-box .btn-outline-secondary:hover {
+  background: #f8f9fa;
+  color: #dc3545;
+}
+
+/* Search Stats */
+.search-stats {
+  background: #f8fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.results-count {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+/* Bill Template Wrapper */
+.bill-template-wrapper {
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bill-template-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(13, 174, 72, 0.15);
+  border-color: #0dae48;
+}
+
+/* Ensure the original bill template fills the wrapper */
+.bill-template-wrapper > * {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Grid Container */
+.bills-grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* No Results State */
+.no-search-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.no-search-results .empty-state-icon {
+  font-size: 3rem;
+  color: #0dae48;
+  opacity: 0.3;
+  margin-bottom: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .card-header .d-flex {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .table-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .search-box {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .search-box .input-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .bills-grid-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .bill-template-wrapper > * {
+    padding: 0.75rem !important;
+  }
+}
+</style>
+{% endblock %}

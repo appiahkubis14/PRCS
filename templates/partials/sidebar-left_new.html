@@ -1,0 +1,153 @@
+<!-- Dynamic Sidebar Menu -->
+<div id="sidebar-menu">
+    <!-- Left Menu Start -->
+    <ul class="left-menu list-unstyled" id="side-menu">
+        <!-- Dashboard -->
+        <!-- <li>
+            <a href="/" class="">
+                <i class="fas fa-desktop"></i>
+                <span>Dashboard</span>
+            </a>
+        </li> -->
+
+        <!-- Dynamic Menu Items -->
+        {% if sidebar_items %}
+        {% for item_name, item_data in sidebar_items.items %}
+            {% if item_data.sub_items %}
+                <!-- Menu item with sub-items -->
+                <li>
+                    <a href="javascript: void(0);" class="has-arrow">
+                        <i class="{{ item_data.icon }}"></i>
+                        <span>{{ item_name }}</span>
+                    </a>
+                    <ul class="sub-menu" aria-expanded="false">
+                        {% for sub_name, sub_data in item_data.sub_items.items %}
+                            {% if sub_data.sub_items %}
+                                <!-- Nested sub-menu -->
+                                <li>
+                                    <a href="javascript: void(0);" class="has-arrow">
+                                        <i class="{{ sub_data.icon }} fa-lg"></i>
+                                        <span>{{ sub_name }}</span>
+                                    </a>
+                                    <ul class="sub-menu" aria-expanded="false">
+                                        {% for nested_name, nested_data in sub_data.sub_items.items %}
+                                            <li>
+                                                <a href="{{ nested_data.url }}">
+                                                    <i class="{{ nested_data.icon }} fa-lg"></i>
+                                                    <span>{{ nested_name }}</span>
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% else %}
+                                <!-- Regular sub-item -->
+                                <li>
+                                    <a href="{{ sub_data.url }}">
+                                        <i class="{{ sub_data.icon }} fa-lg"></i>
+                                        <span>{{ sub_name }}</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% else %}
+                <!-- Menu item without sub-items -->
+                <li>
+                    <a href="{{ item_data.url }}" class="">
+                        <i class="{{ item_data.icon }}"></i>
+                        <span>{{ item_name }}</span>
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        {% else %}
+        <!-- No sidebar items available -->
+        <li>
+            <a href="/" class="">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+<style>
+/* Ensure proper icon sizing with fa-lg */
+.fa-lg {
+    font-size: 1.2em !important;
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle dropdown arrows
+    const dropdownArrows = document.querySelectorAll('.has-arrow');
+    
+    dropdownArrows.forEach(arrow => {
+        arrow.addEventListener('click', function(e) {
+            e.preventDefault();
+            const subMenu = this.nextElementSibling;
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            
+            // Toggle aria-expanded
+            this.setAttribute('aria-expanded', !isExpanded);
+            if (subMenu) {
+                subMenu.setAttribute('aria-expanded', !isExpanded);
+            }
+            
+            // Close other open dropdowns at the same level
+            if (!isExpanded) {
+                const parentLi = this.closest('li');
+                const siblingDropdowns = parentLi.parentElement.querySelectorAll('.has-arrow[aria-expanded="true"]');
+                siblingDropdowns.forEach(sibling => {
+                    if (sibling !== this) {
+                        sibling.setAttribute('aria-expanded', 'false');
+                        const siblingSubMenu = sibling.nextElementSibling;
+                        if (siblingSubMenu) {
+                            siblingSubMenu.setAttribute('aria-expanded', 'false');
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    // Set active state based on current URL
+    function setActiveMenu() {
+        const currentPath = window.location.pathname;
+        const menuLinks = document.querySelectorAll('#sidebar-menu a[href]');
+        
+        menuLinks.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+                // Expand parent menus
+                let parentMenu = link.closest('.sub-menu');
+                while (parentMenu) {
+                    const parentLink = parentMenu.previousElementSibling;
+                    if (parentLink && parentLink.classList.contains('has-arrow')) {
+                        parentLink.setAttribute('aria-expanded', 'true');
+                        parentMenu.setAttribute('aria-expanded', 'true');
+                    }
+                    parentMenu = parentMenu.parentElement.closest('.sub-menu');
+                }
+            }
+        });
+    }
+    
+    setActiveMenu();
+});
+</script>
+
+  <!-- ========== Left Sidebar Start ========== -->
+    <!-- <div class="sidebar-left">
+        <div data-simplebar class="h-100">
+           
+            {% include 'partials/sidebar-left.html' %}
+            
+        </div>
+    </div> -->
+    <!-- Left Sidebar End -->

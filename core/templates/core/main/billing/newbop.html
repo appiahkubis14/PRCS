@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOP Bills - Receipts</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --paper-color: #fffaf0;
+            --line-color: #d16b4a; /* The orange security ink */
+        }
+
+       
+        /* The Main Receipt Body */
+        .receipt {
+            /* width: 1000px;
+            height: 420px; */
+            background-color: var(--paper-color);
+            display: flex;
+            position: relative;
+            border-left: 28px solid #ddd;
+            border-right: 28px solid #ddd;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* Complex Security Wave Pattern */
+            /* background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(209, 107, 74, 0.08) 1px, rgba(209, 107, 74, 0.08) 2px),
+                radial-gradient(circle at 50% 50%, rgba(209, 107, 74, 0.1) 0%, transparent 60%); */
+            background-size: 100% 3px, 400px 400px;
+        }
+
+        /* Tractor Feed Holes (CSS Generated) */
+        .receipt::before, .receipt::after {
+            content: "○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○";
+            position: absolute;
+            width: 20px;
+            left: -24px;
+            top: 15px;
+            font-size: 24px;
+            color: #777;
+            line-height: 1.2;
+            word-break: break-all;
+            text-align: center;
+        }
+        .receipt::after { left: auto; right: -24px; }
+
+        .main-section {
+            flex: 2.2;
+            padding: 20px 30px;
+            border-right: 2px dashed #888;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        /* Coat of Arms & Seal Styling */
+        .logo-container { width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; }
+        .logo-container svg { width: 100%; height: auto; }
+
+        .assembly-title { text-align: center; flex: 1; }
+        .assembly-title h1 { margin: 0; font-size: 24px; font-weight: 800; color: #111; letter-spacing: 0.5px; }
+        
+        .black-bill-box { 
+            background: #000; 
+            color: #fff; 
+            padding: 4px 15px; 
+            display: inline-block; 
+            font-weight: bold; 
+            margin-top: 8px; 
+            font-size: 15px; 
+            border-radius: 3px;
+        }
+
+        /* Form Layout */
+        .form-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; margin-top: 15px; }
+        
+        .field { margin-bottom: 8px; display: flex; align-items: flex-end; }
+        .field label { font-size: 12px; font-weight: bold; color: #333; width: 110px; }
+        .input-line { border-bottom: 1px solid #333; flex: 1; height: 18px; position: relative; padding-left: 10px; box-sizing: border-box; }
+        .input-box { border: 1px solid #000; background: rgba(255,255,255,0.6); height: 26px; flex: 1; padding-left: 10px; box-sizing: border-box; }
+
+        .table-area { border-collapse: collapse; width: 100%; }
+        .table-area td { border: 1px solid #000; height: 28px; background: rgba(255,255,255,0.7); padding: 0 8px 0 12px; font-weight: bold; font-size: 13px; }
+        .table-area .label-cell { border: none; background: transparent; text-align: left; width: 140px; padding-right: 10px; }
+
+        /* Stub Section */
+        .stub { flex: 1; padding: 20px; position: relative; }
+        .stub-header { text-align: center; font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+        .stub-bill-type { border: 1.5px solid #000; text-align: center; font-size: 10px; padding: 2px; font-weight: bold; margin-bottom: 15px; }
+        
+        .stub-field { margin-bottom: 12px; }
+        .stub-field label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 2px; }
+        .stub-input { border: 1px solid #000; height: 22px; background: #fff; width: 100%; padding-left: 10px; box-sizing: border-box; }
+
+        .footer-note { 
+            position: absolute; 
+            bottom: 20px; 
+            width: 85%; 
+            text-align: center; 
+            font-size: 10px; 
+            color: #444; 
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        hr { border: 0; border-top: 1.5px solid #000; margin: 15px 0; }
+
+        .logo-left {
+            position: absolute;
+            left: 1%;
+            top: 25px;
+            width: 78px;
+        }
+       
+        .logo-right {
+            position: absolute;
+            right: 34%;
+            top: 13px;
+            width: 70px;
+        }
+
+        #download-btn {
+            {% comment %} margin: 15px 20px; {% endcomment %}
+            padding: 12px 28px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #0dae48 0%, #0a8a38 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(13, 174, 72, 0.4);
+        }
+        #download-btn:hover { opacity: 0.9; }
+        #download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        #progress-container {
+            display: none;
+            width: 360px;
+            margin: 10px 20px 20px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        #progress-container.show { display: block; }
+        .progress-label { text-align: center; margin-bottom: 8px; font-weight: bold; font-size: 13px; }
+        .progress-bar-wrapper { width: 100%; height: 24px; border-radius: 12px; overflow: hidden; background: #e9ecef; }
+        .progress-bar-fill { height: 100%; border-radius: 12px; transition: width 0.3s ease; background: linear-gradient(90deg, #0dae48, #ffff07); }
+        .progress-status { text-align: center; margin-top: 6px; font-size: 12px; color: #555; }
+    </style>
+</head>
+<body>
+
+{% comment %} <button id="download-btn">Download receipts as PDF</button> {% endcomment %}
+<div id="progress-container">
+    <div class="progress-label">Generating PDF...</div>
+    <div class="progress-bar-wrapper">
+        <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+    </div>
+    <div class="progress-status" id="progress-status">Preparing...</div>
+</div>
+<div id="all-receipts-container">
+{% for bill in bop_easy_collectibles %}
+{% with business=bill.business %}
+<div class="receipt">
+    <div class="main-section">
+        <div class="header">
+            <div class="logo-container">
+                <img class="logo-left" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Coat_of_arms_of_Ghana.svg/1200px-Coat_of_arms_of_Ghana.svg.png">
+            </div>
+            
+            <div class="assembly-title">
+                <h1>LA-NKWANTANANG|MADINA MUNICIPAL ASSEMBLY</h1>
+                <div class="black-bill-box">BUSINESS OPERATING BILL</div>
+            </div>
+
+            <div class="logo-container">
+                <img class="logo-right" src="/static/assets/images/logo/LaNMMA.png">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div>
+                <div class="field"><label>SERIAL NO.:</label><div class="input-line">{{ bill.bill_number|default:"" }}</div></div>
+                <div class="field"><label>BUSINESS TYPE:</label><div class="input-line">{{ business.business_class|default:business.business_category|default:"" }}</div></div>
+                <div class="field"><label>ADDRESS:</label><div class="input-line">{{ business.address|default:"" }}</div></div>
+                <div class="field"><label>LOCATION:</label><div class="input-line">{{ business.location|default:"" }}</div></div>
+                <div class="field"><label>AREA ZONE:</label><div class="input-line">{{ business.block|default:business.division|default:"" }}</div></div>
+            </div>
+            <div>
+                <table class="table-area">
+                    <tr><td class="label-cell">ACCT. NO.</td><td>{{ business.account_number|default:"" }}</td></tr>
+                    <tr><td class="label-cell">BILL YEAR</td><td>{{ bill.billing_year }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="form-grid" style="margin-top: 0;">
+            <div>
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">CATEGORY</label>
+                <div class="input-box" style="height: 50px; width: 90%;">{{ business.business_category|default:"" }}</div>
+            </div>
+            <div>
+                <table class="table-area">
+                    <tr><td class="label-cell">ARREARS GH¢</td><td>{{ bill.penalty_amount|floatformat:2|default:"0.00" }}</td></tr>
+                    <tr><td class="label-cell">CURRENT FEE GH¢</td><td>{{ bill.tax_amount|floatformat:2 }}</td></tr>
+                    <tr><td class="label-cell">PAYMENT</td><td></td></tr>
+                    <tr><td class="label-cell">TOTAL DUE GH¢</td><td>{{ bill.total_amount|floatformat:2 }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="stub">
+        <div class="stub-header">LA-NKWANTANANG|MADINA MUNICIPAL<br>ASSEMBLY</div>
+        <div class="stub-bill-type">BUSINESS OPERATING BILL</div>
+        
+        <div class="stub-field">
+            <label>ACCT. NO.</label>
+            <div class="stub-input">{{ business.account_number|default:"" }}</div>
+        </div>
+        
+        <div class="stub-field">
+            <label>BILL YEAR</label>
+            <div class="stub-input">{{ bill.billing_year }}</div>
+        </div>
+
+        <div style="margin-top: 35px;">
+            <div class="stub-field"><label>BUSINESS NAME:</label><div class="stub-input">{{ business.business_name|default:"" }}</div></div>
+            <div class="stub-field"><label>BUSINESS TYPE:</label><div class="stub-input">{{ business.business_class|default:business.business_category|default:"" }}</div></div>
+            
+            <table class="table-area" style="margin-top: 15px;">
+                <tr>
+                    <td style="border:none; background:transparent; font-size: 11px; padding:0;">TOTAL DUE GH¢</td>
+                    <td style="width: 80px;">{{ bill.total_amount|floatformat:2 }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="footer-note">
+            CUSTOMER INFORMATION<br>PLEASE, SEE OVER
+        </div>
+    </div>
+</div>
+</br>
+{% endwith %}
+
+{% empty %}
+<div class="receipt">
+    <div class="main-section" style="flex: 1; justify-content: center; align-items: center;">
+        <p style="text-align: center; font-size: 14px;">No bill data available. Select a bill or filter by year/block/division.</p>
+    </div>
+</div>
+{% endfor %}
+</div>
+
+<script>
+(function() {
+    function loadImages(element) {
+        return new Promise(function(resolve) {
+            var images = element.querySelectorAll('img');
+            if (images.length === 0) { resolve(); return; }
+            var loaded = 0;
+            function check() {
+                loaded++;
+                if (loaded === images.length) resolve();
+            }
+            images.forEach(function(img) {
+                if (img.complete) check();
+                else { img.onload = check; img.onerror = check; }
+            });
+        });
+    }
+    function updateProgress(percentage, status) {
+        var bar = document.getElementById('progress-bar-fill');
+        var statusEl = document.getElementById('progress-status');
+        if (bar) bar.style.width = percentage + '%';
+        if (statusEl) statusEl.textContent = status;
+    }
+    document.getElementById('download-btn').addEventListener('click', async function() {
+        var button = this;
+        var originalText = button.textContent;
+        var progressContainer = document.getElementById('progress-container');
+        button.disabled = true;
+        button.textContent = 'Generating PDF...';
+        progressContainer.classList.add('show');
+        updateProgress(0, 'Initializing...');
+        try {
+            var receipts = document.querySelectorAll('#all-receipts-container .receipt');
+            if (receipts.length === 0) {
+                alert('No receipts to download');
+                progressContainer.classList.remove('show');
+                button.disabled = false;
+                button.textContent = originalText;
+                return;
+            }
+            var totalReceipts = receipts.length;
+            updateProgress(5, 'Loading images...');
+            for (var r = 0; r < receipts.length; r++) {
+                await loadImages(receipts[r]);
+                updateProgress(5 + (r + 1) / totalReceipts * 10, 'Loading images...');
+            }
+            updateProgress(20, 'Preparing PDF...');
+            await new Promise(function(r) { setTimeout(r, 200); });
+            // 1/3 of A4, horizontal: 210mm × 99mm (width × height). jsPDF landscape swaps format, so pass [99, 210].
+            var PAGE_W_MM = 210;
+            var PAGE_H_MM = 99;
+            var jsPDF = window.jspdf.jsPDF;
+            var pdf = new jsPDF({ unit: 'mm', orientation: 'l', format: [PAGE_H_MM, PAGE_W_MM] });
+            for (var i = 0; i < receipts.length; i++) {
+                if (i > 0) pdf.addPage([PAGE_H_MM, PAGE_W_MM], 'l');
+                updateProgress(20 + (i / totalReceipts) * 70, 'Converting receipt ' + (i + 1) + ' of ' + totalReceipts + '...');
+                var canvas = await html2canvas(receipts[i], {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    allowTaint: true,
+                    backgroundColor: '#fffaf0',
+                    windowWidth: receipts[i].offsetWidth,
+                    windowHeight: receipts[i].offsetHeight
+                });
+                var imgData = canvas.toDataURL('image/jpeg', 0.98);
+                // Fill entire page with receipt (no white space)
+                pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_W_MM, PAGE_H_MM);
+                updateProgress(20 + ((i + 1) / totalReceipts) * 70, 'Added receipt ' + (i + 1) + ' of ' + totalReceipts);
+                await new Promise(function(r) { setTimeout(r, 30); });
+            }
+            updateProgress(95, 'Finalizing PDF...');
+            await new Promise(function(r) { setTimeout(r, 100); });
+            updateProgress(100, 'Downloading...');
+            pdf.save('BOP_Receipts.pdf');
+            updateProgress(100, 'PDF generated successfully.');
+            await new Promise(function(r) { setTimeout(r, 500); });
+            progressContainer.classList.remove('show');
+        } catch (err) {
+            console.error('Error generating PDF:', err);
+            updateProgress(0, 'Error generating PDF.');
+            alert('Error generating PDF: ' + (err.message || err));
+            progressContainer.classList.remove('show');
+        } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    });
+    {% if auto_download %}
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            var btn = document.getElementById('download-btn');
+            if (btn && document.querySelectorAll('#all-receipts-container .receipt').length > 0) btn.click();
+        }, 800);
+    });
+    {% endif %}
+})();
+</script>
+</body>
+</html>

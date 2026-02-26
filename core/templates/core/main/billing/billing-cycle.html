@@ -1,0 +1,1254 @@
+<!-- templates/billing/cycles.html -->
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title">Billing Cycles Management</h3>
+          <p class="card-subtitle">Manage billing periods and due dates</p>
+        </div>
+        <div class="mb-3">
+          <div>
+            <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addCycleModal">
+              <i class="fas fa-plus-circle"></i> Add New Cycle
+            </button>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#generateBatchModal">
+              <i class="fas fa-bolt"></i> Generate Batch
+            </button>
+            <button class="btn btn-outline-info" id="viewPerformanceBtn">
+              <i class="fas fa-chart-line"></i> View Performance
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats Row -->
+<!-- <div class="row mt-4" id="quickStats" style="display: none;">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="row" id="statsContent">
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<!-- Upcoming Cycles -->
+<div class="row mt-4" id="upcomingCycles" style="display: none;">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Upcoming Billing Cycles</h5>
+      </div>
+      <div class="card-body">
+        <div id="upcomingCyclesContent">
+          <!-- Upcoming cycles will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Cycles Table -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">All Billing Cycles</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="cyclesTable" class="table table-striped table-bordered" style="width: 100%">
+            <thead class="thead-dark">
+              <tr>
+                <th>ID</th>
+                <th>CYCLE NAME</th>
+                <th>TYPE</th>
+                <th>PERIOD</th>
+                <th>DUE DATE</th>
+                <th>STATUS</th>
+                <th>BILLS COUNT</th>
+                <th>DAYS REMAINING</th>
+                <th>DESCRIPTION</th>
+                <th>CREATED AT</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Cycle Modal -->
+<div class="modal fade" id="addCycleModal" tabindex="-1" aria-labelledby="addCycleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addCycleModalLabel">Add New Billing Cycle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" id="addCycleForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Cycle Name*</label>
+              <input type="text" name="name" class="form-control" required placeholder="e.g., Q1 2024 Billing">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cycle Type*</label>
+              <select name="cycle_type" class="form-select" required>
+                <option value="">-- Select Cycle Type --</option>
+                <option value="annual">Annual</option>
+                <option value="semi_annual">Semi-Annual</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Start Date*</label>
+              <input type="date" name="start_date" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">End Date*</label>
+              <input type="date" name="end_date" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Due Date*</label>
+              <input type="date" name="due_date" class="form-control" required>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="3" placeholder="Optional description..."></textarea>
+            </div>
+          </div>
+          
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>Note:</strong> 
+            <ul class="mb-0">
+              <li>Start date must be before end date</li>
+              <li>Due date should be after end date to allow for billing processing</li>
+              <li>The system will check for overlapping cycles of the same type</li>
+            </ul>
+          </div>
+          
+          <!-- Submit Buttons -->
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Create Billing Cycle
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Cycle Modal -->
+<div class="modal fade" id="editCycleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Billing Cycle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editCycleForm">
+          {% csrf_token %}
+          <input type="hidden" name="cycle_id" id="editCycleId">
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Cycle Name*</label>
+              <input type="text" name="name" id="editCycleName" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cycle Type</label>
+              <input type="text" id="editCycleType" class="form-control" readonly>
+              <small class="form-text text-muted">Cycle type cannot be changed after creation</small>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Start Date</label>
+              <input type="date" name="start_date" id="editStartDate" class="form-control">
+              <small class="form-text text-muted" id="startDateNote">Cannot change if bills exist</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">End Date</label>
+              <input type="date" name="end_date" id="editEndDate" class="form-control">
+              <small class="form-text text-muted" id="endDateNote">Cannot change if bills exist</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Due Date</label>
+              <input type="date" name="due_date" id="editDueDate" class="form-control">
+              <small class="form-text text-muted" id="dueDateNote">Cannot change if bills exist</small>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" id="editDescription" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_active" id="editIsActive">
+                <label class="form-check-label" for="editIsActive">
+                  Active Cycle
+                </label>
+              </div>
+              <small class="form-text text-muted">Cannot deactivate if bills exist</small>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Update Billing Cycle
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Batch Modal -->
+<div class="modal fade" id="generateBatchModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Generate Multiple Billing Cycles</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="generateBatchForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Base Name*</label>
+              <input type="text" name="base_name" class="form-control" required placeholder="e.g., Fiscal Year">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cycle Type*</label>
+              <select name="cycle_type" class="form-select" required>
+                <option value="">-- Select Cycle Type --</option>
+                <option value="annual">Annual</option>
+                <option value="semi_annual">Semi-Annual</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Start Year*</label>
+              <input type="number" name="start_year" class="form-control" required min="2020" max="2030" value="2024">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Number of Cycles</label>
+              <input type="number" name="number_of_cycles" class="form-control" min="1" max="12" value="4">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Due Date Offset (days)</label>
+              <input type="number" name="due_date_offset" class="form-control" min="1" max="90" value="30">
+              <small class="form-text text-muted">Days after end date</small>
+            </div>
+          </div>
+          
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>Auto-generated cycle names:</strong>
+            <ul class="mb-0">
+              <li><strong>Annual:</strong> "Base Name YYYY" (e.g., "Fiscal Year 2024")</li>
+              <li><strong>Semi-Annual:</strong> "Base Name YYYY H1/H2" (e.g., "Fiscal Year 2024 H1")</li>
+              <li><strong>Quarterly:</strong> "Base Name YYYY Q1-Q4" (e.g., "Fiscal Year 2024 Q1")</li>
+              <li><strong>Monthly:</strong> "Base Name Month YYYY" (e.g., "Fiscal Year January 2024")</li>
+            </ul>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-bolt"></i> Generate Cycles
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cycle Details Modal -->
+<div class="modal fade" id="cycleDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Billing Cycle Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="cycleDetailsContent">
+          <!-- Cycle details will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Performance Modal -->
+<div class="modal fade" id="performanceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Billing Cycles Performance</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="performanceContent">
+          <!-- Performance data will be loaded here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="exportPerformanceBtn">
+          <i class="fas fa-download"></i> Export Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="mt-3"></div>
+
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(document).ready(function () {
+  let currentPerformanceData = null;
+
+  // Show Message Function
+  function showMessage(type, message) {
+    $("#messageContainer").html(`
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `);
+    setTimeout(() => {
+      $(".alert").fadeOut("slow");
+    }, 5000);
+  }
+
+  // CSRF Token Function
+  function getCSRFToken() {
+    let cookieValue = null;
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith("csrftoken=")) {
+        cookieValue = cookie.substring("csrftoken=".length);
+        break;
+      }
+    }
+    return cookieValue;
+  }
+
+  // Apply CSRF Token to AJAX Requests
+  $.ajaxSetup({
+    beforeSend: function (xhr, settings) {
+      if (!this.crossDomain && settings.type !== "GET") {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
+    },
+  });
+
+  // Safe data extraction function for DataTable
+//   function safeDataSrc(json) {
+//     try {
+//       if (json && json.data && Array.isArray(json.data)) {
+//         return json.data;
+//       } else if (json && Array.isArray(json)) {
+//         return json;
+//       } else {
+//         console.warn('Invalid data format received:', json);
+//         return [];
+//       }
+//     } catch (error) {
+//       console.error('Error processing data:', error);
+//       return [];
+//     }
+//   }
+
+  // Initialize DataTable with proper error handling
+  var table = $("#cyclesTable").DataTable({
+    paging: true,
+    searching: true,
+    ordering: true,
+    info: true,
+    responsive: true,
+    autoWidth: false,
+    processing: true,
+    serverSide: true,
+    lengthMenu: [10, 25, 50, 100],
+    pageLength: 20,
+    ajax: {
+      url: "/api/billing-cycles/",
+      type: "GET",
+      dataType: "json",
+      dataSrc: function (json) {
+        return json.data;
+      },
+      error: function (xhr, error, thrown) {
+        console.error('DataTables error:', error, thrown);
+        showMessage("danger", `Error loading billing cycles: ${thrown || 'Unknown error'}`);
+        return [];
+      }
+    },
+    dom: "Bfrtip",
+    buttons: [
+      {
+        extend: "copy",
+        text: '<i class="fas fa-copy"></i> Copy',
+        className: "btn btn-sm btn-outline-secondary",
+      },
+      {
+        extend: "csv",
+        text: '<i class="fas fa-file-csv"></i> CSV',
+        className: "btn btn-sm btn-outline-success",
+      },
+      {
+        extend: "excel",
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        className: "btn btn-sm btn-outline-primary",
+      },
+      {
+        extend: "pdf",
+        text: '<i class="fas fa-file-pdf"></i> PDF',
+        className: "btn btn-sm btn-outline-danger",
+      },
+    ],
+    order: [[0, "desc"]],
+    columns: [
+      { 
+        data: 'id', 
+        visible: false,
+        render: function(data, type, row) {
+          return data || '';
+        }
+      },
+      { 
+        data: 'name',
+        className: "text-left fw-bold",
+        render: function(data, type, row) {
+          return data ? `<i class="fas fa-calendar-alt text-primary me-2"></i>${data}` : '<span class="text-muted">No name</span>';
+        }
+      },
+      { 
+        data: 'cycle_type',
+        className: "text-center",
+        render: function(data, type, row) {
+          if (!data) return '<span class="badge bg-secondary">UNKNOWN</span>';
+          
+          const typeClass = {
+            'annual': 'primary',
+            'semi_annual': 'success',
+            'quarterly': 'info',
+            'monthly': 'warning'
+          }[data] || 'secondary';
+          
+          return `<span class="badge bg-${typeClass}">${data.replace('_', ' ').toUpperCase()}</span>`;
+        }
+      },
+      { 
+        data: null,
+        className: "text-center",
+        render: function(data, type, row) {
+          const startDate = data?.start_date || 'N/A';
+          const endDate = data?.end_date || 'N/A';
+          return `${startDate} to ${endDate}`;
+        }
+      },
+      { 
+        data: 'due_date',
+        className: "text-center fw-bold",
+        render: function(data, type, row) {
+          return data || 'N/A';
+        }
+      },
+      { 
+        data: 'is_active', 
+        className: "text-center",
+        render: function(data, type, row) {
+          return data ? 
+            '<span class="badge bg-success">ACTIVE</span>' : 
+            '<span class="badge bg-secondary">INACTIVE</span>';
+        }
+      },
+      { 
+        data: 'bill_count', 
+        className: "text-center",
+        render: function(data, type, row) {
+          const count = data || 0;
+          return `<span class="badge bg-${count > 0 ? 'info' : 'secondary'}">${count}</span>`;
+        }
+      },
+      { 
+        data: 'days_remaining', 
+        className: "text-center",
+        render: function(data, type, row) {
+          const days = data || 0;
+          if (days > 30) return `<span class="badge bg-success">${days} days</span>`;
+          if (days > 7) return `<span class="badge bg-warning">${days} days</span>`;
+          if (days > 0) return `<span class="badge bg-danger">${days} days</span>`;
+          return '<span class="badge bg-secondary">PAST DUE</span>';
+        }
+      },
+      { 
+        data: 'description',
+        className: "text-left",
+        render: function(data, type, row) {
+          return data || '<span class="text-muted">No description</span>';
+        }
+      },
+      { 
+        data: 'created_at', 
+        className: "text-center",
+        render: function(data, type, row) {
+          return data || 'N/A';
+        }
+      },
+      {
+        data: "id",
+        render: function (data, type, row) {
+          if (!data) return '<div class="text-muted">No actions</div>';
+          
+          return `
+            <div class="d-flex justify-content-center gap-1">
+              <button class="btn btn-sm btn-info details-btn" data-id="${data}" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn btn-sm btn-warning edit-btn" data-id="${data}" title="Edit Cycle">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-danger delete-btn" data-id="${data}" title="Delete Cycle">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>`;
+        },
+      },
+    ],
+    language: {
+      emptyTable: "No billing cycles found",
+      zeroRecords: "No matching billing cycles found",
+      processing: "Loading billing cycles...",
+      infoEmpty: "No billing cycles available",
+      loadingRecords: "Loading...",
+      paginate: {
+        first: "First",
+        last: "Last",
+        next: "Next",
+        previous: "Previous"
+      }
+    }
+  });
+
+  // Load DataTable Buttons
+  table.buttons().container().appendTo("#cyclesTable_wrapper .col-md-6:eq(0)");
+
+  // Safe function to get table data
+  function getTableData() {
+    try {
+      return table.rows().data().toArray();
+    } catch (error) {
+      console.error('Error getting table data:', error);
+      return [];
+    }
+  }
+
+  // Show Message Function
+  function showMessage(type, message) {
+    $("#messageContainer").html(`
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `);
+    setTimeout(() => {
+      $(".alert").fadeOut("slow");
+    }, 5000);
+  }
+
+  // CSRF Token Function
+  function getCSRFToken() {
+    let cookieValue = null;
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith("csrftoken=")) {
+        cookieValue = cookie.substring("csrftoken=".length);
+        break;
+      }
+    }
+    return cookieValue;
+  }
+
+  // Apply CSRF Token to AJAX Requests
+  $.ajaxSetup({
+    beforeSend: function (xhr, settings) {
+      if (!this.crossDomain && settings.type !== "GET") {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
+    },
+  });
+
+  // Load quick stats and upcoming cycles
+  function loadDashboardData() {
+    // Load upcoming cycles
+    $.ajax({
+      url: '/api/billing-cycles/upcoming/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success && response.upcoming_cycles.length > 0) {
+          displayUpcomingCycles(response.upcoming_cycles);
+        }
+      }
+    });
+
+    // Calculate quick stats from table data
+    setTimeout(() => {
+      calculateQuickStats();
+    }, 1000);
+  }
+
+  function calculateQuickStats() {
+    const data = table.rows().data().toArray();
+    
+    const activeCycles = data.filter(cycle => cycle.is_active).length;
+    const cyclesWithBills = data.filter(cycle => cycle.bill_count > 0).length;
+    const overdueCycles = data.filter(cycle => cycle.days_remaining === 0 && cycle.is_active).length;
+    const totalBills = data.reduce((sum, cycle) => sum + cycle.bill_count, 0);
+    
+    const statsHtml = `
+      <div class="col-md-3">
+        <div class="card bg-primary text-white">
+          <div class="card-body text-center">
+            <h4>${data.length}</h4>
+            <p class="mb-0">Total Cycles</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-success text-white">
+          <div class="card-body text-center">
+            <h4>${activeCycles}</h4>
+            <p class="mb-0">Active Cycles</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-info text-white">
+          <div class="card-body text-center">
+            <h4>${totalBills}</h4>
+            <p class="mb-0">Total Bills</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-${overdueCycles > 0 ? 'danger' : 'secondary'} text-white">
+          <div class="card-body text-center">
+            <h4>${overdueCycles}</h4>
+            <p class="mb-0">Overdue Cycles</p>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#statsContent').html(statsHtml);
+    $('#quickStats').show();
+  }
+
+  function displayUpcomingCycles(cycles) {
+    let content = '<div class="row">';
+    
+    cycles.forEach(cycle => {
+      const badgeClass = cycle.days_until_start <= 7 ? 'warning' : 'info';
+      
+      content += `
+        <div class="col-md-6 col-lg-4 mb-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title">${cycle.name}</h6>
+              <p class="card-text mb-1">
+                <small class="text-muted">Type: ${cycle.cycle_type.replace('_', ' ')}</small>
+              </p>
+              <p class="card-text mb-1">
+                <strong>Period:</strong> ${cycle.start_date} to ${cycle.end_date}
+              </p>
+              <p class="card-text mb-1">
+                <strong>Due:</strong> ${cycle.due_date}
+              </p>
+              <span class="badge bg-${badgeClass}">
+                Starts in ${cycle.days_until_start} days
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    content += '</div>';
+    $('#upcomingCyclesContent').html(content);
+    $('#upcomingCycles').show();
+  }
+
+  // Add cycle form submission
+  $('#addCycleForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+      name: $('#addCycleForm input[name="name"]').val(),
+      cycle_type: $('#addCycleForm select[name="cycle_type"]').val(),
+      start_date: $('#addCycleForm input[name="start_date"]').val(),
+      end_date: $('#addCycleForm input[name="end_date"]').val(),
+      due_date: $('#addCycleForm input[name="due_date"]').val(),
+      description: $('#addCycleForm textarea[name="description"]').val()
+    };
+    
+    if (!formData.name || !formData.cycle_type || !formData.start_date || !formData.end_date || !formData.due_date) {
+      showMessage('warning', 'Please fill all required fields');
+      return;
+    }
+    
+    $.ajax({
+      url: '/api/billing-cycles/create/',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: response.message,
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            $('#addCycleModal').modal('hide');
+            $('#addCycleForm')[0].reset();
+            table.ajax.reload();
+            loadDashboardData();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error creating billing cycle';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  });
+
+  // Edit cycle
+  $(document).on('click', '.edit-btn', function() {
+    const cycleId = $(this).data('id');
+    
+    $.ajax({
+      url: `/api/billing-cycles/${cycleId}/`,
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const cycle = response.billing_cycle;
+          const hasBills = cycle.bill_summary.total_bills > 0;
+          
+          $('#editCycleId').val(cycle.id);
+          $('#editCycleName').val(cycle.name);
+          $('#editCycleType').val(cycle.cycle_type);
+          $('#editStartDate').val(cycle.start_date);
+          $('#editEndDate').val(cycle.end_date);
+          $('#editDueDate').val(cycle.due_date);
+          $('#editDescription').val(cycle.description || '');
+          $('#editIsActive').prop('checked', cycle.is_active);
+          
+          // Disable date fields if bills exist
+          if (hasBills) {
+            $('#editStartDate').prop('disabled', true);
+            $('#editEndDate').prop('disabled', true);
+            $('#editDueDate').prop('disabled', true);
+            $('#startDateNote, #endDateNote, #dueDateNote').addClass('text-danger');
+          } else {
+            $('#editStartDate').prop('disabled', false);
+            $('#editEndDate').prop('disabled', false);
+            $('#editDueDate').prop('disabled', false);
+            $('#startDateNote, #endDateNote, #dueDateNote').removeClass('text-danger');
+          }
+          
+          $('#editCycleModal').modal('show');
+        } else {
+          showMessage('danger', response.error);
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading billing cycle for editing');
+      }
+    });
+  });
+
+  // Edit cycle form submission
+  $('#editCycleForm').submit(function(e) {
+    e.preventDefault();
+    
+    const cycleId = $('#editCycleId').val();
+    const formData = {
+      name: $('#editCycleName').val(),
+      description: $('#editDescription').val(),
+      is_active: $('#editIsActive').is(':checked')
+    };
+    
+    // Only include dates if they're enabled (no bills exist)
+    if (!$('#editStartDate').prop('disabled')) {
+      formData.start_date = $('#editStartDate').val();
+      formData.end_date = $('#editEndDate').val();
+      formData.due_date = $('#editDueDate').val();
+    }
+    
+    $.ajax({
+      url: `/api/billing-cycles/${cycleId}/update/`,
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: response.message,
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            $('#editCycleModal').modal('hide');
+            table.ajax.reload();
+            loadDashboardData();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error updating billing cycle';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  });
+
+  // Delete cycle
+  $(document).on('click', '.delete-btn', function() {
+    const cycleId = $(this).data('id');
+    const row = table.row($(this).closest('tr')).data();
+    
+    Swal.fire({
+      title: 'Are you sure?',
+      html: `Delete billing cycle <strong>"${row.name}"</strong>?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: `/api/billing-cycles/${cycleId}/delete/`,
+          type: 'DELETE',
+          success: function(response) {
+            if (response.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: response.message,
+                timer: 1500,
+                showConfirmButton: false
+              });
+              table.ajax.reload();
+              loadDashboardData();
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response.error
+              });
+            }
+          },
+          error: function(xhr) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: xhr.responseJSON?.error || 'Failed to delete billing cycle'
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // View cycle details
+  $(document).on('click', '.details-btn', function() {
+    const cycleId = $(this).data('id');
+    
+    $.ajax({
+      url: `//api/billing-cycles/${cycleId}/`,
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const cycle = response.billing_cycle;
+          const summary = cycle.bill_summary;
+          
+          const content = `
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Cycle Information</h6>
+                <table class="table table-sm">
+                  <tr><td><strong>Name:</strong></td><td>${cycle.name}</td></tr>
+                  <tr><td><strong>Type:</strong></td><td>${cycle.cycle_type}</td></tr>
+                  <tr><td><strong>Status:</strong></td><td>${cycle.is_active ? '<span class="badge bg-success">ACTIVE</span>' : '<span class="badge bg-secondary">INACTIVE</span>'}</td></tr>
+                  <tr><td><strong>Period:</strong></td><td>${cycle.start_date} to ${cycle.end_date}</td></tr>
+                  <tr><td><strong>Due Date:</strong></td><td>${cycle.due_date}</td></tr>
+                  <tr><td><strong>Description:</strong></td><td>${cycle.description || 'N/A'}</td></tr>
+                  <tr><td><strong>Created:</strong></td><td>${cycle.created_at}</td></tr>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <h6>Billing Summary</h6>
+                <table class="table table-sm">
+                  <tr><td><strong>Total Bills:</strong></td><td><span class="badge bg-info">${summary.total_bills}</span></td></tr>
+                  <tr><td><strong>Draft Bills:</strong></td><td><span class="badge bg-secondary">${summary.draft_bills}</span></td></tr>
+                  <tr><td><strong>Generated Bills:</strong></td><td><span class="badge bg-primary">${summary.generated_bills}</span></td></tr>
+                  <tr><td><strong>Sent Bills:</strong></td><td><span class="badge bg-warning">${summary.sent_bills}</span></td></tr>
+                  <tr><td><strong>Paid Bills:</strong></td><td><span class="badge bg-success">${summary.paid_bills}</span></td></tr>
+                  <tr><td><strong>Overdue Bills:</strong></td><td><span class="badge bg-danger">${summary.overdue_bills}</span></td></tr>
+                  <tr class="table-primary fw-bold">
+                    <td><strong>Total Amount:</strong></td>
+                    <td>₵${parseFloat(summary.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                  </tr>
+                  <tr class="table-success fw-bold">
+                    <td><strong>Collected Amount:</strong></td>
+                    <td>₵${parseFloat(summary.collected_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+            
+            ${summary.total_bills > 0 ? `
+            <div class="row mt-3">
+              <div class="col-12">
+                <h6>Collection Performance</h6>
+                <div class="progress" style="height: 25px;">
+                  <div class="progress-bar bg-success" style="width: ${(summary.paid_bills / summary.total_bills * 100)}%">
+                    Paid: ${summary.paid_bills} (${Math.round(summary.paid_bills / summary.total_bills * 100)}%)
+                  </div>
+                  <div class="progress-bar bg-warning" style="width: ${(summary.sent_bills / summary.total_bills * 100)}%">
+                    Sent: ${summary.sent_bills} (${Math.round(summary.sent_bills / summary.total_bills * 100)}%)
+                  </div>
+                  <div class="progress-bar bg-primary" style="width: ${(summary.generated_bills / summary.total_bills * 100)}%">
+                    Generated: ${summary.generated_bills} (${Math.round(summary.generated_bills / summary.total_bills * 100)}%)
+                  </div>
+                </div>
+              </div>
+            </div>
+            ` : ''}
+          `;
+          
+          $('#cycleDetailsContent').html(content);
+          $('#cycleDetailsModal').modal('show');
+        } else {
+          showMessage('danger', response.error);
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading billing cycle details');
+      }
+    });
+  });
+
+  // Generate batch form submission
+  $('#generateBatchForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+      base_name: $('#generateBatchForm input[name="base_name"]').val(),
+      cycle_type: $('#generateBatchForm select[name="cycle_type"]').val(),
+      start_year: $('#generateBatchForm input[name="start_year"]').val(),
+      number_of_cycles: $('#generateBatchForm input[name="number_of_cycles"]').val(),
+      due_date_offset: $('#generateBatchForm input[name="due_date_offset"]').val()
+    };
+    
+    if (!formData.base_name || !formData.cycle_type || !formData.start_year) {
+      showMessage('warning', 'Please fill all required fields');
+      return;
+    }
+    
+    Swal.fire({
+      title: 'Confirm Batch Generation',
+      html: `Generate ${formData.number_of_cycles} ${formData.cycle_type} billing cycles starting ${formData.start_year}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, generate cycles!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '/api/billing-cycles/generate-batch/',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(formData),
+          success: function(response) {
+            if (response.success) {
+              let message = response.message;
+              if (response.errors && response.errors.length > 0) {
+                message += `<br><br><strong>Errors:</strong><br>${response.errors.join('<br>')}`;
+              }
+              
+              Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                html: message,
+                confirmButtonText: 'OK'
+              }).then(() => {
+                $('#generateBatchModal').modal('hide');
+                $('#generateBatchForm')[0].reset();
+                table.ajax.reload();
+                loadDashboardData();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response.error
+              });
+            }
+          },
+          error: function(xhr) {
+            let errorMsg = 'Error generating batch cycles';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            }
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: errorMsg
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // View performance
+  $('#viewPerformanceBtn').click(function() {
+    $.ajax({
+      url: '/api/billing-cycles/performance/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          displayPerformanceData(response.performance_data);
+        } else {
+          showMessage('danger', response.error);
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading performance data');
+      }
+    });
+  });
+
+  function displayPerformanceData(performanceData) {
+    currentPerformanceData = performanceData;
+    
+    let content = '<h6>Billing Cycles Performance Report</h6>';
+    
+    if (performanceData.length > 0) {
+      content += `
+        <div class="table-responsive">
+          <table class="table table-sm table-striped">
+            <thead>
+              <tr>
+                <th>Cycle</th>
+                <th>Type</th>
+                <th>Period</th>
+                <th class="text-center">Total Bills</th>
+                <th class="text-center">Paid Bills</th>
+                <th class="text-center">Overdue</th>
+                <th class="text-right">Total Amount</th>
+                <th class="text-right">Collected</th>
+                <th class="text-center">Collection Rate</th>
+                <th class="text-center">Completion</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      performanceData.forEach(cycle => {
+        content += `
+          <tr>
+            <td>${cycle.cycle_name}</td>
+            <td><span class="badge bg-secondary">${cycle.cycle_type}</span></td>
+            <td>${cycle.period}</td>
+            <td class="text-center">${cycle.total_bills}</td>
+            <td class="text-center"><span class="badge bg-success">${cycle.paid_bills}</span></td>
+            <td class="text-center"><span class="badge bg-danger">${cycle.overdue_bills}</span></td>
+            <td class="text-right">₵${parseFloat(cycle.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td class="text-right">₵${parseFloat(cycle.collected_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td class="text-center">
+              <span class="badge bg-${cycle.collection_rate >= 80 ? 'success' : cycle.collection_rate >= 50 ? 'warning' : 'danger'}">
+                ${cycle.collection_rate}%
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="progress" style="height: 20px; width: 100px; margin: 0 auto;">
+                <div class="progress-bar bg-${cycle.completion_rate >= 80 ? 'success' : cycle.completion_rate >= 50 ? 'warning' : 'danger'}" 
+                     style="width: ${cycle.completion_rate}%">
+                  ${cycle.completion_rate}%
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      
+      content += `
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      content += '<p class="text-muted">No performance data available.</p>';
+    }
+    
+    $('#performanceContent').html(content);
+    $('#performanceModal').modal('show');
+  }
+
+  // Export performance data
+  $('#exportPerformanceBtn').click(function() {
+    if (!currentPerformanceData || currentPerformanceData.length === 0) {
+      showMessage('warning', 'No data to export');
+      return;
+    }
+    
+    // Create CSV content
+    let csvContent = "Cycle Name,Cycle Type,Period,Total Bills,Paid Bills,Overdue Bills,Total Amount,Collected Amount,Collection Rate,Completion Rate\n";
+    
+    currentPerformanceData.forEach(cycle => {
+      csvContent += `"${cycle.cycle_name}","${cycle.cycle_type}","${cycle.period}",${cycle.total_bills},${cycle.paid_bills},${cycle.overdue_bills},${cycle.total_amount},${cycle.collected_amount},${cycle.collection_rate},${cycle.completion_rate}\n`;
+    });
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `billing_cycles_performance_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showMessage('success', 'Performance report exported successfully');
+  });
+
+  // Initialize page
+  loadDashboardData();
+});
+</script>
+
+<style>
+#cyclesTable tbody tr td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.btn-sm {
+  margin: 1px;
+}
+
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.badge {
+  font-size: 0.75em;
+}
+
+.progress {
+  border-radius: 0.375rem;
+}
+
+.progress-bar {
+  font-size: 0.75rem;
+  line-height: 20px;
+}
+
+.table-responsive {
+  max-height: 600px;
+}
+</style>
+{% endblock %}

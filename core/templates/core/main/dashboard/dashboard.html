@@ -1,0 +1,692 @@
+<!-- templates/dashboard/revenue_dashboard.html -->
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Revenue Collection Dashboard</h1>
+        <div>
+            <button class="btn btn-sm btn-primary shadow-sm" id="refreshDashboard">
+                <i class="fas fa-sync-alt fa-sm text-white-50"></i> Refresh
+            </button>
+            <button class="btn btn-sm btn-success shadow-sm" id="exportReport">
+                <i class="fas fa-download fa-sm text-white-50"></i> Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row" id="statsCards">
+        <!-- Total Revenue Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow-sm h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Revenue (All Time)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalBillAmount">GH₵0</div>
+                            <div class="text-xs text-muted mt-1">
+                                <span id="totalBills">0</span> bills from <span id="totalBusinesses">0</span> businesses
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collected Revenue Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow-sm h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Collected Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="paidAmount">GH₵0</div>
+                            <div class="row align-items-center no-gutters mt-1">
+                                <div class="col-auto">
+                                    <div class="text-xs font-weight-bold text-success mr-2" id="collectionRate">0%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar bg-success" role="progressbar" id="collectionProgress" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-muted mt-1">
+                                <span id="paidCount">0</span> paid bills
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Month Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow-sm h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                This Month</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="monthPaymentAmount">GH₵0</div>
+                            <div class="text-xs text-muted mt-1">
+                                <span id="monthCount">0</span> new bills (GH₵<span id="monthAmount">0</span>)
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- At Risk Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow-sm h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                At Risk</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="overdueCount">0</div>
+                            <div class="text-xs text-muted mt-1">
+                                Overdue: GH₵<span id="overdueAmount">0</span>
+                            </div>
+                            <div class="text-xs text-muted">
+                                <i class="fas fa-eye text-warning"></i> <span id="visitedNotPaid">0</span> visited, not paid
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   <!-- Charts Row -->
+<div class="row">
+    <!-- Revenue Trend Chart -->
+    <div class="col-xl-8 col-lg-7 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Revenue Trend (Last 30 Days)</h6>
+                <div class="dropdown no-arrow">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="revenuePeriodDropdown" data-bs-toggle="dropdown">
+                        Last 30 Days
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item revenue-period" data-days="7" href="#">Last 7 Days</a>
+                        <a class="dropdown-item revenue-period active" data-days="30" href="#">Last 30 Days</a>
+                        <a class="dropdown-item revenue-period" data-days="90" href="#">Last 90 Days</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" style="position: relative; height: 350px;">
+                <canvas id="revenueChart" width="800" height="300" style="display: block; max-width: 100%; height: 100% !important;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Distribution Chart -->
+    <div class="col-xl-4 col-lg-5 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Bill Status Distribution</h6>
+            </div>
+            <div class="card-body" style="position: relative; height: 400px;">
+                <canvas id="statusChart" width="400" height="280" style="display: block; max-width: 100%; height: 280px !important;"></canvas>
+                <div class="mt-4 text-center small" id="statusLegend" style="position: absolute; bottom: 15px; left: 0; right: 0;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- Second Row -->
+    <div class="row">
+        <!-- Top Payers -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Paying Businesses</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" id="topPayersTable">
+                            <thead>
+                                <tr>
+                                    <th>Business</th>
+                                    <th class="text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="2" class="text-center text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Overdue -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">Most Overdue Bills</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" id="overdueTable">
+                            <thead>
+                                <tr>
+                                    <th>Business</th>
+                                    <th class="text-right">Amount</th>
+                                    <th>Days</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush" id="recentActivity">
+                        <div class="text-center text-muted py-3">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue by Category -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Revenue by Business Category</h6>
+                </div>
+                <div class="card-body" style="position: relative; height: 300px;">
+                    <canvas id="categoryChart" width="800" height="300" style="display: block; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Chart instances - store them globally
+    let revenueChart = null;
+    let statusChart = null;
+    let categoryChart = null;
+    
+    // Flag to track if charts are initialized
+    let chartsInitialized = false;
+    
+    // Function to destroy existing charts properly
+    function destroyCharts() {
+        if (revenueChart) {
+            revenueChart.destroy();
+            revenueChart = null;
+        }
+        if (statusChart) {
+            statusChart.destroy();
+            statusChart = null;
+        }
+        if (categoryChart) {
+            categoryChart.destroy();
+            categoryChart = null;
+        }
+    }
+    
+    // Load all dashboard data
+    function loadDashboardData() {
+        $.ajax({
+            url: '/api/dashboard/stats/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    updateStatsCards(response.stats);
+                    
+                    // Only update status chart if data exists
+                    if (response.stats.status_distribution) {
+                        updateStatusChart(response.stats.status_distribution);
+                    }
+                    
+                    updateRecentActivity(response.recent_activity);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Dashboard stats error:', error);
+                showMessage('error', 'Failed to load dashboard data');
+            }
+        });
+        
+        loadRevenueTrends(30);
+        loadTopPerformers();
+    }
+    
+    // Update stats cards
+    function updateStatsCards(stats) {
+        $('#totalBillAmount').text('GH₵' + (stats.total_bill_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#totalBills').text(stats.total_bills || 0);
+        $('#totalBusinesses').text(stats.total_businesses || 0);
+        
+        $('#paidAmount').text('GH₵' + (stats.paid_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#paidCount').text(stats.paid_count || 0);
+        $('#collectionRate').text((stats.collection_rate || 0) + '%');
+        $('#collectionProgress').css('width', (stats.collection_rate || 0) + '%');
+        
+        $('#monthPaymentAmount').text('GH₵' + (stats.month_payment_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#monthCount').text(stats.month_count || 0);
+        $('#monthAmount').text((stats.month_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        
+        $('#overdueCount').text(stats.overdue_count || 0);
+        $('#overdueAmount').text((stats.overdue_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#visitedNotPaid').text(stats.visited_not_paid || 0);
+    }
+    
+    // Load revenue trends
+    function loadRevenueTrends(days) {
+        $.ajax({
+            url: '/api/dashboard/revenue-trends/',
+            method: 'GET',
+            data: { days: days },
+            success: function(response) {
+                if (response.success) {
+                    updateRevenueChart(response.daily_revenue || []);
+                    updateCategoryChart(response.category_revenue || []);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Revenue trends error:', error);
+            }
+        });
+    }
+    
+    // Load top performers
+    function loadTopPerformers() {
+        $.ajax({
+            url: '/api/dashboard/top-performers/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    updateTopPayers(response.top_payers || []);
+                    updateOverdueTable(response.most_overdue || []);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Top performers error:', error);
+            }
+        });
+    }
+    
+    // Update revenue chart
+    function updateRevenueChart(data) {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (revenueChart) {
+            revenueChart.destroy();
+        }
+        
+        // Prepare data
+        const labels = data.map(d => d.date || '');
+        const values = data.map(d => d.amount || 0);
+        
+        // Create new chart
+        revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Daily Revenue (GH₵)',
+                    data: values,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'GH₵' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update status chart
+    function updateStatusChart(data) {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (statusChart) {
+            statusChart.destroy();
+        }
+        
+        const total = data.reduce((sum, item) => sum + (item.count || 0), 0);
+        
+        // Create new chart
+        statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.status || 'Unknown'),
+                datasets: [{
+                    data: data.map(d => d.count || 0),
+                    backgroundColor: data.map(d => d.color || '#858796'),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Update legend
+        let legendHtml = '';
+        data.forEach(item => {
+            const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : 0;
+            legendHtml += `<span class="mr-3"><i class="fas fa-circle" style="color: ${item.color || '#858796'}"></i> ${item.status || 'Unknown'}: ${item.count || 0} (${percentage}%)</span>`;
+        });
+        $('#statusLegend').html(legendHtml || 'No data available');
+    }
+    
+    // Update category chart
+    function updateCategoryChart(data) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (categoryChart) {
+            categoryChart.destroy();
+        }
+        
+        const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#5a5c69', '#858796'];
+        const labels = data.map(d => d.category || 'Unknown');
+        const values = data.map(d => d.amount || 0);
+        
+        // Create new chart
+        categoryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue (GH₵)',
+                    data: values,
+                    backgroundColor: data.map((d, i) => colors[i % colors.length]),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'GH₵' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update top payers table
+    function updateTopPayers(data) {
+        const tbody = $('#topPayersTable tbody');
+        tbody.empty();
+        
+        if (!data || data.length === 0) {
+            tbody.append('<tr><td colspan="2" class="text-center text-muted">No data available</td></tr>');
+            return;
+        }
+        
+        data.forEach(item => {
+            tbody.append(`
+                <tr>
+                    <td>${item.name || 'N/A'}</td>
+                    <td class="text-right font-weight-bold">GH₵${(item.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                </tr>
+            `);
+        });
+    }
+    
+    // Update overdue table
+    function updateOverdueTable(data) {
+        const tbody = $('#overdueTable tbody');
+        tbody.empty();
+        
+        if (!data || data.length === 0) {
+            tbody.append('<tr><td colspan="3" class="text-center text-muted">No overdue bills</td></tr>');
+            return;
+        }
+        
+        data.forEach(item => {
+            const days = item.days_overdue || 0;
+            const daysClass = days > 30 ? 'text-danger' : (days > 15 ? 'text-warning' : '');
+            tbody.append(`
+                <tr>
+                    <td>${item.business || 'N/A'}</td>
+                    <td class="text-right">GH₵${(item.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td class="${daysClass} font-weight-bold">${days}d</td>
+                </tr>
+            `);
+        });
+    }
+    
+    // Update recent activity
+    function updateRecentActivity(data) {
+        const container = $('#recentActivity');
+        container.empty();
+        
+        if (!data || data.length === 0) {
+            container.append('<div class="text-center text-muted py-3">No recent activity</div>');
+            return;
+        }
+        
+        data.forEach(item => {
+            const icon = item.type === 'payment' ? 'check-circle' : 'eye';
+            const color = item.type === 'payment' ? 'success' : 'info';
+            
+            container.append(`
+                <div class="list-group-item border-0 pl-0">
+                    <div class="row">
+                        <div class="col-auto">
+                            <i class="fas fa-${icon} text-${color}"></i>
+                        </div>
+                        <div class="col">
+                            <div class="small text-gray-600">${item.time || ''}</div>
+                            <div class="font-weight-bold">${item.description || ''}</div>
+                        </div>
+                    </div>
+                </div>
+            `);
+        });
+    }
+    
+    // Show message function
+    function showMessage(type, message) {
+        // Implement your message display logic here
+        console.log(type, message);
+    }
+    
+    // Refresh button
+    $('#refreshDashboard').click(function() {
+        const $btn = $(this);
+        $btn.html('<i class="fas fa-spinner fa-spin"></i> Refreshing...');
+        
+        // Destroy charts before reloading
+        destroyCharts();
+        
+        // Reload all data
+        loadDashboardData();
+        
+        setTimeout(() => {
+            $btn.html('<i class="fas fa-sync-alt"></i> Refresh');
+        }, 1000);
+    });
+    
+    // Period selector
+    $('.revenue-period').click(function(e) {
+        e.preventDefault();
+        $('.revenue-period').removeClass('active');
+        $(this).addClass('active');
+        
+        const days = $(this).data('days');
+        $('#revenuePeriodDropdown').text($(this).text());
+        
+        // Destroy revenue chart before reloading
+        if (revenueChart) {
+            revenueChart.destroy();
+            revenueChart = null;
+        }
+        
+        loadRevenueTrends(days);
+    });
+    
+    // Export report
+    $('#exportReport').click(function() {
+        window.location.href = '/api/dashboard/export/';
+    });
+    
+    // Initial load with slight delay to ensure DOM is ready
+    setTimeout(function() {
+        loadDashboardData();
+    }, 100);
+    
+    // Auto-refresh every 5 minutes
+    setInterval(function() {
+        // Don't auto-refresh if user is interacting
+        if (!document.hidden) {
+            destroyCharts();
+            loadDashboardData();
+        }
+    }, 300000);
+    
+    // Clean up on page unload
+    $(window).on('beforeunload', function() {
+        destroyCharts();
+    });
+});
+</script>
+
+<style>
+/* Custom styles */
+.border-left-primary { border-left: 0.25rem solid #4e73df !important; }
+.border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+.border-left-info { border-left: 0.25rem solid #36b9cc !important; }
+.border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1) !important;
+}
+
+.text-gray-300 { color: #dddfeb !important; }
+.text-gray-800 { color: #5a5c69 !important; }
+
+.progress {
+    background-color: #eaecf4;
+    border-radius: 1rem;
+}
+
+.table td, .table th {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.list-group-item {
+    padding: 0.75rem 0;
+}
+
+.font-weight-bold {
+    font-weight: 600 !important;
+}
+
+/* Chart container fixes */
+.card-body {
+    overflow: hidden;
+}
+
+canvas {
+    max-width: 100%;
+    height: auto !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .h5 { font-size: 1rem; }
+    .text-xs { font-size: 0.6rem; }
+}
+</style>
+
+{% endblock %}

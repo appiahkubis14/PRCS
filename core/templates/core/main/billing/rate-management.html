@@ -1,0 +1,1040 @@
+<!-- templates/rates.html -->
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title">Rate Management</h3>
+          <p class="card-subtitle">Manage tax rates for zones and property types</p>
+        </div>
+        <div class="mb-3">
+          <div>
+            <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addRateModal">
+              <i class="fas fa-plus-circle"></i> Add New Rate
+            </button>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bulkUpdateModal">
+              <i class="fas fa-sync-alt"></i> Bulk Update
+            </button>
+            <button class="btn btn-outline-info" id="generateReportBtn">
+              <i class="fas fa-chart-bar"></i> Current Rates Report
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-body">
+  <div class="table-responsive">
+    <table id="ratesTable" class="table table-striped table-bordered" style="width: 100%">
+      <thead class="thead-dark">
+        <tr>
+          <th>ID</th>
+          <th>ZONE</th>
+          <th>ZONE TYPE</th>
+          <th>PROPERTY TYPE</th>
+          <th>TAX RATE (%)</th>
+          <th>EFFECTIVE FROM</th>
+          <th>EFFECTIVE TO</th>
+          <th>STATUS</th>
+          <th>DESCRIPTION</th>
+          <th>CREATED BY</th>
+          <th>CREATED AT</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</div>
+
+<!-- Add Rate Modal -->
+<div class="modal fade" id="addRateModal" tabindex="-1" aria-labelledby="addRateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addRateModalLabel">Add New Tax Rate</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" id="addRateForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Zone*</label>
+              <select name="zone_id" class="form-select" id="zoneSelect" required>
+                <option value="">-- Select Zone --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Property Type*</label>
+              <select name="property_type_id" class="form-select" id="propertyTypeSelect" required>
+                <option value="">-- Select Property Type --</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Tax Rate (%)*</label>
+              <input type="number" name="rate" class="form-control" required step="0.0001" min="0" max="100" placeholder="0.0000">
+              <small class="form-text text-muted">Enter rate as percentage (e.g., 1.5 for 1.5%)</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Effective From*</label>
+              <input type="date" name="effective_from" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Effective To</label>
+              <input type="date" name="effective_to" class="form-control">
+              <small class="form-text text-muted">Leave empty for indefinite</small>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="3" placeholder="Optional description..."></textarea>
+            </div>
+          </div>
+          
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>Note:</strong> The system will check for overlapping rates for the same zone and property type combination.
+          </div>
+          
+          <!-- Submit Buttons -->
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Tax Rate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Rate Modal -->
+<div class="modal fade" id="editRateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Tax Rate</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editRateForm">
+          {% csrf_token %}
+          <input type="hidden" name="rate_id" id="editRateId">
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Zone</label>
+              <input type="text" id="editZoneName" class="form-control" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Property Type</label>
+              <input type="text" id="editPropertyTypeName" class="form-control" readonly>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Tax Rate (%)*</label>
+              <input type="number" name="rate" id="editRate" class="form-control" required step="0.0001" min="0" max="100">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Effective From*</label>
+              <input type="date" name="effective_from" id="editEffectiveFrom" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Effective To</label>
+              <input type="date" name="effective_to" id="editEffectiveTo" class="form-control">
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" id="editDescription" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Update Tax Rate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Update Modal -->
+<div class="modal fade" id="bulkUpdateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Bulk Update Tax Rates</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="bulkUpdateForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Effective From*</label>
+              <input type="date" name="effective_from" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Effective To</label>
+              <input type="date" name="effective_to" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Description</label>
+              <input type="text" name="description" class="form-control" value="Bulk update">
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <h6>Rate Updates</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                  <thead>
+                    <tr>
+                      <th>Zone</th>
+                      <th>Property Type</th>
+                      <th>New Rate (%)</th>
+                      <th>Current Rate</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bulkUpdateTable">
+                    <!-- Rows will be added dynamically -->
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary" id="addBulkUpdateRow">
+                <i class="fas fa-plus"></i> Add Row
+              </button>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-sync-alt"></i> Apply Bulk Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rate History Modal -->
+<div class="modal fade" id="rateHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tax Rate History</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="rateHistoryContent">
+          <!-- History content will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Current Rates Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Current Tax Rates Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="reportContent">
+          <!-- Report content will be loaded here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="exportReportBtn">
+          <i class="fas fa-download"></i> Export Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="mt-3"></div>
+
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(document).ready(function () {
+  let zones = [];
+  let propertyTypes = [];
+  let currentRates = [];
+
+  // Initialize DataTable
+  var table = $("#ratesTable").DataTable({
+    paging: true,
+    searching: true,
+    ordering: true,
+    info: true,
+    responsive: true,
+    autoWidth: false,
+    processing: true,
+    serverSide: false,
+    lengthMenu: [10, 25, 50, 100],
+    pageLength: 20,
+    ajax: {
+      url: "/api/tax-rates/",
+      type: "GET",
+      dataType: "json",
+      dataSrc: function (json) {
+        console.log(json);
+        return json.data;
+      },
+      error: function (xhr) {
+        showMessage("danger", `Error fetching tax rates: ${xhr.responseText}`);
+      }
+    },
+    dom: "Bfrtip",
+    buttons: [
+      {
+        extend: "copy",
+        text: '<i class="fas fa-copy"></i> Copy',
+        className: "btn btn-sm btn-outline-secondary",
+      },
+      {
+        extend: "csv",
+        text: '<i class="fas fa-file-csv"></i> CSV',
+        className: "btn btn-sm btn-outline-success",
+      },
+      {
+        extend: "excel",
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        className: "btn btn-sm btn-outline-primary",
+      },
+      {
+        extend: "pdf",
+        text: '<i class="fas fa-file-pdf"></i> PDF',
+        className: "btn btn-sm btn-outline-danger",
+      },
+    ],
+    order: [[0, "desc"]],
+    columns: [
+      { data: 'id', visible: false },
+      { 
+        data: 'zone_name',
+        className: "text-left fw-bold",
+        render: function(data, type, row) {
+          return `<i class="fas fa-map-marker-alt text-success me-2"></i>${data}`;
+        }
+      },
+      { 
+        data: 'zone_type',
+        className: "text-center",
+        render: function(data) {
+          const typeClass = {
+            'residential': 'primary',
+            'commercial': 'success',
+            'industrial': 'warning',
+            'agricultural': 'info',
+            'mixed_use': 'secondary'
+          }[data] || 'secondary';
+          
+          return `<span class="badge bg-${typeClass}">${data}</span>`;
+        }
+      },
+      { 
+        data: 'property_type_name',
+        className: "text-left",
+        render: function(data) {
+          return `<i class="fas fa-home text-primary me-2"></i>${data}`;
+        }
+      },
+      { 
+        data: 'rate', 
+        className: "text-right fw-bold",
+        render: function(data) {
+          return `<span class="text-success">${parseFloat(data).toFixed(4)}%</span>`;
+        }
+      },
+      { data: 'effective_from', className: "text-center" },
+      { data: 'effective_to', className: "text-center" },
+      { 
+        data: 'is_active', 
+        className: "text-center",
+        render: function(data) {
+          return data ? 
+            '<span class="badge bg-success">ACTIVE</span>' : 
+            '<span class="badge bg-secondary">INACTIVE</span>';
+        }
+      },
+      { 
+        data: 'description',
+        className: "text-left",
+        render: function(data) {
+          return data || '<span class="text-muted">No description</span>';
+        }
+      },
+      { data: 'created_by', className: "text-left" },
+      { data: 'created_at', className: "text-center" },
+      {
+        data: "id",
+        render: function (data, type, row) {
+          return `
+            <div class="d-flex justify-content-center gap-1">
+              <button class="btn btn-sm btn-info history-btn" data-zone="${row.zone_id}" data-property-type="${row.property_type_id}" title="View History">
+                <i class="fas fa-history"></i>
+              </button>
+              <button class="btn btn-sm btn-warning edit-btn" data-id="${data}" title="Edit Rate">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-danger delete-btn" data-id="${data}" title="Delete Rate">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>`;
+        },
+      },
+    ],
+  });
+
+  // Load DataTable Buttons
+  table.buttons().container().appendTo("#ratesTable_wrapper .col-md-6:eq(0)");
+
+  // Show Message Function
+  function showMessage(type, message) {
+    $("#messageContainer").html(`
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `);
+    setTimeout(() => {
+      $(".alert").fadeOut("slow");
+    }, 5000);
+  }
+
+  // CSRF Token Function
+  function getCSRFToken() {
+    let cookieValue = null;
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith("csrftoken=")) {
+        cookieValue = cookie.substring("csrftoken=".length);
+        break;
+      }
+    }
+    return cookieValue;
+  }
+
+  // Apply CSRF Token to AJAX Requests
+  $.ajaxSetup({
+    beforeSend: function (xhr, settings) {
+      if (!this.crossDomain && settings.type !== "GET") {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
+    },
+  });
+
+  // Load zones and property types
+  function loadZonesAndPropertyTypes() {
+    $.ajax({
+      url: '/api/zones-property-types/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          zones = response.zones;
+          propertyTypes = response.property_types;
+          
+          // Populate dropdowns
+          const zoneSelect = $('#zoneSelect');
+          zoneSelect.empty().append('<option value="">-- Select Zone --</option>');
+          zones.forEach(zone => {
+            zoneSelect.append(`<option value="${zone.id}">${zone.name} (${zone.zone_type})</option>`);
+          });
+          
+          const propertyTypeSelect = $('#propertyTypeSelect');
+          propertyTypeSelect.empty().append('<option value="">-- Select Property Type --</option>');
+          propertyTypes.forEach(pt => {
+            propertyTypeSelect.append(`<option value="${pt.id}">${pt.name}</option>`);
+          });
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading zones and property types');
+      }
+    });
+  }
+
+  // Add rate form submission
+  $('#addRateForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+      zone_id: $('#zoneSelect').val(),
+      property_type_id: $('#propertyTypeSelect').val(),
+      rate: $('#addRateForm input[name="rate"]').val(),
+      effective_from: $('#addRateForm input[name="effective_from"]').val(),
+      effective_to: $('#addRateForm input[name="effective_to"]').val() || null,
+      description: $('#addRateForm textarea[name="description"]').val()
+    };
+    
+    if (!formData.zone_id || !formData.property_type_id || !formData.rate || !formData.effective_from) {
+      showMessage('warning', 'Please fill all required fields');
+      return;
+    }
+    
+    $.ajax({
+      url: '/api/tax-rates/create/',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: response.message,
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            $('#addRateModal').modal('hide');
+            $('#addRateForm')[0].reset();
+            table.ajax.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error creating tax rate';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  });
+
+  // Edit rate
+  $(document).on('click', '.edit-btn', function() {
+    const rateId = $(this).data('id');
+    const row = table.row($(this).closest('tr')).data();
+    
+    $('#editRateId').val(rateId);
+    $('#editZoneName').val(row.zone_name);
+    $('#editPropertyTypeName').val(row.property_type_name);
+    $('#editRate').val(row.rate);
+    $('#editEffectiveFrom').val(row.effective_from);
+    $('#editEffectiveTo').val(row.effective_to === 'Indefinite' ? '' : row.effective_to);
+    $('#editDescription').val(row.description);
+    
+    $('#editRateModal').modal('show');
+  });
+
+  // Edit rate form submission
+  $('#editRateForm').submit(function(e) {
+    e.preventDefault();
+    
+    const rateId = $('#editRateId').val();
+    const formData = {
+      rate: $('#editRate').val(),
+      effective_from: $('#editEffectiveFrom').val(),
+      effective_to: $('#editEffectiveTo').val() || null,
+      description: $('#editDescription').val()
+    };
+    
+    $.ajax({
+      url: `/api/tax-rates/${rateId}/update/`,
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: response.message,
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            $('#editRateModal').modal('hide');
+            table.ajax.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error updating tax rate';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  });
+
+  // Delete rate
+  $(document).on('click', '.delete-btn', function() {
+    const rateId = $(this).data('id');
+    const row = table.row($(this).closest('tr')).data();
+    
+    Swal.fire({
+      title: 'Are you sure?',
+      html: `Delete tax rate for <strong>${row.zone_name} - ${row.property_type_name}</strong>?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: `/api/tax-rates/${rateId}/delete/`,
+          type: 'DELETE',
+          success: function(response) {
+            if (response.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: response.message,
+                timer: 1500,
+                showConfirmButton: false
+              });
+              table.ajax.reload();
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response.error
+              });
+            }
+          },
+          error: function(xhr) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: xhr.responseJSON?.error || 'Failed to delete tax rate'
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // View rate history
+  $(document).on('click', '.history-btn', function() {
+    const zoneId = $(this).data('zone');
+    const propertyTypeId = $(this).data('property-type');
+    
+    $.ajax({
+      url: `/api/tax-rates/history/${zoneId}/${propertyTypeId}/`,
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          let content = '<h6>Tax Rate History</h6>';
+          
+          if (response.history.length > 0) {
+            content += `
+              <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                  <thead>
+                    <tr>
+                      <th>Rate (%)</th>
+                      <th>Effective From</th>
+                      <th>Effective To</th>
+                      <th>Description</th>
+                      <th>Created By</th>
+                      <th>Created At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+            `;
+            
+            response.history.forEach(rate => {
+              content += `
+                <tr>
+                  <td class="fw-bold">${rate.rate}</td>
+                  <td>${rate.effective_from}</td>
+                  <td>${rate.effective_to}</td>
+                  <td>${rate.description || '-'}</td>
+                  <td>${rate.created_by}</td>
+                  <td>${rate.created_at}</td>
+                </tr>
+              `;
+            });
+            
+            content += `
+                  </tbody>
+                </table>
+              </div>
+            `;
+          } else {
+            content += '<p class="text-muted">No history found for this combination.</p>';
+          }
+          
+          $('#rateHistoryContent').html(content);
+          $('#rateHistoryModal').modal('show');
+        } else {
+          showMessage('danger', response.error);
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading rate history');
+      }
+    });
+  });
+
+  // Generate current rates report
+  $('#generateReportBtn').click(function() {
+    $.ajax({
+      url: '/api/tax-rates/current-report/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          let content = `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6>Current Active Tax Rates</h6>
+              <small class="text-muted">Generated: ${response.generated_at}</small>
+            </div>
+            <p><strong>Total Active Rates:</strong> ${response.total_rates}</p>
+          `;
+          
+          if (response.current_rates.length > 0) {
+            content += `
+              <div class="table-responsive">
+                <table class="table table-sm table-striped" id="reportTable">
+                  <thead>
+                    <tr>
+                      <th>Zone</th>
+                      <th>Zone Type</th>
+                      <th>Property Type</th>
+                      <th>Tax Rate</th>
+                      <th>Effective From</th>
+                      <th>Effective To</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+            `;
+            
+            response.current_rates.forEach(rate => {
+              content += `
+                <tr>
+                  <td>${rate.zone_name}</td>
+                  <td><span class="badge bg-secondary">${rate.zone_type}</span></td>
+                  <td>${rate.property_type_name}</td>
+                  <td class="fw-bold text-success">${rate.rate}</td>
+                  <td>${rate.effective_from}</td>
+                  <td>${rate.effective_to}</td>
+                </tr>
+              `;
+            });
+            
+            content += `
+                  </tbody>
+                </table>
+              </div>
+            `;
+          } else {
+            content += '<p class="text-muted">No active tax rates found.</p>';
+          }
+          
+          $('#reportContent').html(content);
+          currentRates = response.current_rates;
+          $('#reportModal').modal('show');
+        } else {
+          showMessage('danger', response.error);
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error generating report');
+      }
+    });
+  });
+
+  // Export report
+  $('#exportReportBtn').click(function() {
+    if (currentRates.length === 0) {
+      showMessage('warning', 'No data to export');
+      return;
+    }
+    
+    // Create CSV content
+    let csvContent = "Zone,Zone Type,Property Type,Tax Rate,Effective From,Effective To\n";
+    
+    currentRates.forEach(rate => {
+      csvContent += `"${rate.zone_name}","${rate.zone_type}","${rate.property_type_name}","${rate.rate}","${rate.effective_from}","${rate.effective_to}"\n`;
+    });
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tax_rates_report_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showMessage('success', 'Report exported successfully');
+  });
+
+  // Bulk update functionality
+  $('#addBulkUpdateRow').click(function() {
+    addBulkUpdateRow();
+  });
+
+  function addBulkUpdateRow(zoneId = '', propertyTypeId = '', rate = '') {
+    const rowId = Date.now();
+    const row = `
+      <tr id="bulk-row-${rowId}">
+        <td>
+          <select class="form-select form-select-sm bulk-zone" data-row="${rowId}">
+            <option value="">-- Select Zone --</option>
+            ${zones.map(zone => `<option value="${zone.id}" ${zone.id == zoneId ? 'selected' : ''}>${zone.name}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <select class="form-select form-select-sm bulk-property-type" data-row="${rowId}">
+            <option value="">-- Select Property Type --</option>
+            ${propertyTypes.map(pt => `<option value="${pt.id}" ${pt.id == propertyTypeId ? 'selected' : ''}>${pt.name}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <input type="number" class="form-control form-control-sm bulk-rate" value="${rate}" step="0.0001" min="0" max="100" placeholder="0.0000">
+        </td>
+        <td>
+          <span class="current-rate" id="current-rate-${rowId}">-</span>
+        </td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-danger remove-bulk-row" data-row="${rowId}">
+            <i class="fas fa-times"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+    
+    $('#bulkUpdateTable').append(row);
+  }
+
+  $(document).on('change', '.bulk-zone, .bulk-property-type', function() {
+    const rowId = $(this).data('row');
+    const zoneId = $(`#bulk-row-${rowId} .bulk-zone`).val();
+    const propertyTypeId = $(`#bulk-row-${rowId} .bulk-property-type`).val();
+    
+    if (zoneId && propertyTypeId) {
+      // Find current rate for this combination
+      const currentRate = currentRates.find(rate => 
+        rate.zone_id == zoneId && rate.property_type_id == propertyTypeId
+      );
+      
+      if (currentRate) {
+        $(`#current-rate-${rowId}`).text(`${currentRate.rate}%`).addClass('text-info fw-bold');
+      } else {
+        $(`#current-rate-${rowId}`).text('No current rate').removeClass('text-info fw-bold');
+      }
+    } else {
+      $(`#current-rate-${rowId}`).text('-').removeClass('text-info fw-bold');
+    }
+  });
+
+  $(document).on('click', '.remove-bulk-row', function() {
+    const rowId = $(this).data('row');
+    $(`#bulk-row-${rowId}`).remove();
+  });
+
+  // Bulk update form submission
+  $('#bulkUpdateForm').submit(function(e) {
+    e.preventDefault();
+    
+    const effectiveFrom = $('#bulkUpdateForm input[name="effective_from"]').val();
+    const effectiveTo = $('#bulkUpdateForm input[name="effective_to"]').val() || null;
+    const description = $('#bulkUpdateForm input[name="description"]').val();
+    
+    if (!effectiveFrom) {
+      showMessage('warning', 'Effective From date is required');
+      return;
+    }
+    
+    const updates = [];
+    let hasErrors = false;
+    
+    $('#bulkUpdateTable tr').each(function() {
+      const zoneId = $(this).find('.bulk-zone').val();
+      const propertyTypeId = $(this).find('.bulk-property-type').val();
+      const rate = $(this).find('.bulk-rate').val();
+      
+      if (zoneId && propertyTypeId && rate) {
+        updates.push({
+          zone_id: zoneId,
+          property_type_id: propertyTypeId,
+          rate: rate
+        });
+      } else if (zoneId || propertyTypeId || rate) {
+        hasErrors = true;
+        showMessage('warning', 'Please complete all fields in bulk update rows');
+        return false;
+      }
+    });
+    
+    if (hasErrors) return;
+    
+    if (updates.length === 0) {
+      showMessage('warning', 'No valid updates to apply');
+      return;
+    }
+    
+    Swal.fire({
+      title: 'Confirm Bulk Update',
+      html: `Apply ${updates.length} tax rate updates?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, apply updates!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '/api/tax-rates/bulk-update/',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            updates: updates,
+            effective_from: effectiveFrom,
+            effective_to: effectiveTo,
+            description: description
+          }),
+          success: function(response) {
+            if (response.success) {
+              let message = response.message;
+              if (response.errors && response.errors.length > 0) {
+                message += `<br><br><strong>Errors:</strong><br>${response.errors.join('<br>')}`;
+              }
+              
+              Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                html: message,
+                confirmButtonText: 'OK'
+              }).then(() => {
+                $('#bulkUpdateModal').modal('hide');
+                $('#bulkUpdateForm')[0].reset();
+                $('#bulkUpdateTable').empty();
+                table.ajax.reload();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response.error
+              });
+            }
+          },
+          error: function(xhr) {
+            let errorMsg = 'Error in bulk update';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            }
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: errorMsg
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // Initialize page
+  loadZonesAndPropertyTypes();
+  
+  // Add a few sample rows to bulk update table
+  setTimeout(() => {
+    for (let i = 0; i < 3; i++) {
+      addBulkUpdateRow();
+    }
+  }, 1000);
+});
+</script>
+
+<style>
+#ratesTable tbody tr td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.btn-sm {
+  margin: 1px;
+}
+
+.nav-tabs .nav-link {
+  color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.75em;
+}
+
+.table-responsive {
+  max-height: 600px;
+}
+
+#bulkUpdateTable tr td {
+  vertical-align: middle;
+}
+</style>
+{% endblock %}

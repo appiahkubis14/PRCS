@@ -1,0 +1,20 @@
+# Generate PMTiles with default settings
+python manage.py generate_properties_pmtiles_fixed
+
+# With custom zoom levels
+python manage.py generate_properties_pmtiles_fixed --min-zoom 6 --max-zoom 12
+
+# With custom output path
+python manage.py generate_properties_pmtiles_fixed --output custom_properties.pmtiles
+
+# With smaller batch size for memory-constrained environments
+python manage.py generate_properties_pmtiles_fixed --batch-size 50
+
+
+
+
+# For property vector data
+python manage.py generate_pmtiles --type vector --output properties.pmtiles
+
+# For drone orthophoto
+python manage.py generate_pmtiles --type raster --input /path/to/drone.tif --output drone.pmtiles --max-zoom 20

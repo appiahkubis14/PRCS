@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>LANMMA - Property Rate Collection System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
+    <meta content="Codebucks" name="author" />
+    <link rel="icon" href="/static/assets/images/logo/LaNMMA.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/static/assets/images/logo/LaNMMA.png" />
+    <meta name="msapplication-TileImage" content="/static/assets/images/logo/LaNMMA.png" />
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">
+
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.c           ss" rel="stylesheet">
+    
+    <!-- dark layout js -->
+    <script src="/static/assets/js/pages/layout.js"></script>
+
+    <!-- Bootstrap Css -->
+    <link href="/static/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="/static/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- simplebar css -->
+    <link href="/static/assets/libs/simplebar/simplebar.min.css" rel="stylesheet">
+    <!-- App Css-->
+    <link href="/static/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+
+    <!-- Custom Theme: Yellow and Green (La Nkwantanang - Madina Municipal Assembly) -->
+    <style>
+        :root {
+            /* Primary Green Theme */
+            --bs-primary: #0dae48 !important;
+            --bs-primary-rgb: 13, 174, 72 !important;
+            --primary: #0dae48;
+            --primary-dark: #0a8d3a;
+            --primary-light: #4dd97a;
+            
+            /* Secondary Yellow Theme */
+            --bs-secondary: #ffff07 !important;
+            --bs-secondary-rgb: 255, 255, 7 !important;
+            --secondary: #ffff07;
+            --secondary-dark: #cccc05;
+            --secondary-light: #ffffe0;
+            
+            /* Accent Colors */
+            --success: #0dae48;
+            --accent: #0dae48;
+            --accent-light: #4dd97a;
+        }
+
+        /* Override Bootstrap Primary Colors */
+        .btn-primary,
+        .bg-primary,
+        /* .text-primary, */
+        .border-primary {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+            color: #ffffff !important;
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: #0a8d3a !important;
+            border-color: #0a8d3a !important;
+        }
+
+        .btn-outline-primary {
+            color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+            color: #ffffff !important;
+        }
+
+        /* Override Secondary Colors */
+        .btn-secondary,
+        .bg-secondary {
+            background-color: #ffff07 !important;
+            border-color: #ffff07 !important;
+            color: #000000 !important;
+        }
+
+        .btn-secondary:hover,
+        .btn-secondary:focus,
+        .btn-secondary:active {
+            background-color: #cccc05 !important;
+            border-color: #cccc05 !important;
+        }
+
+        /* Link Colors */
+        a.text-primary,
+        a:not(.btn).text-primary {
+            color: #0dae48 !important;
+        }
+
+        a.text-primary:hover {
+            color: #0a8d3a !important;
+        }
+
+        /* Card Primary */
+        .card-primary {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        /* Badge Primary */
+        .badge-primary,
+        .badge.bg-primary {
+            background-color: #0dae48 !important;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            background-color: #0dae48 !important;
+        }
+
+        /* Alert Primary */
+        .alert-primary {
+            background-color: rgba(13, 174, 72, 0.1) !important;
+            border-color: #0dae48 !important;
+            color: #0dae48 !important;
+        }
+
+        /* Sidebar Active States */
+        .sidebar-menu .menu-item.active > a,
+        .sidebar-menu .menu-item.active > .menu-link {
+            background-color: rgba(13, 174, 72, 0.1) !important;
+            color: #0dae48 !important;
+        }
+
+        /* Topbar */
+        .topbar {
+            background-color: #0dae48 !important;
+        }
+
+        /* Custom Setting Button */
+        .custom-setting.bg-secondary {
+            background-color: #ffff07 !important;
+        }
+
+        /* DataTables Primary Buttons */
+        .dt-buttons .btn-primary {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        /* Select2 Primary Theme */
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #0dae48 !important;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        /* Pagination Active */
+        .page-item.active .page-link {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        .page-link {
+            color: #0dae48 !important;
+        }
+
+        .page-link:hover {
+            color: #0a8d3a !important;
+        }
+
+        /* Nav Tabs Active */
+        .nav-tabs .nav-link.active {
+            color: #0dae48 !important;
+            border-color: #0dae48 #0dae48 #fff !important;
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-color: rgba(13, 174, 72, 0.1) !important;
+        }
+
+        /* Dropdown Primary */
+        .dropdown-item.active,
+        .dropdown-item:active {
+            background-color: #0dae48 !important;
+        }
+
+        /* Form Controls Focus */
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #0dae48 !important;
+            box-shadow: 0 0 0 0.25rem rgba(13, 174, 72, 0.25) !important;
+        }
+
+        /* Checkbox and Radio Primary */
+        .form-check-input:checked {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        /* Switch Primary */
+        .form-switch .form-check-input:checked {
+            background-color: #0dae48 !important;
+        }
+
+        /* Range Slider Primary */
+        .form-range::-webkit-slider-thumb {
+            background-color: #0dae48 !important;
+        }
+
+        .form-range::-moz-range-thumb {
+            background-color: #0dae48 !important;
+        }
+
+        /* Sidebar Menu Styling */
+        #sidebar-menu ul li.mm-active > a,
+        #sidebar-menu ul li.mm-active > a i {
+            color: #0dae48 !important;
+            background-color: rgba(13, 174, 72, 0.1) !important;
+        }
+
+        #sidebar-menu ul li a:hover {
+            color: #0dae48 !important;
+            background-color: rgba(13, 174, 72, 0.05) !important;
+        }
+
+        #sidebar-menu ul li a:hover i {
+            color: #0dae48 !important;
+        }
+
+        /* Topbar/Navbar Styling */
+        #page-topbar {
+            background-color: #0dae48 !important;
+            border-bottom: 2px solid #0a8d3a !important;
+        }
+
+        .navbar-logo-box {
+            background-color: #0dae48 !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .top-icon {
+            color: #ffffff !important;
+        }
+
+        .top-icon:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #ffff07 !important;
+        }
+
+        /* Sidebar Left Styling */
+        .sidebar-left {
+            border-right: 1px solid rgba(13, 174, 72, 0.1) !important;
+        }
+
+        .menu-title {
+            color: #0dae48 !important;
+            font-weight: 600 !important;
+        }
+
+        /* Breadcrumb */
+        .breadcrumb-item.active {
+            color: #0dae48 !important;
+        }
+
+        .breadcrumb-item a {
+            color: #0dae48 !important;
+        }
+
+        .breadcrumb-item a:hover {
+            color: #0a8d3a !important;
+        }
+
+        /* Tooltip */
+        .tooltip-inner {
+            background-color: #0dae48 !important;
+        }
+
+        .tooltip.bs-tooltip-top .tooltip-arrow::before {
+            border-top-color: #0dae48 !important;
+        }
+
+        .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+            border-bottom-color: #0dae48 !important;
+        }
+
+        .tooltip.bs-tooltip-start .tooltip-arrow::before {
+            border-left-color: #0dae48 !important;
+        }
+
+        .tooltip.bs-tooltip-end .tooltip-arrow::before {
+            border-right-color: #0dae48 !important;
+        }
+
+        /* Modal */
+        .modal-header {
+            border-bottom: 1px solid rgba(13, 174, 72, 0.1) !important;
+        }
+
+        .modal-footer {
+            border-top: 1px solid rgba(13, 174, 72, 0.1) !important;
+        }
+
+        /* Table Styling */
+        .table-primary,
+        .table-primary > th,
+        .table-primary > td {
+            background-color: rgba(13, 174, 72, 0.1) !important;
+            color: #0dae48 !important;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 174, 72, 0.05) !important;
+        }
+
+        /* List Group */
+        .list-group-item.active {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        /* Spinner */
+        .spinner-border-primary {
+            border-color: #0dae48 !important;
+        }
+
+        .spinner-grow-primary {
+            background-color: #0dae48 !important;
+        }
+
+        /* Toast */
+        .toast-header {
+            background-color: rgba(13, 174, 72, 0.1) !important;
+            border-bottom: 1px solid rgba(13, 174, 72, 0.2) !important;
+            color: #0dae48 !important;
+        }
+
+        /* Accordion */
+        .accordion-button:not(.collapsed) {
+            background-color: rgba(13, 174, 72, 0.1) !important;
+            color: #0dae48 !important;
+        }
+
+        .accordion-button:not(.collapsed)::after {
+            filter: brightness(0) saturate(100%) invert(20%) sepia(95%) saturate(2000%) hue-rotate(80deg) brightness(0.3);
+        }
+
+        /* Carousel */
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            background-color: #0dae48 !important;
+        }
+
+        .carousel-indicators [data-bs-target].active {
+            background-color: #0dae48 !important;
+        }
+
+        /* Offcanvas */
+        .offcanvas-header {
+            border-bottom: 1px solid rgba(13, 174, 72, 0.1) !important;
+        }
+
+        /* Custom Scrollbar */
+        .simplebar-scrollbar::before {
+            background-color: rgba(13, 174, 72, 0.5) !important;
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid rgba(13, 174, 72, 0.1) !important;
+        }
+
+        /* Chart Colors (for Chart.js and ApexCharts) */
+        .chart-primary {
+            color: #0dae48 !important;
+        }
+
+        /* SweetAlert2 Customization */
+        .swal2-confirm {
+            background-color: #0dae48 !important;
+        }
+
+        .swal2-confirm:hover {
+            background-color: #0a8d3a !important;
+        }
+
+        .swal2-cancel {
+            background-color: #ffff07 !important;
+            color: #000000 !important;
+        }
+
+        .swal2-cancel:hover {
+            background-color: #cccc05 !important;
+        }
+
+        /* Flatpickr Calendar */
+        .flatpickr-day.selected,
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        .flatpickr-day.selected:hover,
+        .flatpickr-day.startRange:hover,
+        .flatpickr-day.endRange:hover {
+            background-color: #0a8d3a !important;
+            border-color: #0a8d3a !important;
+        }
+
+        /* DataTables Styling */
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+            color: #ffffff !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background-color: rgba(13, 174, 72, 0.1) !important;
+            border-color: #0dae48 !important;
+            color: #0dae48 !important;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: #0dae48 !important;
+            box-shadow: 0 0 0 0.25rem rgba(13, 174, 72, 0.25) !important;
+        }
+
+        .dataTables_wrapper .dataTables_length select:focus {
+            border-color: #0dae48 !important;
+            box-shadow: 0 0 0 0.25rem rgba(13, 174, 72, 0.25) !important;
+        }
+
+        /* Loading Spinner */
+        .spinner-border,
+        .spinner-grow {
+            color: #0dae48 !important;
+        }
+
+        /* Custom Setting Button Text Color */
+        .custom-setting .btn {
+            color: #000000 !important;
+        }
+
+        /* Notification Badge */
+        .badge-notification {
+            background-color: #ffff07 !important;
+            color: #000000 !important;
+        }
+
+        /* Success Button with Green */
+        .btn-success {
+            background-color: #0dae48 !important;
+            border-color: #0dae48 !important;
+        }
+
+        .btn-success:hover {
+            background-color: #1a6b1a !important;
+            border-color: #1a6b1a !important;
+        }
+
+        /* Info Button with Light Green */
+        .btn-info {
+            background-color: #4dd97a !important;
+            border-color: #4dd97a !important;
+            color: #000000 !important;
+        }
+
+        .btn-info:hover {
+            background-color: #7acc7a !important;
+            border-color: #7acc7a !important;
+        }
+    </style>
+
+    <!-- Leaflet CSS - Consolidated Version -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin="" />
+    
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" 
+          crossorigin="" />
+    
+    <!-- Leaflet Fullscreen CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-fullscreen@1.0.2/dist/leaflet.fullscreen.css" 
+          crossorigin="" />
+    
+    <!-- Leaflet Marker Cluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" 
+          crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" 
+          crossorigin="" />
+    
+    <!-- Additional Leaflet Plugins CSS (Add as needed) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.css" 
+          crossorigin="" />
+</head>
+
+<body>
+
+<div id="layout-wrapper">
+    {% include 'partials/topbar.html' %}
+
+  
+
+    <!-- Start right Content here -->
+    <div class="main-content">
+        <div class="page-content">
+            <div class="container-fluid">
+                {% block content %}
+                {% endblock %}
+            </div>
+            <!-- end row -->
+        </div>
+        <!-- end container-fluid -->
+    </div>
+    <!-- End Page-content -->
+
+    <footer class="footer">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-sm-6">
+                    <script>document.write(new Date().getFullYear())</script> © SKT LIVE.
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-sm-end d-none d-sm-block">
+                        Crafted with <i class="mdi mdi-heart text-danger"></i> by <a href="https://sktlive.com/en" target="_blank" class="text-muted">SKT LIVE</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+<!-- end main content-->
+</div>
+<!-- end layout-wrapper -->
+
+{% comment %} <div class="custom-setting bg-secondary pe-0 d-flex flex-column rounded-start">
+    <button type="button" class="btn btn-wide border-0 text-white fs-20 avatar-sm rounded-end-0" id="light-dark-mode">
+        <i class="mdi mdi-brightness-7 align-middle"></i>
+        <i class="mdi mdi-white-balance-sunny align-middle"></i>
+    </button>
+    <button type="button" class="btn btn-wide border-0 text-white fs-20 avatar-sm" data-toggle="fullscreen">
+        <i class="mdi mdi-arrow-expand-all align-middle"></i>
+    </button>
+</div> {% endcomment %}
+
+<!-- JAVASCRIPT -->
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="/static/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/assets/libs/metismenu/metisMenu.min.js"></script>
+<script src="/static/assets/libs/simplebar/simplebar.min.js"></script>
+<script src="/static/assets/libs/node-waves/waves.min.js"></script>
+
+<!-- Select2 JS (Must come after jQuery) -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- FontAwesome -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+
+<!-- DataTables Extensions -->
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Leaflet JS - Consolidated Version -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<!-- Leaflet Plugins -->
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"
+        crossorigin=""></script>
+        
+<script src="https://unpkg.com/leaflet-fullscreen@1.0.2/dist/Leaflet.fullscreen.js"
+        crossorigin=""></script>
+        
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+        crossorigin=""></script>
+        
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"
+        crossorigin=""></script>
+
+<!-- Leaflet Measure Plugin -->
+<script src="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.js"
+        crossorigin=""></script>
+
+<!-- Additional Leaflet plugins (uncomment as needed) -->
+<!-- 
+<script src="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.umd.js"
+        crossorigin=""></script>
+-->
+
+<!-- html2canvas for export functionality -->
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+<!-- SweetAlerts -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- apexcharts -->
+<script src="/static/assets/libs/apexcharts/apexcharts.min.js"></script>
+
+<script src="/static/assets/js/pages/dashboard.init.js"></script>
+
+<!-- App js -->
+<script src="/static/assets/js/app.js"></script>
+
+</body>
+</html>

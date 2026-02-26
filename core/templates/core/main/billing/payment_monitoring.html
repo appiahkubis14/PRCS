@@ -1,0 +1,748 @@
+<!-- templates/payments/monitoring_dashboard.html -->
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title">Payment Monitoring Dashboard</h3>
+          <p class="card-subtitle">Track payment link clicks and user engagement</p>
+        </div>
+        <div>
+          <button class="btn btn-primary" id="refreshData">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+        </div>
+      </div>
+      
+      <!-- Stats Cards -->
+      <div class="card-body">
+        <div class="row" id="statsCards">
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card border-left-primary shadow-sm h-100">
+      <div class="card-body py-2">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+              Total Bills
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalBills">0</div>
+            <div class="text-xs text-muted">
+              <small>GH₵<span id="totalAmount">0</span></small>
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-file-invoice fa-lg text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card border-left-success shadow-sm h-100">
+      <div class="card-body py-2">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+              Paid Bills
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="paidBills">0</div>
+            <div class="d-flex align-items-center">
+              <small class="text-muted mr-2"><span id="paidPercentage">0</span>%</small>
+              <div class="progress flex-grow-1" style="height: 4px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 0%" id="paidProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-check-circle fa-lg text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card border-left-warning shadow-sm h-100">
+      <div class="card-body py-2">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+              Visited - Not Paid
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="visitedNotPaid">0</div>
+            <div class="text-xs">
+              <small class="text-muted"><i class="fas fa-eye text-warning mr-1"></i>Clicked, no payment</small>
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-user-clock fa-lg text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card border-left-danger shadow-sm h-100">
+      <div class="card-body py-2">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+              Overdue
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="overdueBills">0</div>
+            <div class="text-xs">
+              <small class="text-muted"><i class="fas fa-exclamation-triangle text-danger mr-1"></i>Past due date</small>
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-calendar-times fa-lg text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Compact CSS -->
+<style>
+  /* Soft color variables */
+  :root {
+    --soft-primary: #4e73df;
+    --soft-success: #1cc88a;
+    --soft-warning: #f6c23e;
+    --soft-danger: #e74a3b;
+  }
+
+  /* Compact card styles */
+  .card {
+    border: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .card-body {
+    padding: 0.75rem 1rem;
+  }
+
+  .border-left-primary {
+    border-left: 0.2rem solid var(--soft-primary) !important;
+  }
+  
+  .border-left-success {
+    border-left: 0.2rem solid var(--soft-success) !important;
+  }
+  
+  .border-left-warning {
+    border-left: 0.2rem solid var(--soft-warning) !important;
+  }
+  
+  .border-left-danger {
+    border-left: 0.2rem solid var(--soft-danger) !important;
+  }
+
+  /* Text styles */
+  .text-xs {
+    font-size: 0.65rem;
+    letter-spacing: 0.02rem;
+  }
+
+  .h5 {
+    font-size: 1.1rem;
+    margin-bottom: 0.1rem !important;
+  }
+
+  .text-gray-300 { color: #d1d3e0 !important; }
+  .text-gray-800 { color: #5a5c69 !important; }
+
+  /* Progress bar */
+  .progress {
+    background-color: #eaecf4;
+    border-radius: 1rem;
+    height: 4px;
+  }
+  
+  .progress-bar {
+    background-color: var(--soft-success);
+    border-radius: 1rem;
+  }
+
+  /* Icons */
+  .fa-lg {
+    font-size: 1.25rem;
+    opacity: 0.5;
+  }
+
+  /* Small text */
+  small {
+    font-size: 0.7rem;
+  }
+
+  /* Margins and spacing */
+  .mr-1 { margin-right: 0.25rem; }
+  .mr-2 { margin-right: 0.5rem; }
+  
+  /* No gutters */
+  .no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+  }
+  
+  .no-gutters > .col,
+  .no-gutters > [class*="col-"] {
+    padding-right: 0;
+    padding-left: 0;
+  }
+</style>
+
+<!-- Update the JavaScript -->
+<script>
+function updateStats(stats) {
+  $('#totalBills').text(stats.total_bills || 0);
+  $('#totalAmount').text(stats.total_amount.toLocaleString('en-US', {minimumFractionDigits: 2}));
+  $('#paidBills').text(stats.paid_bills || 0);
+  $('#paidPercentage').text(stats.paid_percentage || 0);
+  
+  // Update progress bar
+  const paidPercentage = stats.paid_percentage || 0;
+  $('#paidProgress').css('width', paidPercentage + '%').attr('aria-valuenow', paidPercentage);
+  
+  $('#visitedNotPaid').text(stats.visited_not_paid || 0);
+  $('#overdueBills').text(stats.overdue_bills || 0);
+}
+</script>
+        
+        <!-- Filters -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <select class="form-control" id="statusFilter">
+              <option value="">All Statuses</option>
+              <option value="draft">Draft</option>
+              <option value="generated">Generated</option>
+              <option value="sent">Sent</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" class="form-control" id="yearFilter" placeholder="Filter by Year">
+          </div>
+          <div class="col-md-6">
+            <input type="text" class="form-control" id="searchFilter" placeholder="Search by Bill Number, Business Name, Account Number">
+          </div>
+        </div>
+        
+        <!-- Main Table -->
+        <div class="table-responsive">
+          <table id="monitoringTable" class="table table-striped table-bordered table-hover" style="width:100%">
+            <thead>
+              <tr>
+                <th>Bill #</th>
+                <th>Business</th>
+                <th>Account #</th>
+                <th>Owner</th>
+                <th>Year</th>
+                <th>Amount (GHS)</th>
+                <th>Status</th>
+                <th>Due Date</th>
+                <th>Click Count</th>
+                <th>Last Click</th>
+                <th>Days Since Click</th>
+                <th>Payment Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- DataTables will populate this -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bill Detail Modal -->
+<div class="modal fade" id="billDetailModal" tabindex="-1" aria-labelledby="billDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-x">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="billDetailModalLabel">Bill Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Bill Information</h6>
+            <table class="table table-sm">
+              <tr><th>Bill Number:</th><td id="detailBillNumber"></td></tr>
+              <tr><th>Business Name:</th><td id="detailBusinessName"></td></tr>
+              <tr><th>Account Number:</th><td id="detailAccountNumber"></td></tr>
+              <tr><th>Owner:</th><td id="detailOwnerName"></td></tr>
+              <tr><th>Phone:</th><td id="detailPhone"></td></tr>
+              <tr><th>Email:</th><td id="detailEmail"></td></tr>
+              <tr><th>Amount:</th><td id="detailAmount"></td></tr>
+              <tr><th>Status:</th><td id="detailStatus"></td></tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <h6>Tracking Information</h6>
+            <table class="table table-sm">
+              <tr><th>Total Clicks:</th><td id="detailTotalClicks"></td></tr>
+              <tr><th>Last Click:</th><td id="detailLastClick"></td></tr>
+              <tr><th>Last IP:</th><td id="detailLastIP"></td></tr>
+              <tr><th>Sent Date:</th><td id="detailSentDate"></td></tr>
+              <tr><th>Generated Date:</th><td id="detailGeneratedDate"></td></tr>
+              <tr><th>Due Date:</th><td id="detailDueDate"></td></tr>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Tabs for Clicks and Payments -->
+        <ul class="nav nav-tabs mt-3" id="detailTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="clicks-tab" data-bs-toggle="tab" data-bs-target="#clicks" type="button" role="tab">Link Clicks</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">Payments</button>
+          </li>
+        </ul>
+        <div class="tab-content mt-3">
+          <div class="tab-pane active" id="clicks" role="tabpanel">
+            <div class="table-responsive">
+              <table class="table table-sm" id="clicksTable">
+                <thead>
+                  <tr>
+                    <th>Date/Time</th>
+                    <th>Link Type</th>
+                    <th>IP Address</th>
+                    <th>User Agent</th>
+                    <th>Payment Made</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="tab-pane" id="payments" role="tabpanel">
+            <div class="table-responsive">
+              <table class="table table-sm" id="paymentsTable">
+                <thead>
+                  <tr>
+                    <th>Date/Time</th>
+                    <th>Transaction ID</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="sendReminderBtn">Send Reminder SMS</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity Card -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Recent Activity</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm" id="recentActivityTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Bill Number</th>
+                <th>Business</th>
+                <th>Link Type</th>
+                <th>Current Status</th>
+                <th>Paid?</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
+<script>
+// Initialize everything when document is ready
+$(document).ready(function() {
+  let monitoringTable;
+  
+  // Initialize DataTable
+  function initMonitoringTable() {
+    monitoringTable = $('#monitoringTable').DataTable({
+      paging: true,
+      searching: true,
+      ordering: true,
+      info: true,
+      responsive: true,
+      autoWidth: false,
+      processing: true,
+      serverSide: false,
+      lengthMenu: [10, 25, 50, 100],
+      pageLength: 25,
+      ajax: {
+        url: "/api/payments/bops-bills/tracking/",
+        type: "GET",
+        data: function(d) {
+          return {
+            status: $('#statusFilter').val(),
+            year: $('#yearFilter').val(),
+            search: $('#searchFilter').val()
+          };
+        },
+        dataSrc: function(json) {
+          if (json.success && json.summary) {
+            updateStats(json.summary);
+          }
+          return json.data || [];
+        },
+        error: function(xhr, error, thrown) {
+          console.error('Error loading data:', error);
+          showMessage('error', 'Failed to load data');
+        }
+      },
+      columns: [
+        { data: 'bill_number' },
+        { data: 'business_name' },
+        { data: 'account_number' },
+        { data: 'owner_name' },
+        { data: 'billing_year' },
+        { 
+          data: 'total_amount',
+          render: function(data) {
+            return 'GH₵' + parseFloat(data).toLocaleString('en-US', {minimumFractionDigits: 2});
+          }
+        },
+        { 
+          data: 'status',
+          render: function(data) {
+            const colors = {
+              'draft': 'secondary',
+              'generated': 'info',
+              'sent': 'primary',
+              'paid': 'success',
+              'overdue': 'danger',
+              'cancelled': 'dark'
+            };
+            return `<span class="badge bg-${colors[data] || 'secondary'}">${data}</span>`;
+          }
+        },
+        { data: 'due_date' },
+        { 
+          data: 'click_count',
+          render: function(data, type, row) {
+            if (row.visited_not_paid) {
+              return `<span class="badge bg-warning">${data} 👁️</span>`;
+            }
+            return data || 0;
+          }
+        },
+        { 
+          data: 'last_clicked_at',
+          render: function(data) {
+            return data || 'Never';
+          }
+        },
+        { 
+          data: 'days_since_click',
+          render: function(data) {
+            if (data === null) return '-';
+            if (data === 0) return 'Today';
+            if (data === 1) return 'Yesterday';
+            return `${data} days ago`;
+          }
+        },
+        { 
+          data: 'payment_status',
+          render: function(data, type, row) {
+            if (row.status === 'paid') {
+              return '<span class="badge bg-success">Paid ✓</span>';
+            } else if (row.click_count > 0) {
+              return '<span class="badge bg-warning">Viewed - Pending</span>';
+            } else {
+              return '<span class="badge bg-secondary">Not Viewed</span>';
+            }
+          }
+        },
+        {
+          data: null,
+          orderable: false,
+          render: function(data) {
+            return `
+              <button class="btn btn-sm btn-info view-details" data-id="${data.id}">
+                <i class="fas fa-eye"></i> Details
+              </button>
+              <button class="btn btn-sm btn-warning send-reminder" data-id="${data.id}" data-phone="${data.phone_number}">
+                <i class="fas fa-bell"></i> Remind
+              </button>
+            `;
+          }
+        }
+      ],
+      createdRow: function(row, data, dataIndex) {
+        if (data.visited_not_paid) {
+          $(row).addClass('table-warning');
+        }
+      }
+    });
+  }
+  
+  // Update stats cards
+  function updateStats(stats) {
+    $('#totalBills').text(stats.total_bills || 0);
+    $('#totalAmount').text(stats.total_amount.toLocaleString('en-US', {minimumFractionDigits: 2}));
+    $('#paidBills').text(stats.paid_bills || 0);
+    $('#paidPercentage').text(stats.paid_percentage || 0);
+    $('#visitedNotPaid').text(stats.visited_not_paid || 0);
+    $('#overdueBills').text(stats.overdue_bills || 0);
+  }
+  
+  // Load recent activity
+  function loadRecentActivity() {
+    $.get('/api/payments/dashboard/stats/', function(response) {
+      if (response.success) {
+        const tbody = $('#recentActivityTable tbody');
+        tbody.empty();
+        
+        response.recent_activity.forEach(function(item) {
+          tbody.append(`
+            <tr>
+              <td>${item.clicked_at}</td>
+              <td>${item.bill_number}</td>
+              <td>${item.business_name}</td>
+              <td>${item.link_type}</td>
+              <td><span class="badge bg-${item.status === 'paid' ? 'success' : 'warning'}">${item.status}</span></td>
+              <td>${item.paid ? '✓' : '✗'}</td>
+            </tr>
+          `);
+        });
+      }
+    });
+  }
+  
+  // View bill details
+  $(document).on('click', '.view-details', function() {
+    const billId = $(this).data('id');
+    
+    $.get(`/api/payments/bops-bills/${billId}/detail/`, function(response) {
+      if (response.success) {
+        // Populate bill info
+        $('#detailBillNumber').text(response.bill.bill_number);
+        $('#detailBusinessName').text(response.bill.business_name);
+        $('#detailAccountNumber').text(response.bill.account_number);
+        $('#detailOwnerName').text(response.bill.owner_name || 'N/A');
+        $('#detailPhone').text(response.bill.phone_number || 'N/A');
+        $('#detailEmail').text(response.bill.email || 'N/A');
+        $('#detailAmount').text('GH₵' + response.bill.total_amount.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#detailStatus').html(`<span class="badge bg-${response.bill.status === 'paid' ? 'success' : 'warning'}">${response.bill.status}</span>`);
+        $('#detailTotalClicks').text(response.bill.click_count);
+        $('#detailLastClick').text(response.bill.last_clicked_at || 'Never');
+        $('#detailLastIP').text(response.bill.last_click_ip || 'N/A');
+        $('#detailSentDate').text(response.bill.sent_date || 'Not sent');
+        $('#detailGeneratedDate').text(response.bill.generated_date);
+        $('#detailDueDate').text(response.bill.due_date);
+        
+        // Populate clicks table
+        const clicksTbody = $('#clicksTable tbody');
+        clicksTbody.empty();
+        response.clicks.forEach(function(click) {
+          clicksTbody.append(`
+            <tr>
+              <td>${click.clicked_at}</td>
+              <td>${click.link_type}</td>
+              <td>${click.ip_address || 'N/A'}</td>
+              <td title="${click.user_agent}">${click.user_agent.substring(0, 50)}...</td>
+              <td>${click.payment_made ? '✓' : '✗'}</td>
+            </tr>
+          `);
+        });
+        
+        // Populate payments table
+        const paymentsTbody = $('#paymentsTable tbody');
+        paymentsTbody.empty();
+        response.payments.forEach(function(payment) {
+          paymentsTbody.append(`
+            <tr>
+              <td>${payment.initiated_at}</td>
+              <td>${payment.transaction_id}</td>
+              <td>GH₵${payment.amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+              <td>${payment.payment_method || 'N/A'}</td>
+              <td><span class="badge bg-${payment.status === 'completed' ? 'success' : 'warning'}">${payment.status}</span></td>
+            </tr>
+          `);
+        });
+        
+        $('#billDetailModal').modal('show');
+      }
+    });
+  });
+  
+  // Send reminder
+  $(document).on('click', '.send-reminder', function() {
+    const billId = $(this).data('id');
+    const phone = $(this).data('phone');
+    
+    if (!phone) {
+      alert('No phone number available for this business');
+      return;
+    }
+    
+    Swal.fire({
+      title: 'Send Reminder?',
+      text: 'Send SMS reminder to this business?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Send',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: `/api/bops-bills/${billId}/send-message/`,
+          type: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          success: function() {
+            Swal.fire('Success', 'Reminder sent successfully', 'success');
+          },
+          error: function() {
+            Swal.fire('Error', 'Failed to send reminder', 'error');
+          }
+        });
+      }
+    });
+  });
+  
+  // Send reminder from modal
+  $('#sendReminderBtn').click(function() {
+    const billId = $('#detailBillNumber').data('id');
+    if (billId) {
+      $(`.send-reminder[data-id="${billId}"]`).click();
+    }
+  });
+  
+  // Refresh data
+  $('#refreshData').click(function() {
+    monitoringTable.ajax.reload();
+    loadRecentActivity();
+  });
+  
+  // Filter change handlers
+  $('#statusFilter, #yearFilter, #searchFilter').on('change keyup', function() {
+    monitoringTable.ajax.reload();
+  });
+  
+  // Initialize
+  initMonitoringTable();
+  loadRecentActivity();
+  
+  // Helper function for CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  
+  // Show message function
+  function showMessage(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const messageHtml = `<div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>`;
+    $('#messageContainer').html(messageHtml);
+    setTimeout(() => {
+      $('.alert').fadeOut();
+    }, 5000);
+  }
+});
+</script>
+
+<style>
+  .table-warning {
+    background-color: #fff3cd !important;
+  }
+  
+  .badge {
+    font-size: 0.875rem;
+    padding: 0.35em 0.65em;
+  }
+  
+  .card {
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+  }
+  
+  .modal-xl {
+    max-width: 90%;
+  }
+  
+  #clicksTable td, #paymentsTable td {
+    font-size: 0.85rem;
+  }
+  
+  .btn-sm {
+    margin: 2px;
+  }
+</style>
+
+{% endblock %}

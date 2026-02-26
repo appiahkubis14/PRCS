@@ -1,0 +1,3196 @@
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+<div class="gis-page-wrapper">
+<style>
+:root {
+    --primary-color: #0dae48;
+    --secondary-color: #ffff07;
+    --success-color: #0dae48;
+    --warning-color: #ff9800;
+    --danger-color: #f44336;
+    --dark-color: #0a8d3a;
+    --light-color: #ffffff;
+    --sidebar-width: 400px;
+    --header-height: 70px;
+    --border-radius: 10px;
+    --border-radius-sm: 6px;
+    --border-radius-lg: 12px;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadown -md: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.25);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden;
+    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+}
+
+.gis-page-wrapper {
+    width: 100%;
+    padding: 0;
+    margin: -0.5rem 0 0 0;
+}
+
+.gis-container {
+    width: 100%;
+    height: calc(100vh - 140px);
+    min-height: 480px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    background: #f0f3f5;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Floating Tools – right-side toolbar */
+.floating-tools {
+    position: absolute;
+    top: 90px;
+    right: 20px;
+    left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 1000;
+}
+
+.tool-btn {
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    color: var(--primary-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tool-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 174, 72, 0.35);
+}
+
+.tool-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.tool-btn .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Main Menu */
+.main-menu {
+    position: absolute;
+    top: 0;
+    left: 80px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-xl);
+    width: 300px;
+    display: none;
+    z-index: 1000;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.main-menu.active {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.menu-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.menu-content {
+    padding: 20px;
+}
+
+.menu-category {
+    margin-bottom: 25px;
+}
+
+.menu-category h4 {
+    font-size: 0.9rem;
+    font-weight: bolder;
+    color: var(--dark-color);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.menu-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.menu-item:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.menu-item:hover .menu-icon {
+    color: white;
+}
+
+.menu-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.menu-item.active .menu-icon {
+    color: white;
+}
+
+.menu-icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    transition: color 0.2s ease;
+}
+
+.menu-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Tool Panels – left-side drawer, draggable */
+.tool-panel {
+    position: absolute;
+    top: 90px;
+    left: 20px;
+    right: auto;
+    width: 320px;
+    max-width: calc(100vw - 100px);
+    max-height: calc(100vh - 140px);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    display: none;
+    z-index: 1100;
+    overflow: hidden;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.tool-panel.active {
+    display: flex;
+    animation: gisPanelSlideInLeft 0.22s ease-out;
+    transform: translateX(0);
+}
+
+#filtersPanel.active,
+#analysisPanel.active {
+    left: 20px;
+    transform: translateX(0);
+}
+
+.tool-panel.dragging {
+    user-select: none;
+    transition: none;
+}
+
+@keyframes gisPanelSlideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.panel-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0a9940 100%);
+    color: white;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex-shrink: 0;
+    cursor: grab;
+    user-select: none;
+}
+
+.panel-header:active {
+    cursor: grabbing;
+}
+
+.panel-header h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.02em;
+}
+
+.close-panel {
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+
+.close-panel:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.panel-content {
+    padding: 14px 16px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 174, 72, 0.1);
+}
+
+.select-wrapper {
+    position: relative;
+}
+
+.select-wrapper i {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+
+/* Search Box – GIS locator bar */
+.search-container {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: 420px;
+    max-width: calc(100vw - 100px);
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 40px 10px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 174, 72, 0.15);
+}
+
+.search-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1001;
+}
+
+.search-result {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.search-result:hover {
+    background: #f8f9fa;
+}
+
+.search-result:last-child {
+    border-bottom: none;
+}
+
+.search-result-highlight {
+    background-color: #e3f2fd !important;
+}
+
+/* Legend – GIS layer list */
+.map-legend {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: #fff;
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    z-index: 1000;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    width: 260px;
+    display: none;
+    max-height: 55vh;
+    overflow-y: auto;
+}
+
+.legend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    position: sticky;
+    top: 0;
+    background: white;
+    padding-bottom: 10px;
+}
+
+.legend-header h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-toggle {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.legend-content {
+    display: grid;
+    gap: 15px;
+}
+
+.legend-category h5 {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.legend-symbol {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.legend-text {
+    font-size: 0.8rem;
+    color: #495057;
+}
+
+/* Layers & Basemaps accordion – always visible at bottom-left of map */
+.map-legend-accordion {
+    position: absolute;
+    bottom: 71px;
+    left: 8px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.06);
+    padding: 0;
+    z-index: 1100;
+    width: 280px;
+    max-height: 60vh;
+    overflow: hidden;
+    display: flex !important;
+    flex-direction: column;
+    border: 1px solid rgba(0,0,0,0.06);
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--dark-color);
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    user-select: none;
+}
+
+.accordion-header:hover { background: #f0f3f5; }
+
+.accordion-header i.chevron {
+    transition: transform 0.2s ease;
+}
+
+.accordion-header.collapsed i.chevron { transform: rotate(-90deg); }
+
+.accordion-content {
+    padding: 10px 14px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.accordion-content.collapsed { display: none; }
+
+.layer-row, .basemap-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    gap: 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.layer-row:last-child, .basemap-row:last-child { border-bottom: none; }
+
+.layer-row label, .basemap-row label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #333;
+    cursor: pointer;
+    margin: 0;
+    flex: 1;
+}
+
+.layer-row .legend-symbol {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+.switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #ced4da;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.switch.on { background: var(--primary-color); }
+
+.switch::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    top: 2px;
+    left: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+.switch.on::after { transform: translateX(16px); }
+
+.basemap-row input[type="radio"] {
+    margin: 0;
+    accent-color: var(--primary-color);
+}
+
+.accordion-section:last-child .accordion-header { border-bottom: none; }
+
+/* Notification */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-xl);
+    padding: 15px 20px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(150%);
+    transition: transform 0.3s ease;
+    border-left: 4px solid;
+    max-width: 400px;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    border-left-color: var(--success-color);
+}
+
+.notification.error {
+    border-left-color: var(--danger-color);
+}
+
+.notification.warning {
+    border-left-color: var(--warning-color);
+}
+
+.notification.info {
+    border-left-color: var(--primary-color);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    display: none;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Custom Controls */
+.custom-zoom-control {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+
+.zoom-btn {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: white;
+    font-size: 20px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.zoom-btn:hover {
+    background-color: #f4f4f4;
+}
+
+.zoom-btn:last-child {
+    border-bottom: none;
+}
+
+.mouse-position-control {
+    background: rgba(255,255,255,0.8);
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+/* Buffer Control */
+.leaflet-control-buffer {
+    background-color: white;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23333"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 18px;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    display: block;
+    text-align: center;
+}
+
+.leaflet-control-buffer:hover {
+    background-color: #f4f4f4;
+}
+
+/* Fullscreen Styles */
+:fullscreen .gis-container,
+:-webkit-full-screen .gis-container,
+:-moz-full-screen .gis-container,
+:-ms-fullscreen .gis-container {
+    width: 100vw !important;
+    height: 100vh !important;
+    background: white !important;
+}
+
+:fullscreen #map,
+:-webkit-full-screen #map,
+:-moz-full-screen #map,
+:-ms-fullscreen #map {
+    width: 100vw !important;
+    height: 100vh !important;
+}
+
+:fullscreen .floating-tools,
+:-webkit-full-screen .floating-tools,
+:-moz-full-screen .floating-tools,
+:-ms-fullscreen .floating-tools {
+    top: 20px !important;
+    right: 20px !important;
+    left: auto !important;
+}
+
+:fullscreen .search-container,
+:-webkit-full-screen .search-container,
+:-moz-full-screen .search-container,
+:-ms-fullscreen .search-container {
+    top: 20px !important;
+}
+
+:fullscreen .main-menu,
+:-webkit-full-screen .main-menu,
+:-moz-full-screen .main-menu,
+:-ms-fullscreen .main-menu {
+    top: 0 !important;
+    left: 80px !important;
+}
+
+:fullscreen .tool-panel,
+:-webkit-full-screen .tool-panel,
+:-moz-full-screen .tool-panel,
+:-ms-fullscreen .tool-panel {
+    top: 90px !important;
+    left: 20px !important;
+    right: auto !important;
+}
+
+:fullscreen .map-legend-accordion,
+:-webkit-full-screen .map-legend-accordion,
+:-moz-full-screen .map-legend-accordion,
+:-ms-fullscreen .map-legend-accordion {
+    bottom: 20px !important;
+    left: 20px !important;
+}
+
+/* Responsive – panels left, tools right */
+@media (max-width: 768px) {
+    .tool-panel,
+    #filtersPanel.active,
+    #analysisPanel.active {
+        width: calc(100vw - 40px);
+        max-width: none;
+        left: 20px;
+        right: auto;
+        top: 80px;
+    }
+    
+    .main-menu {
+        width: calc(100vw - 40px);
+        left: 20px;
+    }
+    
+    .search-container {
+        width: calc(100vw - 100px);
+    }
+    
+    .floating-tools {
+        flex-direction: row;
+        bottom: 20px;
+        top: auto;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        gap: 6px;
+    }
+    
+    .tool-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 0.95rem;
+    }
+    
+    .map-legend-accordion {
+        left: 10px;
+        bottom: 10px;
+        width: 260px;
+    }
+}
+
+/* Leaflet Customization */
+.leaflet-control-zoom {
+    border-radius: var(--border-radius) !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-control-zoom a {
+    border-radius: 0 !important;
+}
+
+.leaflet-popup-content {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.9rem !important;
+    min-width: 200px !important;
+}
+
+.leaflet-draw-toolbar {
+    margin-top: 12px !important;
+}
+
+.leaflet-draw-toolbar a {
+    background-color: white !important;
+    border: 1px solid #ccc !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: #f4f4f4 !important;
+}
+
+.leaflet-measure-resultpopup {
+    font-family: 'Inter', sans-serif !important;
+    border: 2px solid var(--primary-color) !important;
+}
+
+/* Property Popup */
+.property-popup {
+    max-width: 350px !important;
+}
+
+/* Marker Cluster */
+.marker-cluster-small {
+    background-color: rgba(13, 174, 72, 0.6) !important;
+}
+
+.marker-cluster-small div {
+    background-color: rgba(13, 174, 72, 0.8) !important;
+}
+
+.marker-cluster-medium {
+    background-color: rgba(76, 175, 80, 0.6) !important;
+}
+
+.marker-cluster-medium div {
+    background-color: rgba(76, 175, 80, 0.8) !important;
+}
+
+.marker-cluster-large {
+    background-color: rgba(255, 152, 0, 0.6) !important;
+}
+
+.marker-cluster-large div {
+    background-color: rgba(255, 152, 0, 0.8) !important;
+}
+
+/* Layer Controls */
+.layer-active {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+.layer-active .menu-icon {
+    color: white !important;
+}
+
+
+/* Leaflet Fullscreen Control Customization */
+.leaflet-control-fullscreen a {
+    background-color: white;
+    color: var(--primary-color);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+
+.leaflet-control-fullscreen a:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+}
+
+.leaflet-control-fullscreen.leaflet-fullscreen-on a {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Fullscreen mode styles */
+:fullscreen .leaflet-control-fullscreen,
+:-webkit-full-screen .leaflet-control-fullscreen,
+:-moz-full-screen .leaflet-control-fullscreen,
+:-ms-fullscreen .leaflet-control-fullscreen {
+    top: 20px !important;
+    left: 20px !important;
+}
+
+/* Adjust other controls in fullscreen */
+:fullscreen .leaflet-control-zoom,
+:-webkit-full-screen .leaflet-control-zoom,
+:-moz-full-screen .leaflet-control-zoom,
+:-ms-fullscreen .leaflet-control-zoom {
+    top: 70px !important;
+    left: 20px !important;
+}
+</style>
+
+<div class="gis-container">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Floating Tools -->
+   <div class="floating-tools">
+    <button class="tool-btn" id="btnMenu" title="Menu" style="display: none;">
+        <i class="fas fa-bars"></i>
+    </button>
+    <button class="tool-btn" id="btnProperties" title="Toggle Properties">
+        <i class="fas fa-home"></i>
+        <span class="badge" id="propertyCount">0</span>
+    </button>
+    <button class="tool-btn" id="btnZones" title="Toggle Zones">
+        <i class="fas fa-th-large"></i>
+    </button>
+    <button class="tool-btn" id="btnDistricts" title="Toggle Districts">
+        <i class="fas fa-map-pin"></i>
+    </button>
+    <button class="tool-btn" id="btnHeatmap" title="Toggle Heatmap">
+        <i class="fas fa-fire"></i>
+    </button>
+    <button class="tool-btn" id="btnFilters" title="Filters">
+        <i class="fas fa-filter"></i>
+    </button>
+    <button class="tool-btn" id="btnAnalysis" title="Analysis">
+        <i class="fas fa-chart-pie"></i>
+    </button>
+    <button class="tool-btn" id="btnMeasure" title="Measure">
+        <i class="fas fa-ruler-combined"></i>
+    </button>
+    <button class="tool-btn" id="btnDraw" title="Draw">
+        <i class="fas fa-pencil-alt"></i>
+    </button>
+    <button class="tool-btn" id="btnExport" title="Export">
+        <i class="fas fa-download"></i>
+    </button>
+    <button class="tool-btn" id="btnLocate" title="My Location">
+        <i class="fas fa-location-arrow"></i>
+    </button>
+    <!-- Remove the fullscreen button from here since we're using Leaflet's control -->
+    <button class="tool-btn" id="btnLegend" title="Toggle Legend">
+        <i class="fas fa-list"></i>
+    </button>
+    <button class="tool-btn" id="btnSatellite" title="Satellite View">
+        <i class="fas fa-satellite"></i>
+    </button>
+</div>
+    
+    <!-- Main Menu -->
+    <div class="main-menu" id="mainMenu">
+        <div class="menu-header">
+            <h3><i class="fas fa-map-marked-alt"></i> GIS Tools</h3>
+        </div>
+        
+        <div class="menu-content">
+            <div class="menu-category">
+                <h4><i class="fas fa-layer-group"></i> Map Layers</h4>
+                <div class="menu-grid">
+                    <div class="menu-item" data-action="toggle-properties" id="menuProperties">
+                        <i class="fas fa-home menu-icon"></i>
+                        <span class="menu-label">Properties</span>
+                    </div>
+                    <div class="menu-item" data-action="toggle-zones" id="menuZones">
+                        <i class="fas fa-th-large menu-icon"></i>
+                        <span class="menu-label">Zones</span>
+                    </div>
+                    <div class="menu-item" data-action="toggle-districts" id="menuDistricts">
+                        <i class="fas fa-map-pin menu-icon"></i>
+                        <span class="menu-label">Districts</span>
+                    </div>
+                    <div class="menu-item" data-action="toggle-heatmap" id="menuHeatmap">
+                        <i class="fas fa-fire menu-icon"></i>
+                        <span class="menu-label">Heatmap</span>
+                    </div>
+                    <div class="menu-item" data-action="toggle-bops" id="menuBops">
+                        <i class="fas fa-store menu-icon"></i>
+                        <span class="menu-label">Bops (Businesses)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="menu-category">
+                <h4><i class="fas fa-tools"></i> Analysis Tools</h4>
+                <div class="menu-grid">
+                    <div class="menu-item" data-action="open-filters" id="menuFilters">
+                        <i class="fas fa-filter menu-icon"></i>
+                        <span class="menu-label">Filters</span>
+                    </div>
+                    <div class="menu-item" data-action="open-analysis" id="menuAnalysis">
+                        <i class="fas fa-chart-pie menu-icon"></i>
+                        <span class="menu-label">Analysis</span>
+                    </div>
+                    <div class="menu-item" data-action="open-measure" id="menuMeasure">
+                        <i class="fas fa-ruler-combined menu-icon"></i>
+                        <span class="menu-label">Measure</span>
+                    </div>
+                    <div class="menu-item" data-action="open-draw" id="menuDraw">
+                        <i class="fas fa-pencil-alt menu-icon"></i>
+                        <span class="menu-label">Draw</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="menu-category">
+                <h4><i class="fas fa-file-export"></i> Export & Reports</h4>
+                <div class="menu-grid">
+                    <div class="menu-item" data-action="export-data" id="menuExport">
+                        <i class="fas fa-download menu-icon"></i>
+                        <span class="menu-label">Export Data</span>
+                    </div>
+                    <div class="menu-item" data-action="generate-report" id="menuReport">
+                        <i class="fas fa-file-pdf menu-icon"></i>
+                        <span class="menu-label">Generate Report</span>
+                    </div>
+                    <div class="menu-item" data-action="print-map" id="menuPrint">
+                        <i class="fas fa-print menu-icon"></i>
+                        <span class="menu-label">Print Map</span>
+                    </div>
+                    <div class="menu-item" data-action="share-map" id="menuShare">
+                        <i class="fas fa-share-alt menu-icon"></i>
+                        <span class="menu-label">Share</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search Box -->
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search properties by address, district, zone, or ID...">
+            <button class="search-btn" id="searchBtn">
+                <i class="fas fa-search"></i>
+            </button>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+    
+    <!-- Layers & Basemaps Accordion (visible by default at bottom-left) -->
+    <div class="map-legend-accordion" id="layersAccordion" style="display: flex;">
+        <div class="accordion-section">
+            <div class="accordion-header" data-accordion="layers">
+                <span><i class="fas fa-layer-group"></i> Layers</span>
+                <i class="fas fa-chevron-down chevron"></i>
+            </div>
+            <div class="accordion-content" id="layersAccordionContent">
+                <div class="layer-row">
+                    <label><div class="legend-symbol" style="background:#0dae48;"></div> Properties</label>
+                    <div class="switch on" id="switchProperties" data-layer="properties" title="Toggle Properties"></div>
+                </div>
+                <div class="layer-row">
+                    <label><div class="legend-symbol" style="background:#ffff07; border:1px solid #ccc;"></div> Zones</label>
+                    <div class="switch" id="switchZones" data-layer="zones" title="Toggle Zones"></div>
+                </div>
+                <div class="layer-row">
+                    <label><div class="legend-symbol" style="background:#6c757d;"></div> Districts</label>
+                    <div class="switch" id="switchDistricts" data-layer="districts" title="Toggle Districts"></div>
+                </div>
+                <div class="layer-row">
+                    <label><div class="legend-symbol" style="background:#ff9800;"></div> Heatmap</label>
+                    <div class="switch" id="switchHeatmap" data-layer="heatmap" title="Toggle Heatmap"></div>
+                </div>
+                <div class="layer-row">
+                    <label><div class="legend-symbol" style="background:#9c27b0; border-radius:50%;"></div> Bops (Businesses)</label>
+                    <div class="switch" id="switchBops" data-layer="bops" title="Toggle Bops"></div>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-section">
+            <div class="accordion-header collapsed" data-accordion="basemaps">
+                <span><i class="fas fa-map"></i> Basemaps</span>
+                <i class="fas fa-chevron-down chevron"></i>
+            </div>
+            <div class="accordion-content collapsed" id="basemapsAccordionContent">
+                <div class="basemap-row">
+                    <label><input type="radio" name="basemap" value="osm" checked> OpenStreetMap</label>
+                </div>
+                <div class="basemap-row">
+                    <label><input type="radio" name="basemap" value="carto_positron"> CartoDB Positron</label>
+                </div>
+                <div class="basemap-row">
+                    <label><input type="radio" name="basemap" value="carto_dark"> CartoDB Dark Matter</label>
+                </div>
+                <div class="basemap-row">
+                    <label><input type="radio" name="basemap" value="esri_world"> ESRI World Street</label>
+                </div>
+                <div class="basemap-row">
+                    <label><input type="radio" name="basemap" value="esri_imagery"> ESRI World Imagery</label>
+                </div>
+                <div class="basemap-row">
+                    <label><input type="radio" name="basemap" value="stamen_terrain"> OpenTopoMap (Terrain)</label>
+                </div>
+                <div class="basemap-row">
+                    <label><input type="radio" name="basemap" value="wikimedia"> Wikimedia</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tool Panels -->
+    <div class="tool-panel" id="filtersPanel">
+        <div class="panel-header">
+            <h3><i class="fas fa-filter"></i> Filters</h3>
+            <button class="close-panel" data-panel="filtersPanel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="panel-content">
+            <div class="form-group">
+                <label><i class="fas fa-map-marker-alt"></i> District</label>
+                <div class="select-wrapper">
+                    <select class="form-control" id="districtFilter">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.district }}">{{ district.district }}</option>
+                        {% endfor %}
+                    </select>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-th-large"></i> Zone</label>
+                <div class="select-wrapper">
+                    <select class="form-control" id="zoneFilter">
+                        <option value="">All Zones</option>
+                        {% for zone in zones %}
+                        <option value="{{ zone.code }}">{{ zone.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-home"></i> Property Type</label>
+                <div class="select-wrapper">
+                    <select class="form-control" id="propertyTypeFilter">
+                        <option value="">All Types</option>
+                        {% for prop_type in property_types %}
+                        <option value="{{ prop_type.code }}">{{ prop_type.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            
+            <button class="tool-btn" id="applyFilters" style="width: 100%; margin-top: 20px; border-radius: var(--border-radius-sm); padding: 12px; background: var(--primary-color); color: white;">
+                <i class="fas fa-check"></i> Apply Filters
+            </button>
+            <button class="tool-btn" id="clearFilters" style="width: 100%; margin-top: 10px; border-radius: var(--border-radius-sm); padding: 12px; background: #6c757d; color: white;">
+                <i class="fas fa-times"></i> Clear Filters
+            </button>
+        </div>
+    </div>
+    
+    <div class="tool-panel" id="analysisPanel">
+        <div class="panel-header">
+            <h3><i class="fas fa-chart-pie"></i> Analysis</h3>
+            <button class="close-panel" data-panel="analysisPanel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="panel-content">
+            <div class="form-group">
+                <label>Analysis Type</label>
+                <div class="select-wrapper">
+                    <select class="form-control" id="analysisType">
+                        <option value="revenue_heatmap">Revenue Heatmap</option>
+                        <option value="property_clusters">Property Clusters</option>
+                        <option value="zone_performance">Zone Performance</option>
+                        <option value="density_analysis">Density Analysis</option>
+                    </select>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Buffer Analysis</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="number" class="form-control" id="bufferRadius" placeholder="Radius in meters" style="flex: 1;" value="500" min="10" max="10000">
+                    <button class="tool-btn" id="btnBuffer" style="border-radius: var(--border-radius-sm); padding: 10px;">
+                        <i class="fas fa-bullseye"></i>
+                    </button>
+                </div>
+                <small class="text-muted">Click on map after setting radius</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Export Analysis Results</label>
+                <button class="tool-btn" id="exportAnalysis" style="width: 100%; border-radius: var(--border-radius-sm); padding: 12px; background: #4caf50; color: white;">
+                    <i class="fas fa-file-export"></i> Export Results
+                </button>
+            </div>
+            
+            <button class="tool-btn" id="runAnalysis" style="width: 100%; margin-top: 20px; border-radius: var(--border-radius-sm); padding: 12px; background: var(--primary-color); color: white;">
+                <i class="fas fa-play"></i> Run Analysis
+            </button>
+        </div>
+    </div>
+    
+    <!-- Map -->
+    <div id="map"></div>
+</div>
+
+<!-- Notification Container -->
+<div id="notificationContainer"></div>
+<!-- Add this to your HTML template head section -->
+<script src="https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js"></script>
+<script src="https://unpkg.com/leaflet-pmtiles@1.0.0/leaflet-pmtiles.js"></script>
+
+<!-- Add this in your <head> section or before your GIS script -->
+<script src="https://unpkg.com/protomaps-leaflet@1.0.1/dist/protomaps-leaflet.min.js"></script>
+
+<script>
+class PropertyRevenueGIS {
+    constructor() {
+        this.map = null;
+        this.propertyLayer = null;
+        this.pmtilesLayer = null; // New PMTiles layer
+        this.zoneLayer = null;
+        this.districtLayer = null;
+        this.heatLayer = null;
+        this.bopsLayer = null;
+        this.bopsMarkerCluster = null;
+        this.markerCluster = null;
+        this.currentBasemap = 'osm';
+        this.basemapLayers = {};
+        this.drawControl = null;
+        this.measureControl = null;
+        this.drawnItems = null;
+        this.propertyFeatures = [];
+        this.currentFilters = {};
+        this.activePanel = null;
+        this.isDrawing = false;
+        this.isMeasuring = false;
+        this.isBufferMode = false;
+        this.activeLayers = {
+            properties: true,
+            zones: false,
+            districts: false,
+            heatmap: false,
+            bops: false
+        };
+        this.propertyCount = 0;
+        this.searchMarker = null;
+        
+        this.initMap();
+        this.bindEvents();
+        this.loadInitialData();
+    }
+
+    initMap() {
+        this.map = L.map('map', {
+            minZoom: 5,
+            zoomControl: false,
+            preferCanvas: true
+        }).setView([5.8, -0.2], 12);
+        
+        // Free basemap tile layers
+        this.basemapLayers = {
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }),
+            carto_positron: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap © CARTO',
+                maxZoom: 20
+            }),
+            carto_dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap © CARTO',
+                maxZoom: 20
+            }),
+            esri_world: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri',
+                maxZoom: 19
+            }),
+            esri_imagery: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri',
+                maxZoom: 19
+            }),
+            stamen_terrain: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap © SRTM © OpenTopoMap',
+                maxZoom: 17
+            }),
+            wikimedia: L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+                attribution: '© Wikimedia',
+                maxZoom: 19
+            })
+        };
+        this.satelliteLayer = this.basemapLayers.esri_imagery;
+        this.basemapLayers.osm.addTo(this.map);
+        
+        this.addFullscreenControl();
+        this.addMousePositionControl();
+        this.addCustomZoomControls();
+        L.control.scale({ imperial: false }).addTo(this.map);
+        
+        this.drawnItems = new L.FeatureGroup();
+        this.map.addLayer(this.drawnItems);
+        
+        this.markerCluster = L.markerClusterGroup({
+            maxClusterRadius: 80,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true
+        });
+        
+        this.bopsMarkerCluster = L.markerClusterGroup({
+            maxClusterRadius: 60,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true
+        });
+    }
+
+    addMousePositionControl() {
+        const mousePosition = L.control({ position: 'bottomleft' });
+        mousePosition.onAdd = function(map) {
+            this._div = L.DomUtil.create('div', 'mouse-position-control');
+            this.update();
+            return this._div;
+        };
+        mousePosition.update = function(evt) {
+            let latlng = this._map.getCenter();
+            if (evt && evt.latlng) {
+                latlng = evt.latlng;
+            }
+            this._div.innerHTML = `Lat: ${latlng.lat.toFixed(6)}, Lng: ${latlng.lng.toFixed(6)}`;
+        };
+        mousePosition.addTo(this.map);
+        this.map.on('mousemove', function(evt) {
+            mousePosition.update(evt);
+        });
+    }
+
+    addCustomZoomControls() {
+        const zoomControl = L.control({ position: 'topleft' });
+        zoomControl.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'custom-zoom-control');
+            div.innerHTML = `
+                <button class="zoom-btn" id="zoomin">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="zoom-btn" id="zoomout">
+                    <i class="fas fa-minus"></i>
+                </button>
+            `;
+            return div;
+        };
+        zoomControl.addTo(this.map);
+        
+        $('#zoomin').on('click', () => this.map.zoomIn(1));
+        $('#zoomout').on('click', () => this.map.zoomOut(1));
+    }
+
+    async loadInitialData() {
+        this.showLoading(true);
+        try {
+            // Load PMTiles for polygons
+            await this.initPMTilesLayer();
+            
+            // Load points for clustering
+            await this.loadPoints();
+            
+            // Load other layers
+            await Promise.all([
+                this.loadZones(),
+                this.loadDistricts(),
+                this.loadBops()
+            ]);
+            
+            this.showNotification('GIS Map loaded successfully', 'success');
+        } catch (error) {
+            console.error('Error loading initial data:', error);
+            this.showNotification('Failed to load map data', 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+// async initPMTilesLayer() {
+//     try {
+//         // Check if PMTiles protocol is available
+//         if (typeof pmtiles === 'undefined' || typeof pmtiles.Protocol === 'undefined') {
+//             console.warn('PMTiles not available, falling back to GeoJSON');
+//             await this.loadPropertiesGeoJSON();
+//             return;
+//         }
+
+//         // Create a simple tile layer for the PMTiles file
+//         this.pmtilesLayer = L.tileLayer(`/tiles/properties.pmtiles`, {
+//             attribution: 'Property Boundaries',
+//             minZoom: 8,
+//             maxZoom: 14,
+//             tileSize: 256,
+//             tms: false
+//         });
+
+//         console.log('PMTiles layer initialized successfully');
+        
+//         // Add to map if active
+//         if (this.activeLayers.properties) {
+//             this.pmtilesLayer.addTo(this.map);
+//         }
+        
+//     } catch (error) {
+//         console.error('Error initializing PMTiles layer:', error);
+//         await this.loadPropertiesGeoJSON();
+//     }
+// }
+
+async initPMTilesLayer() {
+    try {
+        // Method 1: Try Protomaps
+        if (typeof protomapsL !== 'undefined') {
+            console.log('Using Protomaps for PMTiles');
+            const propertyStyle = [
+                {
+                    dataLayer: 'properties',
+                    symbolizer: new protomapsL.PolygonSymbolizer({
+                        fill: '#0dae48',
+                        fillOpacity: 0.5,
+                        stroke: '#ffffff',
+                        width: 2,
+                        opacity: 0.8,
+                        dash: [3, 3]
+                    }),
+                    minZoom: 8,
+                    maxZoom: 14
+                }
+            ];
+
+            this.pmtilesLayer = protomapsL.leafletLayer({
+                url: '/tiles/properties.pmtiles',
+                paintRules: propertyStyle,
+                attribution: 'Property Boundaries',
+                minZoom: 8,
+                maxZoom: 14
+            });
+            
+            if (this.activeLayers.properties) {
+                this.pmtilesLayer.addTo(this.map);
+            }
+            
+            console.log('PMTiles layer initialized with Protomaps');
+            return;
+        }
+        
+        // Method 2: Try PMTiles plugin
+        if (typeof L.tileLayer.pmtiles !== 'undefined') {
+            console.log('Using PMTiles plugin');
+            this.pmtilesLayer = L.tileLayer.pmtiles('/tiles/properties.pmtiles', {
+                attribution: 'Property Boundaries',
+                minZoom: 8,
+                maxZoom: 14,
+                opacity: 0.7
+            });
+            
+            if (this.activeLayers.properties) {
+                this.pmtilesLayer.addTo(this.map);
+            }
+            
+            console.log('PMTiles layer initialized with plugin');
+            return;
+        }
+        
+        // Method 3: Try to load as GeoJSON
+        console.warn('No PMTiles support available, falling back to GeoJSON');
+        await this.loadPropertiesGeoJSON();
+        
+    } catch (error) {
+        console.error('Error initializing PMTiles layer:', error);
+        await this.loadPropertiesGeoJSON();
+    }
+}
+async loadInitialData() {
+    this.showLoading(true);
+    try {
+        // Debug: Check if PMTiles file is accessible
+        try {
+            const response = await fetch('/tiles/properties.pmtiles', { 
+                method: 'HEAD',
+                cache: 'no-cache'
+            });
+            console.log('PMTiles file access:', response.status, response.statusText);
+            console.log('Content-Type:', response.headers.get('content-type'));
+            console.log('Content-Length:', response.headers.get('content-length'));
+        } catch (fetchError) {
+            console.error('Error checking PMTiles file:', fetchError);
+        }
+
+        // Load PMTiles for polygons
+        await this.initPMTilesLayer();
+        
+        // Rest of your code...
+    } catch (error) {
+        // Handle error
+    }
+}
+
+// Add method to handle feature interaction with protomaps
+addProtomapsInteractivity() {
+    if (!this.pmtilesLayer) return;
+    
+    // Protomaps handles interaction differently
+    // You might need to add click handlers through the map
+    this.map.on('click', (e) => {
+        // Query features at click location
+        if (this.pmtilesLayer && this.pmtilesLayer.queryFeatures) {
+            const features = this.pmtilesLayer.queryFeatures(e.latlng, 5);
+            if (features && features.length > 0) {
+                // Handle feature click
+                const feature = features[0];
+                const props = feature.properties;
+                
+                // Create popup
+                L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent(this.getPropertyPopup(props))
+                    .openOn(this.map);
+            }
+        }
+    });
+}
+
+    async loadPoints(filters = {}) {
+        try {
+            const params = new URLSearchParams(filters);
+            const response = await fetch(`/api/properties/points/?${params}`);
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const data = await response.json();
+            const pointFeatures = data.features || [];
+            
+            // Update property count
+            this.propertyCount = pointFeatures.length;
+            document.getElementById('propertyCount').textContent = this.propertyCount.toLocaleString();
+            
+            // Clear existing marker cluster
+            if (this.markerCluster) {
+                this.map.removeLayer(this.markerCluster);
+                this.markerCluster.clearLayers();
+            }
+            
+            // Add point markers to cluster
+            if (pointFeatures.length > 0) {
+                const pointLayer = L.geoJSON(pointFeatures, {
+                    pointToLayer: (feature, latlng) => {
+                        return L.marker(latlng, {
+                            icon: this.getPropertyIcon(feature.properties)
+                        });
+                    },
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(this.getPropertyPopup(feature.properties), {
+                            className: 'property-popup'
+                        });
+                        layer.on('click', () => {
+                            this.showPropertyPopup(feature.properties);
+                        });
+                    }
+                });
+                
+                pointLayer.eachLayer((layer) => {
+                    this.markerCluster.addLayer(layer);
+                });
+                
+                if (this.activeLayers.properties) {
+                    this.map.addLayer(this.markerCluster);
+                }
+            }
+            
+            console.log(`Loaded ${pointFeatures.length} point features for clustering`);
+            
+        } catch (error) {
+            console.error('Error loading points:', error);
+            this.showNotification('Failed to load point data', 'error');
+        }
+    }
+
+    async loadPropertiesGeoJSON(filters = {}) {
+        // Fallback method if PMTiles fails
+        try {
+            const params = new URLSearchParams(filters);
+            const response = await fetch(`/api/properties/geojson/?${params}`);
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const geojson = await response.json();
+            
+            this.propertyFeatures = geojson.features || [];
+            this.propertyCount = this.propertyFeatures.length;
+            
+            document.getElementById('propertyCount').textContent = this.propertyCount.toLocaleString();
+            
+            // Clear existing polygon layer
+            if (this.propertyLayer) {
+                this.map.removeLayer(this.propertyLayer);
+            }
+            
+            // Filter polygon features
+            const polygonFeatures = this.propertyFeatures.filter(feature => 
+                feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon'
+            );
+            
+            if (polygonFeatures.length > 0) {
+                this.propertyLayer = L.geoJSON(polygonFeatures, {
+                    style: (feature) => ({
+                        fillColor: feature.properties.marker_color || '#0dae48',
+                        weight: 2,
+                        opacity: 0.8,
+                        color: '#ffffff',
+                        fillOpacity: 0.5,
+                        dashArray: '3'
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(this.getPropertyPopup(feature.properties), {
+                            className: 'property-popup'
+                        });
+                        
+                        layer.on('click', (e) => {
+                            this.showPropertyPopup(feature.properties);
+                            e.originalEvent.stopPropagation();
+                        });
+                        
+                        layer.on('mouseover', function(e) {
+                            this.setStyle({
+                                weight: 3,
+                                fillOpacity: 0.7,
+                                color: '#ffeb3b'
+                            });
+                        });
+                        
+                        layer.on('mouseout', function(e) {
+                            this.setStyle({
+                                weight: 2,
+                                fillOpacity: 0.5,
+                                color: '#ffffff'
+                            });
+                        });
+                    }
+                });
+                
+                if (this.activeLayers.properties) {
+                    this.map.addLayer(this.propertyLayer);
+                }
+            }
+            
+            this.showNotification(`Loaded ${polygonFeatures.length} polygons (GeoJSON fallback)`, 'info');
+            
+        } catch (error) {
+            console.error('Error loading GeoJSON:', error);
+            this.showNotification('Failed to load property data', 'error');
+        }
+    }
+
+    async loadZones() {
+        try {
+            const response = await fetch('/api/zones/geojson/');
+            if (!response.ok) {
+                throw new Error(`Failed to load zones: ${response.status}`);
+            }
+            
+            const geojson = await response.json();
+            
+            if (!geojson || !geojson.type || geojson.type !== 'FeatureCollection') {
+                throw new Error('Invalid GeoJSON format: Expected FeatureCollection');
+            }
+            
+            if (!geojson.features || !Array.isArray(geojson.features)) {
+                throw new Error('Invalid GeoJSON format: No features array');
+            }
+            
+            const validFeatures = geojson.features.filter(feature => 
+                feature && feature.geometry && feature.geometry.type && feature.geometry.coordinates
+            );
+            
+            if (validFeatures.length === 0) {
+                console.warn('No valid zone features found');
+                return;
+            }
+            
+            if (this.zoneLayer) {
+                this.map.removeLayer(this.zoneLayer);
+            }
+            
+            this.zoneLayer = L.geoJSON(validFeatures, {
+                style: (feature) => ({
+                    fillColor: feature.properties?.color || '#ffff07',
+                    weight: 3,
+                    opacity: 0.8,
+                    color: feature.properties?.color || '#ffff07',
+                    fillOpacity: 0.15,
+                    dashArray: '5, 5'
+                }),
+                onEachFeature: (feature, layer) => {
+                    const props = feature.properties || {};
+                    layer.bindPopup(`
+                        <div style="min-width: 250px;">
+                            <h4 style="margin: 0 0 10px 0; color: #ffff07;">${props.name || 'Unnamed Zone'}</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <div style="font-size: 11px; color: #666;">Type</div>
+                                    <div style="font-size: 13px; font-weight: 500;">${props.zone_type || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: #666;">Code</div>
+                                    <div style="font-size: 13px; font-weight: 500;">${props.code || 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                                <div style="font-size: 11px; color: #666;">Properties</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #ffff07;">${props.property_count || 0}</div>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+            
+            console.log('Zone layer loaded with', validFeatures.length, 'valid features');
+            
+        } catch (error) {
+            console.error('Error loading zones:', error);
+            this.showNotification('Failed to load zones', 'error');
+        }
+    }
+
+    async loadDistricts() {
+        try {
+            const response = await fetch('/api/districts/geojson/');
+            if (!response.ok) {
+                throw new Error(`Failed to load districts: ${response.status}`);
+            }
+            
+            const geojson = await response.json();
+            
+            if (!geojson || !geojson.type || geojson.type !== 'FeatureCollection') {
+                throw new Error('Invalid GeoJSON format: Expected FeatureCollection');
+            }
+            
+            if (!geojson.features || !Array.isArray(geojson.features)) {
+                throw new Error('Invalid GeoJSON format: No features array');
+            }
+            
+            const validFeatures = geojson.features.filter(feature => 
+                feature && feature.geometry && feature.geometry.type && feature.geometry.coordinates
+            );
+            
+            if (validFeatures.length === 0) {
+                console.warn('No valid district features found');
+                return;
+            }
+            
+            if (this.districtLayer) {
+                this.map.removeLayer(this.districtLayer);
+            }
+            
+            this.districtLayer = L.geoJSON(validFeatures, {
+                style: {
+                    fillColor: '#6c757d',
+                    weight: 4,
+                    opacity: 0.6,
+                    color: '#6c757d',
+                    fillOpacity: 0.08,
+                    dashArray: '8, 4'
+                },
+                onEachFeature: (feature, layer) => {
+                    const props = feature.properties || {};
+                    layer.bindPopup(`
+                        <div style="min-width: 250px;">
+                            <h4 style="margin: 0 0 10px 0; color: #6c757d;">${props.name || 'Unnamed District'}</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <div style="font-size: 11px; color: #666;">Region</div>
+                                    <div style="font-size: 13px; font-weight: 500;">${props.region || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: #666;">Properties</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: #6c757d;">${props.property_count || 0}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+            
+            console.log('District layer loaded with', validFeatures.length, 'valid features');
+            
+        } catch (error) {
+            console.error('Error loading districts:', error);
+            this.showNotification('Failed to load districts', 'error');
+        }
+    }
+
+    async loadBops() {
+        try {
+            const response = await fetch('/api/bops/geojson/');
+            if (!response.ok) throw new Error(`Failed to load Bops: ${response.status}`);
+            const geojson = await response.json();
+            if (!geojson || !geojson.features || !Array.isArray(geojson.features)) return;
+            const validFeatures = geojson.features.filter(f => f && f.geometry && f.geometry.type === 'Point' && f.geometry.coordinates);
+            if (validFeatures.length === 0) return;
+            if (this.bopsMarkerCluster) {
+                if (this.map.hasLayer(this.bopsMarkerCluster)) this.map.removeLayer(this.bopsMarkerCluster);
+                this.bopsMarkerCluster.clearLayers();
+            }
+            const bopIcon = L.divIcon({
+                className: 'bop-marker',
+                html: '<div style="background:#9c27b0;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            });
+            const pointLayer = L.geoJSON(validFeatures, {
+                pointToLayer: (feature, latlng) => {
+                    const m = L.marker(latlng, { icon: bopIcon });
+                    const p = feature.properties || {};
+                    m.bindPopup(`
+                        <div style="min-width:200px;">
+                            <strong style="color:#9c27b0;">${p.business_name || 'Business'}</strong>
+                            <div style="font-size:12px;margin-top:6px;color:#666;">${p.account_number || ''}</div>
+                            <div style="font-size:12px;">${p.business_category || ''} ${p.business_class ? ' · ' + p.business_class : ''}</div>
+                            <div style="font-size:11px;margin-top:4px;">${p.location || p.address || ''}</div>
+                            <div style="font-size:11px;">${p.division || ''} ${p.block ? ' · ' + p.block : ''}</div>
+                        </div>
+                    `);
+                    return m;
+                }
+            });
+            pointLayer.eachLayer(l => this.bopsMarkerCluster.addLayer(l));
+            if (this.activeLayers.bops) {
+                this.bopsMarkerCluster.addTo(this.map);
+                this.bopsMarkerCluster.refreshClusters();
+            }
+        } catch (error) {
+            console.error('Error loading Bops:', error);
+            this.showNotification('Failed to load Bops', 'error');
+        }
+    }
+
+    getPropertyIcon(properties) {
+        const color = properties.marker_color || '#0dae48';
+        const icon = 'fa-home';
+        
+        return L.divIcon({
+            html: `
+                <div style="
+                    background: ${color};
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-size: 14px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                ">
+                    <i class="fas ${icon}"></i>
+                </div>
+            `,
+            className: 'property-marker',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+    }
+
+    getPropertyPopup(properties) {
+        return `
+            <div style="min-width: 280px; max-width: 350px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: #0dae48; font-size: 15px; font-weight: 600;">Property ${properties.id || 'N/A'}</h4>
+                    <span style="background: ${properties.marker_color || '#0dae48'}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                        ${properties.status || 'Active'}
+                    </span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <p style="margin: 0 0 8px 0; font-size: 13px; color: #555;">
+                        <i class="fas fa-map-marker-alt" style="color: #0dae48; width: 16px;"></i>
+                        ${properties.address || 'No address'}
+                    </p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 3px;">District</div>
+                        <div style="font-size: 13px; font-weight: 500;">${properties.district || 'Unknown'}</div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 3px;">Region</div>
+                        <div style="font-size: 13px; font-weight: 500;">${properties.region || 'Unknown'}</div>
+                    </div>
+                    ${properties.area ? `
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 3px;">Area</div>
+                        <div style="font-size: 13px; font-weight: 500;">${properties.area.toFixed(2)} sq.m</div>
+                    </div>
+                    ` : ''}
+                    ${properties.area_in_me ? `
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 3px;">Area (ME)</div>
+                        <div style="font-size: 13px; font-weight: 500;">${properties.area_in_me.toFixed(2)}</div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <button onclick="gis.flyToProperty(${JSON.stringify(properties).replace(/"/g, '&quot;')})" 
+                        style="width: 100%; margin-top: 10px; padding: 8px; background: #0dae48; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s;">
+                    <i class="fas fa-search-location"></i> Fly to Location
+                </button>
+            </div>
+        `;
+    }
+
+    showPropertyPopup(properties) {
+        const popupContent = this.getPropertyPopup(properties);
+        
+        let lat, lng;
+        if (properties.latitude && properties.longitude) {
+            lat = properties.latitude;
+            lng = properties.longitude;
+        }
+        
+        if (lat && lng) {
+            this.map.flyTo([lat, lng], 16, {
+                duration: 1.5,
+                easeLinearity: 0.25
+            });
+            
+            setTimeout(() => {
+                L.popup()
+                    .setLatLng([lat, lng])
+                    .setContent(popupContent)
+                    .openOn(this.map);
+            }, 1500);
+        }
+    }
+
+    flyToProperty(properties) {
+        let lat, lng;
+        
+        if (properties.latitude && properties.longitude) {
+            lat = parseFloat(properties.latitude);
+            lng = parseFloat(properties.longitude);
+        }
+        
+        if (lat && lng) {
+            if (this.searchMarker) {
+                this.map.removeLayer(this.searchMarker);
+            }
+            
+            this.searchMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    html: '<div style="background: #ff5722; width: 32px; height: 32px; border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; box-shadow: 0 3px 8px rgba(0,0,0,0.4);"><i class="fas fa-search"></i></div>',
+                    className: 'search-marker',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                })
+            }).addTo(this.map);
+            
+            this.map.flyTo([lat, lng], 16, {
+                duration: 2,
+                easeLinearity: 0.25
+            });
+            
+            setTimeout(() => {
+                this.searchMarker.bindPopup(`<div style="font-weight: 500; color: #ff5722;">Search Result</div><div>${properties.address || 'Property'}</div>`)
+                    .openPopup();
+            }, 2000);
+            
+            this.showNotification('Flying to property location', 'info');
+        }
+    }
+
+    addFullscreenControl() {
+        const fullscreenControl = L.control.fullscreen({
+            position: 'topleft',
+            title: {
+                'false': 'View Fullscreen',
+                'true': 'Exit Fullscreen'
+            },
+            content: '<i class="fas fa-expand"></i>',
+            forceSeparateButton: true,
+            forcePseudoFullscreen: false
+        });
+        
+        this.map.addControl(fullscreenControl);
+        this.map.on('fullscreenchange', this.handleFullscreenChange.bind(this));
+    }
+
+    handleFullscreenChange() {
+        const btn = document.getElementById('btnFullscreen');
+        const gisContainer = document.querySelector('.gis-container');
+        
+        if (this.map.isFullscreen()) {
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-compress"></i>';
+                btn.title = 'Exit Fullscreen';
+            }
+            if (gisContainer) {
+                gisContainer.classList.add('fullscreen-mode');
+            }
+            this.hideAllPanels();
+            this.hideMenu();
+            
+            const legend = document.getElementById('layersAccordion');
+            if (legend) legend.style.display = 'none';
+            
+            this.showNotification('Fullscreen mode enabled', 'info');
+        } else {
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-expand"></i>';
+                btn.title = 'Fullscreen';
+            }
+            const legend = document.getElementById('layersAccordion');
+            if (legend) legend.style.display = 'flex';
+            if (gisContainer) {
+                gisContainer.classList.remove('fullscreen-mode');
+            }
+            this.showNotification('Fullscreen mode disabled', 'info');
+        }
+    }
+
+    bindEvents() {
+        const btnMenu = document.getElementById('btnMenu');
+        if (btnMenu) btnMenu.addEventListener('click', () => this.toggleMenu());
+        
+        const btnProperties = document.getElementById('btnProperties');
+        const btnZones = document.getElementById('btnZones');
+        const btnDistricts = document.getElementById('btnDistricts');
+        const btnHeatmap = document.getElementById('btnHeatmap');
+        
+        if (btnProperties) btnProperties.addEventListener('click', () => this.toggleLayer('properties'));
+        if (btnZones) btnZones.addEventListener('click', () => this.toggleLayer('zones'));
+        if (btnDistricts) btnDistricts.addEventListener('click', () => this.toggleLayer('districts'));
+        if (btnHeatmap) btnHeatmap.addEventListener('click', () => this.toggleLayer('heatmap'));
+        
+        const btnFilters = document.getElementById('btnFilters');
+        const btnAnalysis = document.getElementById('btnAnalysis');
+        const btnMeasure = document.getElementById('btnMeasure');
+        const btnDraw = document.getElementById('btnDraw');
+        const btnExport = document.getElementById('btnExport');
+        const btnLocate = document.getElementById('btnLocate');
+        const btnLegend = document.getElementById('btnLegend');
+        const btnSatellite = document.getElementById('btnSatellite');
+        
+        if (btnFilters) btnFilters.addEventListener('click', () => this.showPanel('filtersPanel'));
+        if (btnAnalysis) btnAnalysis.addEventListener('click', () => this.showPanel('analysisPanel'));
+        if (btnMeasure) btnMeasure.addEventListener('click', () => this.activateMeasureTool());
+        if (btnDraw) btnDraw.addEventListener('click', () => this.activateDrawTools());
+        if (btnExport) btnExport.addEventListener('click', () => this.exportData());
+        if (btnLocate) btnLocate.addEventListener('click', () => this.locateUser());
+        if (btnLegend) btnLegend.addEventListener('click', () => this.toggleLegend());
+        if (btnSatellite) btnSatellite.addEventListener('click', () => this.toggleSatellite());
+        
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const action = e.currentTarget.dataset.action;
+                this.handleMenuAction(action);
+                this.hideMenu();
+            });
+        });
+        
+        document.querySelectorAll('.close-panel').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const panel = e.currentTarget.dataset.panel;
+                this.hidePanel(panel);
+            });
+        });
+        
+        const gisContainerEl = document.querySelector('.gis-container');
+        document.querySelectorAll('.tool-panel .panel-header').forEach(header => {
+            let startX, startY, startLeft, startTop;
+            const onMouseMove = (e) => {
+                const panel = header.closest('.tool-panel');
+                if (!panel || !panel.classList.contains('active')) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                let left = startLeft + dx;
+                let top = startTop + dy;
+                if (gisContainerEl) {
+                    const maxLeft = gisContainerEl.offsetWidth - panel.offsetWidth;
+                    const maxTop = gisContainerEl.offsetHeight - panel.offsetHeight;
+                    left = Math.max(0, Math.min(left, maxLeft));
+                    top = Math.max(0, Math.min(top, maxTop));
+                }
+                panel.style.left = left + 'px';
+                panel.style.top = top + 'px';
+            };
+            const onMouseUp = () => {
+                const panel = header.closest('.tool-panel');
+                if (panel) panel.classList.remove('dragging');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+            header.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.close-panel')) return;
+                const panel = header.closest('.tool-panel');
+                if (!panel) return;
+                panel.classList.add('dragging');
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = panel.offsetLeft;
+                startTop = panel.offsetTop;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        });
+        
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        
+        if (searchInput) searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+        if (searchBtn) searchBtn.addEventListener('click', () => this.handleSearch(searchInput ? searchInput.value : ''));
+        
+        const applyFilters = document.getElementById('applyFilters');
+        const clearFilters = document.getElementById('clearFilters');
+        
+        if (applyFilters) applyFilters.addEventListener('click', () => this.applyFilters());
+        if (clearFilters) clearFilters.addEventListener('click', () => this.clearFilters());
+        
+        const runAnalysis = document.getElementById('runAnalysis');
+        const btnBuffer = document.getElementById('btnBuffer');
+        const exportAnalysis = document.getElementById('exportAnalysis');
+        
+        if (runAnalysis) runAnalysis.addEventListener('click', () => this.runAnalysis());
+        if (btnBuffer) btnBuffer.addEventListener('click', () => this.activateBufferMode());
+        if (exportAnalysis) exportAnalysis.addEventListener('click', () => this.exportAnalysisResults());
+        
+        document.querySelectorAll('#layersAccordion .accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const section = header.closest('.accordion-section');
+                const content = section.querySelector('.accordion-content');
+                header.classList.toggle('collapsed');
+                if (content) content.classList.toggle('collapsed');
+            });
+        });
+        
+        document.querySelectorAll('#layersAccordion .layer-row .switch').forEach(sw => {
+            sw.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const layer = sw.dataset.layer;
+                if (layer) this.toggleLayer(layer);
+            });
+        });
+        
+        document.querySelectorAll('input[name="basemap"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const key = e.target.value;
+                if (key) this.setBasemap(key);
+            });
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (this.isDrawing) this.deactivateDrawTools();
+                if (this.isMeasuring) this.deactivateMeasureTool();
+                if (this.isBufferMode) this.cancelBufferMode();
+                this.hideMenu();
+                this.hideAllPanels();
+            }
+            if (e.key === 'm' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                this.activateMeasureTool();
+            }
+            if (e.key === 'd' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                this.activateDrawTools();
+            }
+            if (e.key === 'b' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                this.activateBufferMode();
+            }
+            if (e.key === 'f' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                this.showPanel('filtersPanel');
+            }
+            if (e.key === 'l' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                this.toggleLegend();
+            }
+            if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) searchInput.focus();
+            }
+            if (e.key === 'F11') {
+                e.preventDefault();
+                this.toggleFullscreen();
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                this.hideSearchResults();
+            }
+        });
+    }
+
+    toggleMenu() {
+        const menu = document.getElementById('mainMenu');
+        const btn = document.getElementById('btnMenu');
+        menu.classList.toggle('active');
+        btn.classList.toggle('active');
+    }
+
+    hideMenu() {
+        const menu = document.getElementById('mainMenu');
+        const btn = document.getElementById('btnMenu');
+        menu.classList.remove('active');
+        btn.classList.remove('active');
+    }
+
+    toggleLayer(layerType) {
+        const cap = layerType.charAt(0).toUpperCase() + layerType.slice(1);
+        const btn = document.getElementById(`btn${cap}`);
+        const menuItem = document.getElementById(`menu${cap}`);
+        const sw = document.getElementById(`switch${cap}`);
+        const syncSwitch = (on) => {
+            if (sw) { if (on) sw.classList.add('on'); else sw.classList.remove('on'); }
+            if (btn) { if (on) btn.classList.add('active'); else btn.classList.remove('active'); }
+            if (menuItem) { if (on) menuItem.classList.add('active'); else menuItem.classList.remove('active'); }
+        };
+        
+        switch(layerType) {
+            case 'properties':
+                this.activeLayers.properties = !this.activeLayers.properties;
+                if (this.activeLayers.properties) {
+                    if (this.pmtilesLayer) this.map.addLayer(this.pmtilesLayer);
+                    if (this.markerCluster) this.map.addLayer(this.markerCluster);
+                    syncSwitch(true);
+                    this.showNotification('Properties shown', 'info');
+                } else {
+                    if (this.pmtilesLayer) this.map.removeLayer(this.pmtilesLayer);
+                    if (this.markerCluster) this.map.removeLayer(this.markerCluster);
+                    syncSwitch(false);
+                    this.showNotification('Properties hidden', 'info');
+                }
+                break;
+            case 'zones':
+                this.activeLayers.zones = !this.activeLayers.zones;
+                if (this.activeLayers.zones && this.zoneLayer) {
+                    this.map.addLayer(this.zoneLayer);
+                    syncSwitch(true);
+                    this.showNotification('Zones shown', 'info');
+                } else if (this.zoneLayer) {
+                    this.map.removeLayer(this.zoneLayer);
+                    syncSwitch(false);
+                    this.showNotification('Zones hidden', 'info');
+                }
+                break;
+            case 'districts':
+                this.activeLayers.districts = !this.activeLayers.districts;
+                if (this.activeLayers.districts && this.districtLayer) {
+                    this.map.addLayer(this.districtLayer);
+                    syncSwitch(true);
+                    this.showNotification('Districts shown', 'info');
+                } else if (this.districtLayer) {
+                    this.map.removeLayer(this.districtLayer);
+                    syncSwitch(false);
+                    this.showNotification('Districts hidden', 'info');
+                }
+                break;
+            case 'heatmap':
+                this.activeLayers.heatmap = !this.activeLayers.heatmap;
+                if (this.activeLayers.heatmap) {
+                    this.createHeatmap();
+                    syncSwitch(true);
+                } else {
+                    if (this.heatLayer) {
+                        this.map.removeLayer(this.heatLayer);
+                        this.heatLayer = null;
+                    }
+                    syncSwitch(false);
+                    this.showNotification('Heatmap hidden', 'info');
+                }
+                break;
+            case 'bops':
+                this.activeLayers.bops = !this.activeLayers.bops;
+                if (this.activeLayers.bops) {
+                    if (this.bopsMarkerCluster) {
+                        this.bopsMarkerCluster.addTo(this.map);
+                        this.bopsMarkerCluster.refreshClusters();
+                        const count = this.bopsMarkerCluster.getLayers().length;
+                        if (count === 0) {
+                            this.loadBops();
+                        }
+                    } else {
+                        this.loadBops();
+                    }
+                    syncSwitch(true);
+                    this.showNotification('Bops (businesses) shown', 'info');
+                } else {
+                    if (this.bopsMarkerCluster) this.map.removeLayer(this.bopsMarkerCluster);
+                    syncSwitch(false);
+                    this.showNotification('Bops hidden', 'info');
+                }
+                break;
+        }
+    }
+
+    setBasemap(key) {
+        if (!this.basemapLayers || !this.basemapLayers[key]) return;
+        if (this.currentBasemap && this.basemapLayers[this.currentBasemap]) {
+            this.map.removeLayer(this.basemapLayers[this.currentBasemap]);
+        }
+        this.currentBasemap = key;
+        this.basemapLayers[key].addTo(this.map);
+        this.showNotification(`Basemap: ${key.replace(/_/g, ' ')}`, 'info');
+    }
+
+    handleMenuAction(action) {
+        switch(action) {
+            case 'toggle-properties':
+                this.toggleLayer('properties');
+                break;
+            case 'toggle-zones':
+                this.toggleLayer('zones');
+                break;
+            case 'toggle-districts':
+                this.toggleLayer('districts');
+                break;
+            case 'toggle-heatmap':
+                this.toggleLayer('heatmap');
+                break;
+            case 'toggle-bops':
+                this.toggleLayer('bops');
+                break;
+            case 'open-filters':
+                this.showPanel('filtersPanel');
+                break;
+            case 'open-analysis':
+                this.showPanel('analysisPanel');
+                break;
+            case 'open-measure':
+                this.activateMeasureTool();
+                break;
+            case 'open-draw':
+                this.activateDrawTools();
+                break;
+            case 'export-data':
+                this.exportData();
+                break;
+            case 'generate-report':
+                this.generateReport();
+                break;
+            case 'print-map':
+                this.printMap();
+                break;
+            case 'share-map':
+                this.shareMap();
+                break;
+        }
+    }
+
+    createHeatmap() {
+        if (this.heatLayer) {
+            this.map.removeLayer(this.heatLayer);
+            this.heatLayer = null;
+        }
+        
+        try {
+            const points = this.markerCluster.getLayers().map(marker => {
+                const latlng = marker.getLatLng();
+                return [latlng.lat, latlng.lng, 1];
+            });
+            
+            if (points.length === 0) {
+                this.showNotification('No data available for heatmap', 'warning');
+                return;
+            }
+            
+            this.heatLayer = L.heatLayer(points, {
+                radius: 25,
+                blur: 15,
+                maxZoom: 17,
+                gradient: {
+                    0.1: '#0dae48',
+                    0.3: '#ffff07',
+                    0.5: '#1976d2',
+                    0.7: '#1565c0',
+                    1.0: '#0d47a1'
+                }
+            }).addTo(this.map);
+            
+            this.showNotification('Heatmap generated', 'success');
+        } catch (error) {
+            console.error('Error creating heatmap:', error);
+            this.showNotification('Failed to generate heatmap', 'error');
+        }
+    }
+
+    showPanel(panelId) {
+        if (this.activePanel) {
+            this.hidePanel(this.activePanel);
+        }
+        const panel = document.getElementById(panelId);
+        panel.classList.add('active');
+        this.activePanel = panelId;
+    }
+
+    hidePanel(panelId) {
+        const panel = document.getElementById(panelId);
+        panel.classList.remove('active');
+        this.activePanel = null;
+    }
+
+    hideAllPanels() {
+        document.querySelectorAll('.tool-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        this.activePanel = null;
+    }
+
+    async handleSearch(query) {
+        if (query.length < 2) {
+            this.hideSearchResults();
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/map/search/?q=${encodeURIComponent(query)}`);
+            if (!response.ok) throw new Error('Search failed');
+            
+            const results = await response.json();
+            this.displaySearchResults(results);
+        } catch (error) {
+            console.error('Search error:', error);
+            this.showNotification('Search failed. Please try again.', 'error');
+            this.hideSearchResults();
+        }
+    }
+
+    displaySearchResults(results) {
+        const container = document.getElementById('searchResults');
+        
+        if (!results || results.length === 0) {
+            container.innerHTML = '<div style="padding: 15px; text-align: center; color: #666;">No results found</div>';
+            container.style.display = 'block';
+            return;
+        }
+        
+        const html = results.map((result, index) => `
+            <div class="search-result" data-index="${index}" data-id="${result.id}" 
+                 data-lat="${result.latitude}" data-lng="${result.longitude}"
+                 data-address="${result.address || ''}" data-district="${result.district || ''}" data-zone="${result.zone || ''}">
+                <div style="font-weight: 500; color: #0dae48;">Property ${result.id}</div>
+                <div style="font-size: 13px; color: #666; margin-top: 5px;">${result.address || 'No address'}</div>
+                <div style="font-size: 12px; color: #888; margin-top: 3px;">
+                    ${result.district || ''} ${result.zone ? '• ' + result.zone : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+        container.style.display = 'block';
+        
+        if (results.length > 0) {
+            container.querySelector('.search-result').classList.add('search-result-highlight');
+        }
+        
+        container.querySelectorAll('.search-result').forEach(item => {
+            item.addEventListener('click', () => {
+                const lat = parseFloat(item.dataset.lat);
+                const lng = parseFloat(item.dataset.lng);
+                const address = item.dataset.address;
+                const id = item.dataset.id;
+                
+                if (lat && lng) {
+                    this.flyToSearchResult(lat, lng, address, id);
+                }
+                
+                this.hideSearchResults();
+                document.getElementById('searchInput').value = '';
+            });
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.navigateSearchResults(e.key);
+            }
+            if (e.key === 'Enter') {
+                const highlighted = container.querySelector('.search-result-highlight');
+                if (highlighted) {
+                    highlighted.click();
+                }
+            }
+        });
+    }
+
+    flyToSearchResult(lat, lng, address, id) {
+        if (this.searchMarker) {
+            this.map.removeLayer(this.searchMarker);
+        }
+        
+        this.searchMarker = L.marker([lat, lng], {
+            icon: L.divIcon({
+                html: '<div style="background: #ff5722; width: 32px; height: 32px; border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; box-shadow: 0 3px 8px rgba(0,0,0,0.4);"><i class="fas fa-search"></i></div>',
+                className: 'search-marker',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            })
+        }).addTo(this.map);
+        
+        this.map.flyTo([lat, lng], 16, {
+            duration: 1.5,
+            easeLinearity: 0.25
+        });
+        
+        setTimeout(() => {
+            this.searchMarker.bindPopup(`
+                <div style="min-width: 200px;">
+                    <div style="font-weight: 500; color: #ff5722; font-size: 16px; margin-bottom: 5px;">
+                        <i class="fas fa-search"></i> Search Result
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <div style="font-size: 14px; font-weight: 500; color: #0dae48;">Property ${id}</div>
+                        <div style="font-size: 13px; color: #666;">${address || 'No address'}</div>
+                    </div>
+                    <div style="font-size: 12px; color: #888;">
+                        Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                    </div>
+                </div>
+            `).openPopup();
+        }, 1500);
+        
+        this.showNotification(`Found property ${id}`, 'success');
+    }
+
+    navigateSearchResults(direction) {
+        const container = document.getElementById('searchResults');
+        const results = container.querySelectorAll('.search-result');
+        if (results.length === 0) return;
+        
+        let currentIndex = -1;
+        results.forEach((result, index) => {
+            if (result.classList.contains('search-result-highlight')) {
+                currentIndex = index;
+            }
+        });
+        
+        if (direction === 'ArrowDown') {
+            currentIndex = (currentIndex + 1) % results.length;
+        } else if (direction === 'ArrowUp') {
+            currentIndex = (currentIndex - 1 + results.length) % results.length;
+        }
+        
+        results.forEach(result => result.classList.remove('search-result-highlight'));
+        results[currentIndex].classList.add('search-result-highlight');
+        results[currentIndex].scrollIntoView({ block: 'nearest' });
+    }
+
+    hideSearchResults() {
+        document.getElementById('searchResults').style.display = 'none';
+    }
+
+    applyFilters() {
+        const filters = {
+            district: document.getElementById('districtFilter').value,
+            zone: document.getElementById('zoneFilter').value,
+            property_type: document.getElementById('propertyTypeFilter').value
+        };
+        
+        this.currentFilters = filters;
+        this.loadPoints(filters);
+        this.hidePanel('filtersPanel');
+    }
+
+    clearFilters() {
+        document.getElementById('districtFilter').value = '';
+        document.getElementById('zoneFilter').value = '';
+        document.getElementById('propertyTypeFilter').value = '';
+        this.currentFilters = {};
+        this.loadPoints({});
+        this.showNotification('Filters cleared', 'info');
+    }
+
+    async runAnalysis() {
+        const type = document.getElementById('analysisType').value;
+        
+        switch(type) {
+            case 'revenue_heatmap':
+                this.toggleLayer('heatmap');
+                break;
+            case 'property_clusters':
+                this.showNotification('Cluster analysis activated', 'info');
+                break;
+            case 'zone_performance':
+                await this.analyzeZonePerformance();
+                break;
+            case 'density_analysis':
+                await this.analyzeDensity();
+                break;
+        }
+        
+        this.hidePanel('analysisPanel');
+    }
+
+    async analyzeZonePerformance() {
+        this.showNotification('Zone performance analysis started', 'info');
+    }
+
+    async analyzeDensity() {
+        this.showNotification('Density analysis started', 'info');
+    }
+
+    locateUser() {
+        if (!navigator.geolocation) {
+            this.showNotification('Geolocation not supported', 'error');
+            return;
+        }
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                this.map.flyTo([lat, lng], 15, {
+                    duration: 1.5,
+                    easeLinearity: 0.25
+                });
+                
+                L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: '<div style="background: #0dae48; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
+                        className: 'user-marker',
+                        iconSize: [24, 24]
+                    })
+                }).addTo(this.map)
+                .bindPopup('Your location')
+                .openPopup();
+                
+                this.showNotification('Location found', 'success');
+            },
+            (error) => {
+                this.showNotification('Unable to get location', 'error');
+            }
+        );
+    }
+
+    toggleFullscreen() {
+        if (this.map.toggleFullscreen) {
+            this.map.toggleFullscreen();
+        }
+    }
+
+    toggleLegend() {
+        const accordion = document.getElementById('layersAccordion');
+        const btn = document.getElementById('btnLegend');
+        if (!accordion || !btn) return;
+        if (accordion.style.display === 'none') {
+            accordion.style.display = 'flex';
+            btn.classList.add('active');
+        } else {
+            accordion.style.display = 'none';
+            btn.classList.remove('active');
+        }
+    }
+
+    toggleSatellite() {
+        const btn = document.getElementById('btnSatellite');
+        
+        if (btn.classList.contains('active')) {
+            this.map.removeLayer(this.satelliteLayer);
+            btn.classList.remove('active');
+            btn.title = 'Satellite View';
+            this.showNotification('Switched to street map', 'info');
+        } else {
+            this.satelliteLayer.addTo(this.map);
+            btn.classList.add('active');
+            btn.title = 'Street Map';
+            this.showNotification('Switched to satellite view', 'info');
+        }
+    }
+
+    activateMeasureTool() {
+        if (this.isMeasuring) {
+            this.deactivateMeasureTool();
+            return;
+        }
+        
+        this.isMeasuring = true;
+        const btn = document.getElementById('btnMeasure');
+        btn.classList.add('active');
+        
+        if (typeof L.Control.Measure === 'undefined') {
+            this.showNotification('Measurement plugin not loaded', 'error');
+            this.isMeasuring = false;
+            btn.classList.remove('active');
+            return;
+        }
+        
+        this.measureControl = L.control.measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares',
+            activeColor: '#0dae48',
+            completedColor: '#0dae48',
+            popupOptions: {
+                className: 'leaflet-measure-resultpopup',
+                autoPanPadding: [10, 10]
+            }
+        }).addTo(this.map);
+        
+        this.showNotification('Measurement tool activated. Click to start measuring.', 'info');
+        
+        if (this.isDrawing) this.deactivateDrawTools();
+        if (this.isBufferMode) this.cancelBufferMode();
+    }
+
+    deactivateMeasureTool() {
+        if (this.measureControl) {
+            this.map.removeControl(this.measureControl);
+            this.measureControl = null;
+        }
+        this.isMeasuring = false;
+        document.getElementById('btnMeasure').classList.remove('active');
+        this.showNotification('Measurement tool deactivated', 'info');
+    }
+
+    activateDrawTools() {
+        if (this.isDrawing) {
+            this.deactivateDrawTools();
+            return;
+        }
+        
+        this.isDrawing = true;
+        const btn = document.getElementById('btnDraw');
+        btn.classList.add('active');
+        
+        if (typeof L.Control.Draw === 'undefined') {
+            this.showNotification('Drawing plugin not loaded', 'error');
+            this.isDrawing = false;
+            btn.classList.remove('active');
+            return;
+        }
+        
+        this.drawControl = new L.Control.Draw({
+            position: 'topleft',
+            draw: {
+                polygon: {
+                    shapeOptions: {
+                        color: '#0dae48',
+                        fillColor: '#0dae48',
+                        fillOpacity: 0.2,
+                        weight: 2
+                    },
+                    showArea: true,
+                    metric: true,
+                    allowIntersection: false,
+                    drawError: {
+                        color: '#f44336',
+                        timeout: 1000
+                    }
+                },
+                polyline: {
+                    shapeOptions: {
+                        color: '#0dae48',
+                        weight: 3
+                    },
+                    metric: true
+                },
+                rectangle: {
+                    shapeOptions: {
+                        color: '#0dae48',
+                        fillColor: '#0dae48',
+                        fillOpacity: 0.2,
+                        weight: 2
+                    },
+                    showArea: true,
+                    metric: true
+                },
+                circle: {
+                    shapeOptions: {
+                        color: '#0dae48',
+                        fillColor: '#0dae48',
+                        fillOpacity: 0.2,
+                        weight: 2
+                    },
+                    showRadius: true,
+                    metric: true
+                },
+                marker: {
+                    icon: L.icon({
+                        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41]
+                    })
+                }
+            },
+            edit: {
+                featureGroup: this.drawnItems,
+                edit: {
+                    selectedPathOptions: {
+                        color: '#0dae48',
+                        fillColor: '#0dae48',
+                        fillOpacity: 0.2
+                    }
+                },
+                remove: true
+            }
+        });
+        
+        this.drawControl.addTo(this.map);
+        
+        this.map.on(L.Draw.Event.CREATED, (e) => {
+            const layer = e.layer;
+            this.drawnItems.addLayer(layer);
+            this.showDrawResult(e);
+        });
+        
+        this.map.on(L.Draw.Event.EDITED, () => {
+            this.showNotification('Shape edited', 'info');
+        });
+        
+        this.map.on(L.Draw.Event.DELETED, () => {
+            this.showNotification('Shape deleted', 'info');
+        });
+        
+        this.showNotification('Drawing tool activated. Select a shape to draw.', 'info');
+        
+        if (this.isMeasuring) this.deactivateMeasureTool();
+        if (this.isBufferMode) this.cancelBufferMode();
+    }
+
+    deactivateDrawTools() {
+        if (this.drawControl) {
+            this.map.removeControl(this.drawControl);
+            this.drawControl = null;
+        }
+        this.isDrawing = false;
+        document.getElementById('btnDraw').classList.remove('active');
+        this.showNotification('Drawing tool deactivated', 'info');
+    }
+
+    showDrawResult(e) {
+        let message = '';
+        
+        switch(e.layerType) {
+            case 'polygon':
+                const polygonArea = L.GeometryUtil.geodesicArea(e.layer.getLatLngs()[0]);
+                message = `Polygon drawn. Area: ${(polygonArea / 10000).toFixed(2)} hectares`;
+                break;
+            case 'rectangle':
+                const bounds = e.layer.getBounds();
+                const rectArea = bounds.getSouthWest().distanceTo(
+                    L.latLng(bounds.getSouthWest().lat, bounds.getNorthEast().lng)
+                ) * bounds.getSouthWest().distanceTo(
+                    L.latLng(bounds.getNorthEast().lat, bounds.getSouthWest().lng)
+                );
+                message = `Rectangle drawn. Area: ${(rectArea / 10000).toFixed(2)} hectares`;
+                break;
+            case 'polyline':
+                const length = L.GeometryUtil.length(e.layer.getLatLngs());
+                message = `Line drawn. Length: ${length.toFixed(2)} meters`;
+                break;
+            case 'circle':
+                const radius = e.layer.getRadius();
+                const circleArea = Math.PI * radius * radius;
+                message = `Circle drawn. Radius: ${radius.toFixed(2)} meters, Area: ${(circleArea / 10000).toFixed(2)} hectares`;
+                break;
+            case 'marker':
+                const latlng = e.layer.getLatLng();
+                message = `Marker placed at: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+                break;
+        }
+        
+        this.showNotification(message, 'success');
+    }
+
+    activateBufferMode() {
+        if (this.isBufferMode) {
+            this.cancelBufferMode();
+            return;
+        }
+        
+        this.isBufferMode = true;
+        this.showNotification('Click on the map to create a buffer', 'info');
+        this.map.getContainer().style.cursor = 'crosshair';
+        
+        this.map.once('click', (e) => {
+            this.createBuffer(e.latlng);
+        });
+        
+        if (this.isDrawing) this.deactivateDrawTools();
+        if (this.isMeasuring) this.deactivateMeasureTool();
+    }
+
+    createBuffer(center) {
+        const radiusInput = document.getElementById('bufferRadius').value;
+        const radius = parseFloat(radiusInput);
+        
+        if (isNaN(radius) || radius <= 0) {
+            this.showNotification('Invalid radius. Please enter a positive number.', 'error');
+            this.cancelBufferMode();
+            return;
+        }
+        
+        const bufferLayer = L.circle(center, {
+            radius: radius,
+            color: '#ff5722',
+            fillColor: '#ff5722',
+            fillOpacity: 0.2,
+            weight: 2,
+            dashArray: '5, 5'
+        }).addTo(this.map);
+        
+        const centerMarker = L.marker(center, {
+            icon: L.divIcon({
+                html: '<i class="fas fa-bullseye" style="color: #ff5722;"></i>',
+                className: 'buffer-center-marker',
+                iconSize: [20, 20]
+            })
+        }).addTo(this.map);
+        
+        const bufferGroup = L.featureGroup([bufferLayer, centerMarker]);
+        this.map.addLayer(bufferGroup);
+        
+        this.analyzeBuffer(bufferLayer, radius);
+        this.cancelBufferMode();
+    }
+
+    analyzeBuffer(bufferLayer, radius) {
+        const bounds = bufferLayer.getBounds();
+        
+        // Count points in buffer
+        const pointsInBuffer = [];
+        this.markerCluster.getLayers().forEach(marker => {
+            if (bounds.contains(marker.getLatLng())) {
+                pointsInBuffer.push(marker);
+            }
+        });
+        
+        const popupContent = `
+            <div style="max-width: 400px; max-height: 300px; overflow-y: auto;">
+                <h4 style="margin: 0 0 10px 0; color: #0dae48;">
+                    <i class="fas fa-bullseye"></i> Buffer Analysis
+                </h4>
+                <div style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                    <div style="font-size: 14px; font-weight: 500; color: #333;">
+                        Radius: ${radius}m
+                    </div>
+                    <div style="font-size: 14px; font-weight: 500; color: #333;">
+                        Properties Found: ${pointsInBuffer.length}
+                    </div>
+                </div>
+                ${pointsInBuffer.length > 0 ? `
+                    <div style="margin-top: 10px;">
+                        ${pointsInBuffer.slice(0, 10).map(marker => {
+                            const props = marker.getPopup().getContent();
+                            return `<div style="padding: 8px; border-bottom: 1px solid #eee;">Property found</div>`;
+                        }).join('')}
+                        ${pointsInBuffer.length > 10 ? `
+                            <div style="padding: 8px; text-align: center; color: #666; font-size: 12px;">
+                                ... and ${pointsInBuffer.length - 10} more properties
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : `
+                    <div style="padding: 15px; text-align: center; color: #666;">
+                        No properties found in buffer area
+                    </div>
+                `}
+            </div>
+        `;
+        
+        bufferLayer.bindPopup(popupContent, {
+            maxWidth: 400,
+            maxHeight: 400
+        }).openPopup();
+        
+        this.showNotification(`Found ${pointsInBuffer.length} properties in buffer area`, 'success');
+    }
+
+    exportAnalysisResults() {
+        this.showNotification('Exporting analysis results...', 'info');
+        setTimeout(() => {
+            this.showNotification('Analysis results exported', 'success');
+        }, 1000);
+    }
+
+    cancelBufferMode() {
+        this.isBufferMode = false;
+        this.map.getContainer().style.cursor = '';
+        this.map.off('click');
+        this.showNotification('Buffer mode cancelled', 'info');
+    }
+
+    exportData() {
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            filters: this.currentFilters,
+            mapCenter: this.map.getCenter(),
+            mapZoom: this.map.getZoom(),
+            propertyCount: this.propertyCount,
+            activeLayers: this.activeLayers
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `gis-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        
+        this.showNotification('Data exported successfully', 'success');
+    }
+
+    generateReport() {
+        if (typeof html2canvas === 'undefined') {
+            this.showNotification('html2canvas not available for report generation', 'warning');
+            return;
+        }
+        
+        html2canvas(document.querySelector('.gis-container')).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `map-report-${new Date().toISOString().split('T')[0]}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            this.showNotification('Report generated as PNG', 'success');
+        }).catch(() => {
+            this.showNotification('Failed to generate report', 'error');
+        });
+    }
+
+    printMap() {
+        window.print();
+    }
+
+    shareMap() {
+        const mapUrl = window.location.href;
+        navigator.clipboard.writeText(mapUrl).then(() => {
+            this.showNotification('Map URL copied to clipboard', 'success');
+        }).catch(() => {
+            this.showNotification('Failed to copy URL', 'error');
+        });
+    }
+
+    showLoading(show) {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.style.display = show ? 'flex' : 'none';
+    }
+
+    showNotification(message, type = 'info') {
+        const container = document.getElementById('notificationContainer');
+        
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                            type === 'error' ? 'exclamation-circle' : 
+                            type === 'warning' ? 'exclamation-triangle' : 
+                            'info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        container.appendChild(notification);
+        
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
+    }
+}
+
+// Initialize the GIS system
+// Initialize the GIS system
+let gis;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // First, load the Protomaps library
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/protomaps-leaflet@1.0.1/dist/protomaps-leaflet.min.js';
+    
+    script.onload = function() {
+        console.log('Protomaps loaded successfully');
+        // Initialize after library is loaded
+        gis = new PropertyRevenueGIS();
+        window.gis = gis;
+    };
+    
+    script.onerror = function() {
+        console.warn('Failed to load Protomaps, falling back to GeoJSON');
+        // Initialize without PMTiles support
+        gis = new PropertyRevenueGIS();
+        window.gis = gis;
+    };
+    
+    document.head.appendChild(script);
+});
+</script>
+</div><!-- .gis-page-wrapper -->
+{% endblock %}

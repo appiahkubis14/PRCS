@@ -1,0 +1,4 @@
+Requirement already satisfied: django-jazzmin in ./venv/lib/python3.12/site-packages (3.0.1)
+Requirement already satisfied: django>=4.2 in ./venv/lib/python3.12/site-packages (from django-jazzmin) (6.0.2)
+Requirement already satisfied: asgiref>=3.9.1 in ./venv/lib/python3.12/site-packages (from django>=4.2->django-jazzmin) (3.11.1)
+Requirement already satisfied: sqlparse>=0.5.0 in ./venv/lib/python3.12/site-packages (from django>=4.2->django-jazzmin) (0.5.5)

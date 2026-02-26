@@ -1,0 +1,907 @@
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+
+
+
+{% block content %}
+
+
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title">Property Registry</h3>
+        </div>
+        <div class="mb-3">
+          <div>
+            <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addPropertyModal">
+              <i class="fas fa-plus-circle"></i> Add New Property
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-body">
+  <div class="table-responsive">
+    <table id="propertyTable" class="table table-striped table-bordered" style="width: 100%">
+      <thead class="thead-dark">
+        <tr>
+          <th>ID</th>
+          <th>PROPERTY ID</th>
+          <th>ADDRESS</th>
+          <th>ZONE</th>
+          <th>PROPERTY TYPE</th>
+          <th>AREA (m²)</th>
+          <th>MARKET VALUE</th>
+          <th>ASSESSED VALUE</th>
+          <th>OWNER</th>
+          <th>STATUS</th>
+          <th>REGION</th>
+          <th>DISTRICT</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</div>
+
+<!-- Add Property Modal -->
+<div class="modal fade" id="addPropertyModal" tabindex="-1" aria-labelledby="addPropertyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addPropertyModalLabel">Add New Property</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" id="addPropertyForm">
+          {% csrf_token %}
+          
+          <ul class="nav nav-tabs" id="propertyTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab">Basic Info</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab">Location</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="owner-tab" data-bs-toggle="tab" data-bs-target="#owner" type="button" role="tab">Owner Info</button>
+            </li>
+          </ul>
+          
+          <div class="tab-content p-3 border border-top-0" id="propertyTabContent">
+            <!-- Basic Information Tab -->
+            <div class="tab-pane fade show active" id="basic" role="tabpanel">
+              <div class="row mb-3">
+                <!-- <div class="col-md-4">
+                  <label class="form-label">Property ID*</label>
+                  <input type="text" name="property_id" class="form-control" required placeholder="e.g., PROP-1234-5678"/>
+                </div> -->
+                
+                <div class="col-md-4">
+                  <label class="form-label">Status*</label>
+                  <select name="status" class="form-control" required>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="under_construction">Under Construction</option>
+                    <option value="demolished">Demolished</option>
+                  </select>
+                </div>
+              
+                <div class="col-md-4">
+                  <label class="form-label">Zone*</label>
+                  <select name="zone" class="form-select" required>
+                    <option value="">-- Select Zone --</option>
+                    {% for zone in zones %}
+                      <option value="{{ zone.id }}">{{ zone.name }} ({{ zone.zone_type }})</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Property Type*</label>
+                  <select name="property_type" class="form-select" required>
+                    <option value="">-- Select Property Type --</option>
+                    {% for prop_type in property_types %}
+                      <option value="{{ prop_type.id }}">{{ prop_type.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label">Total Area (m²)*</label>
+                  <input type="number" name="total_area" class="form-control" required step="0.01" min="0"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Built-up Area (m²)</label>
+                  <input type="number" name="built_up_area" class="form-control" step="0.01" min="0"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Floor Count</label>
+                  <input type="number" name="floor_count" class="form-control" value="1" min="1"/>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label">Year Built</label>
+                  <input type="number" name="year_built" class="form-control" min="1800" max="{% now 'Y' %}"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Market Value*</label>
+                  <input type="number" name="market_value" class="form-control" required step="0.01" min="0"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Assessed Value*</label>
+                  <input type="number" name="assessed_value" class="form-control" required step="0.01" min="0"/>
+                </div>
+              </div>
+              
+              
+            </div>
+            
+            <!-- Location Tab -->
+            <div class="tab-pane fade" id="location" role="tabpanel">
+              <div class="row mb-3">
+                <div class="col-12">
+                  <label class="form-label">Address*</label>
+                  <textarea name="address" class="form-control" rows="3" required></textarea>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label">Region</label>
+                  <select name="region" class="form-select">
+                    <option value="">-- Select Region --</option>
+                    {% for region in regions %}
+                      <option value="{{ region.region }}">{{ region.region }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">District</label>
+                  <select name="district" class="form-select">
+                    <option value="">-- Select District --</option>
+                    {% for district in districts %}
+                      <option value="{{ district.district }}">{{ district.district }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Postal Code</label>
+                  <input type="text" name="postcode" class="form-control"/>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Street</label>
+                  <input type="text" name="street" class="form-control"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Latitude</label>
+                  <input type="number" name="latitude" class="form-control" step="0.000000000001"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Longitude</label>
+                  <input type="number" name="longitude" class="form-control" step="0.000000000001"/>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Owner Information Tab -->
+            <div class="tab-pane fade" id="owner" role="tabpanel">
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Owner Name*</label>
+                  <input type="text" name="owner_name" class="form-control" required/>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Owner Type*</label>
+                  <select name="owner_type" class="form-control" required>
+                    <option value="individual">Individual</option>
+                    <option value="company">Company</option>
+                    <option value="government">Government</option>
+                    <option value="trust">Trust</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label">ID Number</label>
+                  <input type="text" name="id_number" class="form-control"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Phone Number</label>
+                  <input type="text" name="phone_number" class="form-control"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Email</label>
+                  <input type="email" name="email" class="form-control"/>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-12">
+                  <label class="form-label">Owner Address</label>
+                  <textarea name="owner_address" class="form-control" rows="3"></textarea>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Ownership Start Date</label>
+                  <input type="date" name="start_date" class="form-control"/>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Submit Buttons -->
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Property
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Property Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Property</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editPropertyForm" method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="property_id" id="editPropertyId">
+          <!-- Form content will be dynamically loaded here -->
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="mt-3"></div>
+
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- FontAwesome -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+
+<!-- DataTables Extensions -->
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+
+
+<script>
+$(document).ready(function () {
+  // Initialize DataTable
+  var table = $("#propertyTable").DataTable({
+    paging: true,
+    searching: true,
+    ordering: true,
+    info: true,
+    responsive: true,
+    autoWidth: false,
+    processing: true,
+    serverSide: false,
+    lengthMenu: [10, 25, 50, 100],
+    pageLength: 20,
+    ajax: {
+      url: "/api/properties/",
+      type: "GET",
+      dataType: "json",
+      dataSrc: function (json) {
+        return json.data;
+      },
+      error: function (xhr) {
+        showMessage("danger", `Error fetching properties: ${xhr.responseText}`);
+      }
+    },
+    dom: "Bfrtip",
+    buttons: [
+      {
+        extend: "copy",
+        text: '<i class="fas fa-copy"></i> Copy',
+        className: "btn btn-sm btn-outline-secondary",
+      },
+      {
+        extend: "csv",
+        text: '<i class="fas fa-file-csv"></i> CSV',
+        className: "btn btn-sm btn-outline-success",
+      },
+      {
+        extend: "excel",
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        className: "btn btn-sm btn-outline-primary",
+      },
+      {
+        extend: "pdf",
+        text: '<i class="fas fa-file-pdf"></i> PDF',
+        className: "btn btn-sm btn-outline-danger",
+      },
+    ],
+    order: [[0, "desc"]],
+    columns: [
+      { data: 'id', visible: false },
+      { 
+        data: 'property_id',
+        className: "text-left",
+        render: function(data) {
+          return `
+          <div style="display:flex">
+            <div class="symbol symbol-40px me-3">
+              <span class="symbol-label bg-light-primary">
+                <i class="fas fa-home text-primary"></i>
+              </span>
+            </div>
+            ${data} 
+          </div>`;
+        }
+      },
+      { data: 'address', className: "text-left" },
+      { data: 'zone', className: "text-left" },
+      { data: 'property_type', className: "text-left" },
+      { 
+        data: 'total_area', 
+        className: "text-right",
+        render: function(data) {
+          return data ? parseFloat(data).toLocaleString() : '0';
+        }
+      },
+      { 
+        data: 'market_value', 
+        className: "text-right",
+        render: function(data) {
+          return data ? '₵' + parseFloat(data).toLocaleString() : '₵0';
+        }
+      },
+      { 
+        data: 'assessed_value', 
+        className: "text-right",
+        render: function(data) {
+          return data ? '₵' + parseFloat(data).toLocaleString() : '₵0';
+        }
+      },
+      { data: 'owner_name', className: "text-left" },
+      { 
+        data: 'status', 
+        className: "text-center",
+        render: function(data) {
+          const statusClass = {
+            'active': 'success',
+            'inactive': 'secondary',
+            'under_construction': 'warning',
+            'demolished': 'danger'
+          }[data] || 'secondary';
+          
+          return `<span class="badge bg-${statusClass}">${data.toUpperCase()}</span>`;
+        }
+      },
+      { data: 'region', className: "text-left" },
+      { data: 'district', className: "text-left" },
+      {
+        data: "id",
+        render: function (data) {
+          return `
+            <div class="d-flex justify-content-center">
+              <button class="btn btn-sm btn-primary edit-btn edit-property" data-id="${data}">
+                <i class="fas fa-edit"></i> EDIT
+              </button>
+              <button class="btn btn-danger btn-sm delete-btn delete-property" data-id="${data}">
+                <i class="fas fa-trash-alt"></i> DELETE
+              </button>
+            </div>`;
+        },
+      },
+    ],
+  });
+
+  // Load DataTable Buttons
+  table.buttons().container().appendTo("#propertyTable_wrapper .col-md-6:eq(0)");
+
+  // Show Message Function
+  function showMessage(type, message) {
+    $("#messageContainer").html(`
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `);
+    setTimeout(() => {
+      $(".alert").fadeOut("slow");
+    }, 4000);
+  }
+
+  // CSRF Token Function
+  function getCSRFToken() {
+    let cookieValue = null;
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith("csrftoken=")) {
+        cookieValue = cookie.substring("csrftoken=".length);
+        break;
+      }
+    }
+    return cookieValue;
+  }
+
+  // Apply CSRF Token to AJAX Requests
+  $.ajaxSetup({
+    beforeSend: function (xhr, settings) {
+      if (!this.crossDomain && settings.type !== "GET") {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
+    },
+  });
+
+  // Add Property Form Submission
+  $('#addPropertyForm').submit(function(e) {
+    e.preventDefault();
+    
+    const form = $(this);
+    const submitBtn = form.find('button[type="submit"]');
+    submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+    
+    const formData = new FormData(this);
+    
+    $.ajax({
+      url: '/api/properties/add/',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(response) {
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: response.message,
+            timer: 1500,
+            showConfirmButton: false
+          }).then(() => {
+            $('#addPropertyModal').modal('hide');
+            form[0].reset();
+            table.ajax.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error || 'Failed to add property'
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Failed to add property';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      },
+      complete: function() {
+        submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Save Property');
+      }
+    });
+  });
+
+  // Edit Property
+  $(document).on("click", ".edit-property", function() {
+    const propertyId = $(this).data("id");
+
+    // Show loading state
+    $("#editPropertyForm").html(`
+      <div class="text-center py-4">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <p>Loading property details...</p>
+      </div>
+    `);
+    $("#editModal").modal("show");
+
+    $.ajax({
+      url: `/api/properties/${propertyId}/`,
+      type: "GET",
+      success: function(response) {
+        if (response.success) {
+          const data = response.data;
+          
+          // Create form with all fields
+          const formHTML = `
+            <input type="hidden" name="property_id" value="${data.id}">
+            
+            <ul class="nav nav-tabs" id="editPropertyTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="edit-basic-tab" data-bs-toggle="tab" data-bs-target="#edit-basic" type="button" role="tab">Basic Info</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="edit-location-tab" data-bs-toggle="tab" data-bs-target="#edit-location" type="button" role="tab">Location</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="edit-owner-tab" data-bs-toggle="tab" data-bs-target="#edit-owner" type="button" role="tab">Owner Info</button>
+              </li>
+            </ul>
+            
+            <div class="tab-content p-3 border border-top-0" id="editPropertyTabContent">
+              <!-- Basic Information Tab -->
+              <div class="tab-pane fade show active" id="edit-basic" role="tabpanel">
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Property ID*</label>
+                    <input type="text" name="property_id" class="form-control" value="${data.property_id}" required readonly/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Zone*</label>
+                    <select name="zone" class="form-select" required id="editZoneSelect">
+                      <option value="">-- Select Zone --</option>
+                      {% for zone in zones %}
+                        <option value="{{ zone.id }}">{{ zone.name }} ({{ zone.zone_type }})</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Property Type*</label>
+                    <select name="property_type" class="form-select" required id="editPropertyTypeSelect">
+                      <option value="">-- Select Property Type --</option>
+                      {% for prop_type in property_types %}
+                        <option value="{{ prop_type.id }}">{{ prop_type.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Total Area (m²)*</label>
+                    <input type="number" name="total_area" class="form-control" value="${data.total_area || ''}" required step="0.01" min="0"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Built-up Area (m²)</label>
+                    <input type="number" name="built_up_area" class="form-control" value="${data.built_up_area || ''}" step="0.01" min="0"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Floor Count</label>
+                    <input type="number" name="floor_count" class="form-control" value="${data.floor_count || 1}" min="1"/>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Year Built</label>
+                    <input type="number" name="year_built" class="form-control" value="${data.year_built || ''}" min="1800" max="{% now 'Y' %}"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Market Value*</label>
+                    <input type="number" name="market_value" class="form-control" value="${data.market_value || ''}" required step="0.01" min="0"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Assessed Value*</label>
+                    <input type="number" name="assessed_value" class="form-control" value="${data.assessed_value || ''}" required step="0.01" min="0"/>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Status*</label>
+                    <select name="status" class="form-control" required>
+                      <option value="active" ${data.status === 'active' ? 'selected' : ''}>Active</option>
+                      <option value="inactive" ${data.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                      <option value="under_construction" ${data.status === 'under_construction' ? 'selected' : ''}>Under Construction</option>
+                      <option value="demolished" ${data.status === 'demolished' ? 'selected' : ''}>Demolished</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Location Tab -->
+              <div class="tab-pane fade" id="edit-location" role="tabpanel">
+                <div class="row mb-3">
+                  <div class="col-12">
+                    <label class="form-label">Address*</label>
+                    <textarea name="address" class="form-control" rows="3" required>${data.address || ''}</textarea>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Region</label>
+                    <select name="region" class="form-select" id="editRegionSelect">
+                      <option value="">-- Select Region --</option>
+                      {% for region in regions %}
+                        <option value="{{ region.region }}">{{ region.region }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">District</label>
+                    <select name="district" class="form-select" id="editDistrictSelect">
+                      <option value="">-- Select District --</option>
+                      {% for district in districts %}
+                        <option value="{{ district.district }}">{{ district.district }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Postal Code</label>
+                    <input type="text" name="postcode" class="form-control" value="${data.postcode || ''}"/>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Street</label>
+                    <input type="text" name="street" class="form-control" value="${data.street || ''}"/>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Latitude</label>
+                    <input type="number" name="latitude" class="form-control" value="${data.latitude || ''}" step="0.000000000001"/>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Longitude</label>
+                    <input type="number" name="longitude" class="form-control" value="${data.longitude || ''}" step="0.000000000001"/>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Owner Information Tab -->
+              <div class="tab-pane fade" id="edit-owner" role="tabpanel">
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Owner Name*</label>
+                    <input type="text" name="owner_name" class="form-control" value="${data.owner_name || ''}" required/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Owner Type*</label>
+                    <select name="owner_type" class="form-control" required>
+                      <option value="individual" ${data.owner_type === 'individual' ? 'selected' : ''}>Individual</option>
+                      <option value="company" ${data.owner_type === 'company' ? 'selected' : ''}>Company</option>
+                      <option value="government" ${data.owner_type === 'government' ? 'selected' : ''}>Government</option>
+                      <option value="trust" ${data.owner_type === 'trust' ? 'selected' : ''}>Trust</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">ID Number</label>
+                    <input type="text" name="id_number" class="form-control" value="${data.id_number || ''}"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" name="phone_number" class="form-control" value="${data.phone_number || ''}"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" value="${data.email || ''}"/>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-12">
+                    <label class="form-label">Owner Address</label>
+                    <textarea name="owner_address" class="form-control" rows="3">${data.owner_address || ''}</textarea>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Ownership Start Date</label>
+                    <input type="date" name="start_date" class="form-control" value="${data.start_date || ''}"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-end mt-4">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Changes
+              </button>
+            </div>
+          `;
+          
+          $("#editPropertyForm").html(formHTML);
+          
+          // Set selected values for dropdowns
+          $('#editZoneSelect').val(data.zone_id);
+          $('#editPropertyTypeSelect').val(data.property_type_id);
+          $('#editRegionSelect').val(data.region);
+          $('#editDistrictSelect').val(data.district);
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error || 'Failed to fetch property details'
+          });
+          $("#editModal").modal("hide");
+        }
+      },
+      error: function(xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: xhr.responseJSON?.error || 'Failed to load property details'
+        });
+        $("#editModal").modal("hide");
+      }
+    });
+  });
+
+  // Handle form submission for updating property
+  $("#editPropertyForm").on("submit", function(e) {
+    e.preventDefault();
+    
+    const form = $(this);
+    const submitBtn = form.find('button[type="submit"]');
+    submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+    
+    const propertyId = form.find('input[name="property_id"]').val();
+    const formData = new FormData(this);
+    
+    Swal.fire({
+      title: 'Confirm Update',
+      text: 'Are you sure you want to update this property?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, update it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: `/api/properties/${propertyId}/update/`,
+          type: "POST",
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function(response) {
+            if (response.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: response.message,
+                timer: 1500,
+                showConfirmButton: false
+              }).then(() => {
+                $("#editModal").modal("hide");
+                table.ajax.reload();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response.error || 'Failed to update property'
+              });
+            }
+          },
+          error: function(xhr) {
+            let errorMsg = 'Failed to update property';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            }
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: errorMsg
+            });
+          },
+          complete: function() {
+            submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Save Changes');
+          }
+        });
+      } else {
+        submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Save Changes');
+      }
+    });
+  });
+
+  // Delete Property
+  $(document).on('click', '.delete-property', function() {
+    const propertyId = $(this).data('id');
+    
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: `/api/properties/${propertyId}/delete/`,
+          type: 'DELETE',
+          beforeSend: function(xhr) {
+            xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+          },
+          success: function(response) {
+            if (response.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: response.message,
+                timer: 1500,
+                showConfirmButton: false
+              });
+              table.ajax.reload();
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response.error || 'Failed to delete property'
+              });
+            }
+          },
+          error: function(xhr) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: xhr.responseJSON?.error || 'Failed to delete property'
+            });
+          }
+        });
+      }
+    });
+  });
+});
+</script>
+
+<style>
+  #propertyTable tbody tr td {
+    text-transform: uppercase;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .dropdown-menu {
+    min-width: 120px;
+  }
+
+  .dropdown-item {
+    font-size: 14px;
+  }
+
+  .dropdown-item i {
+    margin-right: 5px;
+  }
+
+  .btn-sm {
+    margin: 2px;
+  }
+  
+  .nav-tabs .nav-link {
+    color: #495057;
+  }
+  
+  .nav-tabs .nav-link.active {
+    font-weight: 600;
+  }
+</style>
+{% endblock %}

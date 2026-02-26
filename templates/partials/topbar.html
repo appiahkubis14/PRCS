@@ -1,0 +1,381 @@
+<!-- Start topbar -->
+<header id="page-topbar">
+    <div class="navbar-header">
+
+        <!-- Logo -->
+        <div class="navbar-logo-box">
+            <a href="/" class="logo logo-dark">
+                <span class="logo-sm">
+                    <img src="/static/assets/images/logo/LaNMMA.png" alt="logo-sm-dark" height="30">
+                </span>
+                <span class="logo-lg">
+                    <img src="/static/assets/images/logo/LaNMMA.png" alt="logo-dark" height="65" width="80">
+                </span>
+            </a>
+
+            <a href="/" class="logo logo-light">
+                <span class="logo-sm">
+                    <img src="/static/assets/images/logo/LaNMMA.png" alt="logo-sm-light" height="20">
+                </span>
+                <span class="logo-lg">
+                    <img src="/static/assets/images/logo/LaNMMA.png" alt="logo-dark" height="65" width="80">
+                </span>
+            </a>
+        </div>
+
+        <!-- Start Navigation Menu -->
+        <div class="d-flex justify-content-between menu-sm px-3 ms-auto">
+            <div class="d-flex align-items-center gap-2">
+                <!-- Dynamic Menu Items as Dropdowns -->
+                {% if sidebar_items %}
+                    {% for item_name, item_data in sidebar_items.items %}
+                        {% if item_data.sub_items %}
+                            <!-- Menu item with sub-items as dropdown -->
+                            <div class="dropdown d-none d-lg-block">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle menu-dropdown-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="{{ item_data.icon }} me-1"></i>
+                                    {{ item_name }}
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-start dropdown-menu-animated">
+                                    {% for sub_name, sub_data in item_data.sub_items.items %}
+                                        {% if sub_data.sub_items %}
+                                            <!-- Nested sub-menu -->
+                                            <div class="dropdown-submenu">
+                                                <a href="javascript: void(0);" class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">
+                                                    <i class="{{ sub_data.icon }} me-2"></i>
+                                                    {{ sub_name }}
+                                                </a>
+                                                <div class="dropdown-submenu-menu dropdown-submenu-end">
+                                                    {% for nested_name, nested_data in sub_data.sub_items.items %}
+                                                        <a href="{{ nested_data.url }}" class="dropdown-item">
+                                                            <i class="{{ nested_data.icon }} me-2"></i>
+                                                            {{ nested_name }}
+                                                        </a>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <!-- Regular sub-item -->
+                                            <a href="{{ sub_data.url }}" class="dropdown-item">
+                                                <i class="{{ sub_data.icon }} me-2"></i>
+                                                {{ sub_name }}
+                                            </a>
+                                        {% endif %}
+                                        {% if not forloop.last %}
+                                            <div class="dropdown-divider"></div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Simple menu item (no dropdown) -->
+                            <a href="{{ item_data.url }}" class="btn btn-sm btn-outline-secondary menu-link-btn">
+                                <i class="{{ item_data.icon }} me-1"></i>
+                                {{ item_name }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <!-- Default menu if no sidebar items -->
+                    <a href="/" class="btn btn-sm btn-outline-secondary menu-link-btn">
+                        <i class="fas fa-home me-1"></i>
+                        Home
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- Right side icons (notification, profile, etc) -->
+            <div class="d-flex align-items-center gap-2">
+                <!-- Start Notification -->
+                <div class="dropdown d-inline-block">
+                    <button type="button" class="btn btn-sm top-icon" id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bell align-middle"></i>
+                        <span class="btn-marker"><i class="marker marker-dot text-danger"></i><span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-md dropdown-menu-end p-0" aria-labelledby="page-header-notifications-dropdown">
+                        <div class="p-3 bg-info">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <h6 class="text-white m-0"><i class="far fa-bell me-2"></i> Notifications </h6>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="/#!" class="badge bg-info-subtle text-info"> 8+</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-simplebar style="max-height: 230px;">
+                            <!-- Notification items here -->
+                            <a href="/" class="text-reset notification-item">
+                                <div class="d-flex">
+                                    <div class="avatar avatar-xs avatar-label-secondary me-3">
+                                        <span class="rounded fs-16">
+                                            <i class="mdi mdi-file-document-outline"></i>
+                                        </span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h6 class="mb-1">New report has been recived</h6>
+                                        <div class="fs-12 text-muted">
+                                            <p class="mb-0"><i class="mdi mdi-clock-outline"></i> 3 min ago</p>
+                                        </div>
+                                    </div>
+                                    <i class="mdi mdi-chevron-right align-middle ms-2"></i>
+                                </div>
+                            </a>
+                            <!-- More notification items... -->
+                        </div>
+                        <div class="p-2 border-top">
+                            <div class="d-grid">
+                                <a class="btn btn-sm btn-link font-size-14 text-center" href="javascript:void(0)">
+                                    <i class="mdi mdi-arrow-right-circle me-1"></i> View More..
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Notification -->
+
+                <!-- Start Activities -->
+                <div class="d-inline-block activities">
+                    <button type="button" class="btn btn-sm top-icon" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-rightsidabar">
+                        <i class="fas fa-table align-middle"></i>
+                    </button>
+                </div>
+                <!-- End Activities -->
+
+                <!-- Start Profile -->
+                <div class="dropdown d-inline-block">
+                    <button type="button" class="btn btn-sm top-icon p-0" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <img class="rounded avatar-2xs p-0" src="/static/assets/images/users/avatar-6.png" alt="Header Avatar">
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-wide dropdown-menu-end dropdown-menu-animated overflow-hidden py-0">
+                        <div class="card border-0">
+                            <div class="card-header rounded-0">
+                                <div class="rich-list-item w-100 p-0">
+                                    <div class="rich-list-prepend">
+                                        <div class="avatar avatar-label-dark avatar-circle">
+                                            <div class="avatar-display"><i class="fa fa-user-alt"></i></div>
+                                        </div>
+                                    </div>
+                                    <div class="rich-list-content">
+                                        <h3 class="rich-list-title">Charlie Stone</h3>
+                                        <span class="rich-list-subtitle">admin@codubucks.in</span>
+                                    </div>
+                                    <div class="rich-list-append"><span class="badge badge-label-light fs-6">6+</span></div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="grid-nav grid-nav-flush grid-nav-action grid-nav-no-rounded">
+                                    <div class="grid-nav-row">
+                                        <a href="apps-contact.html" class="grid-nav-item">
+                                            <div class="grid-nav-icon"><i class="far fa-address-card"></i></div>
+                                            <span class="grid-nav-content">Profile</span>
+                                        </a>
+                                        <a href="/#!" class="grid-nav-item">
+                                            <div class="grid-nav-icon"><i class="far fa-comments"></i></div>
+                                            <span class="grid-nav-content">Messages</span>
+                                        </a>
+                                        <a href="/#!" class="grid-nav-item">
+                                            <div class="grid-nav-icon"><i class="far fa-clone"></i></div>
+                                            <span class="grid-nav-content">Activities</span>
+                                        </a>
+                                    </div>
+                                    <div class="grid-nav-row">
+                                        <a href="/#!" class="grid-nav-item">
+                                            <div class="grid-nav-icon"><i class="far fa-calendar-check"></i></div>
+                                            <span class="grid-nav-content">Tasks</span>
+                                        </a>
+                                        <a href="/#!" class="grid-nav-item">
+                                            <div class="grid-nav-icon"><i class="far fa-sticky-note"></i></div>
+                                            <span class="grid-nav-content">Notes</span>
+                                        </a>
+                                        <a href="/#!" class="grid-nav-item">
+                                            <div class="grid-nav-icon"><i class="far fa-bell"></i></div>
+                                            <span class="grid-nav-content">Notification</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer card-footer-bordered rounded-0">
+                                <a href="{% url 'logout' %}" class="btn btn-label-danger">Sign out</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Profile -->
+            </div>
+        </div>
+        <!-- End Navigation Menu -->
+    </div>
+</header>
+<!-- End topbar -->
+
+<!-- Remove the sidebar div completely - delete this section -->
+<!-- <div id="sidebar-menu"> ... </div> -->
+
+<!-- Add custom CSS for the topbar menu -->
+<style>
+/* Topbar menu styles */
+.navbar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.menu-dropdown-btn, .menu-link-btn {
+    margin: 0 2px;
+    border-color: #e9ecef;
+    color: #495057;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+}
+
+.menu-dropdown-btn:hover, .menu-link-btn:hover {
+    background-color: #6e8603;
+    border-color: #dee2e6;
+}
+
+/* Dropdown submenu styles */
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -6px;
+    margin-left: -1px;
+    border-radius: 0.25rem;
+}
+
+.dropdown-submenu:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-submenu .dropdown-toggle::after {
+    display: inline-block;
+    margin-left: 0.5em;
+    vertical-align: middle;
+    content: "";
+    border-top: 0.3em solid transparent;
+    border-right: 0;
+    border-bottom: 0.3em solid transparent;
+    border-left: 0.3em solid;
+}
+
+.dropdown-menu {
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+/* Ensure proper spacing for icons */
+.dropdown-item i {
+    width: 1.2rem;
+    text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .menu-dropdown-btn, .menu-link-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .d-lg-block {
+        display: none !important;
+    }
+    
+    /* Add a mobile menu button for smaller screens */
+    .mobile-menu-btn {
+        display: block;
+    }
+}
+
+/* Mobile menu button (visible only on mobile) */
+.mobile-menu-btn {
+    display: none;
+    margin-right: 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .mobile-menu-btn {
+        display: block;
+    }
+}
+</style>
+
+<!-- Add JavaScript for enhanced dropdown functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle dropdown submenus on hover (desktop)
+    if (window.innerWidth > 992) {
+        const submenuItems = document.querySelectorAll('.dropdown-submenu');
+        
+        submenuItems.forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                const submenu = this.querySelector('.dropdown-submenu-menu');
+                if (submenu) {
+                    submenu.classList.add('show');
+                }
+            });
+            
+            item.addEventListener('mouseleave', function() {
+                const submenu = this.querySelector('.dropdown-submenu-menu');
+                if (submenu) {
+                    submenu.classList.remove('show');
+                }
+            });
+        });
+    }
+    
+    // Handle dropdown toggles on click (mobile)
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+    
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            if (window.innerWidth <= 992) {
+                e.preventDefault();
+                const dropdownMenu = this.nextElementSibling;
+                if (dropdownMenu) {
+                    dropdownMenu.classList.toggle('show');
+                }
+            }
+        });
+    });
+    
+    // Set active state based on current URL
+    function setActiveMenu() {
+        const currentPath = window.location.pathname;
+        const menuLinks = document.querySelectorAll('.dropdown-item[href], .menu-link-btn[href]');
+        
+        menuLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && href !== '#' && href !== 'javascript: void(0);' && href === currentPath) {
+                link.classList.add('active');
+                
+                // Find parent dropdown button and add active class
+                const parentDropdown = link.closest('.dropdown-menu');
+                if (parentDropdown) {
+                    const dropdownBtn = parentDropdown.previousElementSibling;
+                    if (dropdownBtn && dropdownBtn.classList.contains('menu-dropdown-btn')) {
+                        dropdownBtn.classList.add('active');
+                    }
+                }
+            }
+        });
+    }
+    
+    setActiveMenu();
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    });
+});
+</script>

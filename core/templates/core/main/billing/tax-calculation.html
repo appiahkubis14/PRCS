@@ -1,0 +1,1540 @@
+<!-- templates/calculation.html -->
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title">Tax Calculation</h3>
+          <p class="card-subtitle">Calculate property taxes with detailed breakdowns</p>
+        </div>
+        <div class="mb-3">
+          <div>
+            <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#calculateTaxModal">
+              <i class="fas fa-calculator"></i> Calculate Tax
+            </button>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bulkCalculateModal">
+              <i class="fas fa-bolt"></i> Bulk Calculate
+            </button>
+            <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#scenarioModal">
+              <i class="fas fa-chart-line"></i> Tax Scenario
+            </button>
+            <button class="btn btn-outline-success" id="generateSummaryBtn">
+              <i class="fas fa-chart-bar"></i> Summary Report
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calculation Results Section -->
+<div class="row mt-4" id="calculationResults" style="display: none;">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Tax Calculation Results</h5>
+        <button class="btn btn-sm btn-outline-secondary" id="clearResultsBtn">
+          <i class="fas fa-times"></i> Clear Results
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="resultsContent">
+          <!-- Results will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Calculations -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Recent Tax Calculations</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="calculationsTable" class="table table-striped table-bordered" style="width: 100%">
+            <thead class="thead-dark">
+              <tr>
+                <th>PROPERTY ID</th>
+                <th>ADDRESS</th>
+                <th>ZONE</th>
+                <th>PROPERTY TYPE</th>
+                <th>ASSESSED VALUE (₵)</th>
+                <th>TAX RATE (%)</th>
+                <th>BASE TAX (₵)</th>
+                <th>CALCULATION DATE</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calculate Tax Modal -->
+<div class="modal fade" id="calculateTaxModal" tabindex="-1" aria-labelledby="calculateTaxModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="calculateTaxModalLabel">Calculate Property Tax</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" id="calculateTaxForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Property*</label>
+              <select name="property_id" class="form-select" id="propertySelect" required>
+                <option value="">-- Select Property --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Billing Cycle</label>
+              <select name="billing_cycle_id" class="form-select" id="billingCycleSelect">
+                <option value="">-- Select Billing Cycle (Optional) --</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="include_penalties" id="includePenalties">
+                <label class="form-check-label" for="includePenalties">
+                  Include Outstanding Penalties
+                </label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="include_discounts" id="includeDiscounts">
+                <label class="form-check-label" for="includeDiscounts">
+                  Include Available Discounts
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>Note:</strong> The system will automatically use the current active tax rate for the property's zone and property type.
+          </div>
+          
+          <!-- Submit Buttons -->
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-calculator"></i> Calculate Tax
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Calculate Modal -->
+<div class="modal fade" id="bulkCalculateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Bulk Tax Calculation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="bulkCalculateForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Billing Cycle</label>
+              <select name="billing_cycle_id" class="form-select" id="bulkBillingCycleSelect">
+                <option value="">-- Select Billing Cycle (Optional) --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Properties to Calculate</label>
+              <button type="button" class="btn btn-outline-primary w-100" id="selectPropertiesBtn">
+                <i class="fas fa-list"></i> Select Properties
+              </button>
+              <small class="form-text text-muted" id="selectedPropertiesCount">0 properties selected</small>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-12">
+              <div id="selectedPropertiesList" class="border p-3" style="max-height: 200px; overflow-y: auto; display: none;">
+                <!-- Selected properties will be listed here -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-bolt"></i> Calculate Taxes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tax Scenario Modal -->
+<div class="modal fade" id="scenarioModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tax Scenario Simulation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="scenarioForm">
+          {% csrf_token %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Assessed Value (₵)*</label>
+              <input type="number" name="assessed_value" class="form-control" required step="0.01" min="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Proposed Tax Rate (%)</label>
+              <input type="number" name="proposed_rate" class="form-control" step="0.0001" min="0" max="100" placeholder="Leave empty for current rate">
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Zone*</label>
+              <select name="zone_id" class="form-select" id="scenarioZoneSelect" required>
+                <option value="">-- Select Zone --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Property Type*</label>
+              <select name="property_type_id" class="form-select" id="scenarioPropertyTypeSelect" required>
+                <option value="">-- Select Property Type --</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="include_penalties" id="scenarioPenalties">
+                <label class="form-check-label" for="scenarioPenalties">
+                  Include Penalties
+                </label>
+              </div>
+              <input type="number" name="penalty_amount" class="form-control mt-2" value="0" step="0.01" min="0" placeholder="Penalty amount">
+            </div>
+            <div class="col-md-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="include_discounts" id="scenarioDiscounts">
+                <label class="form-check-label" for="scenarioDiscounts">
+                  Include Discounts
+                </label>
+              </div>
+              <input type="number" name="discount_percentage" class="form-control mt-2" value="0" step="0.01" min="0" max="100" placeholder="Discount %">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Current Rate</label>
+              <input type="text" id="currentRateDisplay" class="form-control" readonly>
+            </div>
+          </div>
+          
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-chart-line"></i> Run Simulation
+            </button>
+          </div>
+        </form>
+        
+        <div id="scenarioResults" class="mt-4" style="display: none;">
+          <hr>
+          <h6>Scenario Results</h6>
+          <div id="scenarioResultsContent">
+            <!-- Scenario results will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Properties Selection Modal -->
+<div class="modal fade" id="propertiesSelectionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Select Properties for Calculation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table id="propertiesSelectionTable" class="table table-sm table-striped">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAllProperties"></th>
+                <th>PROPERTY ID</th>
+                <th>ADDRESS</th>
+                <th>ZONE</th>
+                <th>PROPERTY TYPE</th>
+                <th>ASSESSED VALUE (₵)</th>
+                <th>CURRENT RATE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Properties will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmPropertiesSelection">Confirm Selection</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tax History Modal -->
+<div class="modal fade" id="taxHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tax Calculation History</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="taxHistoryContent">
+          <!-- History content will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Report Modal -->
+<div class="modal fade" id="summaryReportModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tax Summary Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="summaryReportContent">
+          <!-- Report content will be loaded here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="exportSummaryBtn">
+          <i class="fas fa-download"></i> Export Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="mt-3"></div>
+
+<script src="/static/assets/libs/jquery/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(document).ready(function () {
+  let selectedProperties = [];
+  let allProperties = [];
+  let currentSummaryData = null;
+
+   // CSRF Token Handling
+  function getCSRFToken() {
+    // Try to get CSRF token from cookie
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, 10) === 'csrftoken=') {
+          cookieValue = decodeURIComponent(cookie.substring(10));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Apply CSRF Token to all AJAX Requests
+  $.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+      if (!this.crossDomain && !/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
+    }
+  });
+// Initialize DataTable for recent calculations
+var table = $("#calculationsTable").DataTable({
+    paging: true,
+    searching: true,
+    ordering: true,
+    info: true,
+    responsive: true,
+    autoWidth: false,
+    processing: true,
+    serverSide: false,
+    lengthMenu: [10, 25, 50, 100],
+    pageLength: 10,
+    ajax: {
+        url: "/api/tax/recent-calculations/",
+        type: "GET",
+        dataType: "json",
+        dataSrc: function (json) {
+            return json.success ? json.calculations : [];
+        },
+        error: function (xhr) {
+            showMessage("danger", `Error fetching calculations: ${xhr.responseText}`);
+            return [];
+        }
+    },
+    dom: "Bfrtip",
+    buttons: [
+        {
+            extend: "copy",
+            text: '<i class="fas fa-copy"></i> Copy',
+            className: "btn btn-sm btn-outline-secondary",
+        },
+        {
+            extend: "csv",
+            text: '<i class="fas fa-file-csv"></i> CSV',
+            className: "btn btn-sm btn-outline-success",
+        },
+        {
+            extend: "excel",
+            text: '<i class="fas fa-file-excel"></i> Excel',
+            className: "btn btn-sm btn-outline-primary",
+        }
+    ],
+    order: [[7, "desc"]],
+    columns: [
+        { 
+            data: 'property_id',
+            className: "text-left fw-bold"
+        },
+        { 
+            data: 'address',
+            className: "text-left"
+        },
+        { 
+            data: 'zone',
+            className: "text-center"
+        },
+        { 
+            data: 'property_type',
+            className: "text-center"
+        },
+        { 
+            data: 'assessed_value', 
+            className: "text-right",
+            render: function(data) {
+                return '₵' + parseFloat(data).toLocaleString(undefined, {minimumFractionDigits: 2});
+            }
+        },
+        { 
+            data: 'tax_rate', 
+            className: "text-right",
+            render: function(data) {
+                return parseFloat(data).toFixed(4) + '%';
+            }
+        },
+        { 
+            data: 'base_tax', 
+            className: "text-right fw-bold",
+            render: function(data) {
+                return '₵' + parseFloat(data).toLocaleString(undefined, {minimumFractionDigits: 2});
+            }
+        },
+        { 
+            data: 'calculation_date',
+            className: "text-center"
+        },
+        {
+            data: "property_id",
+            render: function (data, type, row) {
+                return `
+                    <div class="d-flex justify-content-center gap-1">
+                        <button class="btn btn-sm btn-info history-btn" data-property="${data}" title="View History">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary calculate-btn" data-property="${data}" title="Recalculate">
+                            <i class="fas fa-calculator"></i>
+                        </button>
+                    </div>`;
+            },
+        },
+    ],
+    language: {
+        emptyTable: "No recent calculations found",
+        zeroRecords: "No matching calculations found"
+    }
+});
+
+  // Load DataTable Buttons
+  table.buttons().container().appendTo("#calculationsTable_wrapper .col-md-6:eq(0)");
+
+  // Show Message Function
+  function showMessage(type, message) {
+    $("#messageContainer").html(`
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `);
+    setTimeout(() => {
+      $(".alert").fadeOut("slow");
+    }, 5000);
+  }
+
+  // CSRF Token Function
+  function getCSRFToken() {
+    let cookieValue = null;
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith("csrftoken=")) {
+        cookieValue = cookie.substring("csrftoken=".length);
+        break;
+      }
+    }
+    return cookieValue;
+  }
+
+  // Apply CSRF Token to AJAX Requests
+  $.ajaxSetup({
+    beforeSend: function (xhr, settings) {
+      if (!this.crossDomain && settings.type !== "GET") {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
+    },
+  });
+
+  // Load properties for dropdown
+  function loadProperties() {
+    $.ajax({
+      url: '/api/properties/billing/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const select = $('#propertySelect');
+          select.empty().append('<option value="">-- Select Property --</option>');
+          
+          response.properties.forEach(property => {
+            select.append(`<option value="${property.id}">${property.property_id} - ${property.address}</option>`);
+          });
+          
+          // Store all properties for bulk selection
+          allProperties = response.properties;
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading properties');
+      }
+    });
+  }
+
+  // Load billing cycles
+  function loadBillingCycles() {
+    $.ajax({
+      url: '/api/billing-cycles/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const select = $('#billingCycleSelect');
+          const bulkSelect = $('#bulkBillingCycleSelect');
+          
+          select.empty().append('<option value="">-- Select Billing Cycle (Optional) --</option>');
+          bulkSelect.empty().append('<option value="">-- Select Billing Cycle (Optional) --</option>');
+          
+          response.billing_cycles.forEach(cycle => {
+            const option = `<option value="${cycle.id}">${cycle.name} (${cycle.start_date} to ${cycle.end_date})</option>`;
+            select.append(option);
+            bulkSelect.append(option);
+          });
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading billing cycles');
+      }
+    });
+  }
+
+  // Load zones and property types for scenario
+  function loadZonesAndPropertyTypes() {
+    $.ajax({
+      url: '/api/zones-property-types/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const zoneSelect = $('#scenarioZoneSelect');
+          const propertyTypeSelect = $('#scenarioPropertyTypeSelect');
+          
+          zoneSelect.empty().append('<option value="">-- Select Zone --</option>');
+          propertyTypeSelect.empty().append('<option value="">-- Select Property Type --</option>');
+          
+          response.zones.forEach(zone => {
+            zoneSelect.append(`<option value="${zone.id}">${zone.name} (${zone.zone_type})</option>`);
+          });
+          
+          response.property_types.forEach(pt => {
+            propertyTypeSelect.append(`<option value="${pt.id}">${pt.name}</option>`);
+          });
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading zones and property types');
+      }
+    });
+  }
+
+  // Calculate tax form submission
+  $('#calculateTaxForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+      property_id: $('#propertySelect').val(),
+      billing_cycle_id: $('#billingCycleSelect').val() || null,
+      include_penalties: $('#includePenalties').is(':checked'),
+      include_discounts: $('#includeDiscounts').is(':checked')
+    };
+    
+    if (!formData.property_id) {
+      showMessage('warning', 'Please select a property');
+      return;
+    }
+    
+    calculateTax(formData);
+  });
+
+  function calculateTax(formData) {
+    $.ajax({
+      url: '/api/tax/calculate/',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          displayCalculationResults(response.calculation);
+          $('#calculateTaxModal').modal('hide');
+          table.ajax.reload(); // Refresh recent calculations
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error calculating tax';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  }
+
+  function displayCalculationResults(calculation) {
+    const property = calculation.property_details;
+    const taxRate = calculation.tax_rate_details;
+    const amounts = calculation.calculation_details;
+    
+    let content = `
+      <div class="row">
+        <div class="col-md-6">
+          <h6>Property Information</h6>
+          <table class="table table-sm">
+            <tr><td><strong>Property ID:</strong></td><td>${property.property_id}</td></tr>
+            <tr><td><strong>Address:</strong></td><td>${property.address}</td></tr>
+            <tr><td><strong>Zone:</strong></td><td>${property.zone}</td></tr>
+            <tr><td><strong>Property Type:</strong></td><td>${property.property_type}</td></tr>
+            <tr><td><strong>Assessed Value:</strong></td><td>₵${parseFloat(property.assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+            <tr><td><strong>Market Value:</strong></td><td>₵${parseFloat(property.market_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <h6>Tax Rate Information</h6>
+          <table class="table table-sm">
+            <tr><td><strong>Tax Rate:</strong></td><td>${taxRate.rate}%</td></tr>
+            <tr><td><strong>Effective From:</strong></td><td>${taxRate.effective_from}</td></tr>
+            <tr><td><strong>Effective To:</strong></td><td>${taxRate.effective_to}</td></tr>
+            <tr><td><strong>Description:</strong></td><td>${taxRate.description || 'N/A'}</td></tr>
+          </table>
+        </div>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-12">
+          <h6>Tax Calculation Breakdown</h6>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-dark">
+                <tr>
+                  <th>Description</th>
+                  <th class="text-right">Amount (₵)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Base Tax (${property.assessed_value} × ${taxRate.rate}%)</td>
+                  <td class="text-right">₵${parseFloat(amounts.base_tax).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                </tr>
+                <tr>
+                  <td>Penalties</td>
+                  <td class="text-right">₵${parseFloat(amounts.penalties).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                </tr>
+                <tr>
+                  <td>Discounts</td>
+                  <td class="text-right text-success">-₵${parseFloat(amounts.discounts).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                </tr>
+                <tr class="table-primary fw-bold">
+                  <td>TOTAL AMOUNT DUE</td>
+                  <td class="text-right">₵${parseFloat(amounts.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add penalty details if any
+    if (calculation.penalty_details && calculation.penalty_details.length > 0) {
+      content += `
+        <div class="row mt-3">
+          <div class="col-12">
+            <h6>Outstanding Penalties</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-striped">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Reason</th>
+                    <th>Applied Date</th>
+                    <th>Due Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+      `;
+      
+      calculation.penalty_details.forEach(penalty => {
+        content += `
+          <tr>
+            <td>${penalty.type}</td>
+            <td>₵${parseFloat(penalty.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td>${penalty.reason}</td>
+            <td>${penalty.applied_date}</td>
+            <td>${penalty.due_date}</td>
+          </tr>
+        `;
+      });
+      
+      content += `
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Add billing cycle info if available
+    if (calculation.billing_cycle) {
+      content += `
+        <div class="row mt-3">
+          <div class="col-12">
+            <h6>Billing Cycle Information</h6>
+            <table class="table table-sm">
+              <tr><td><strong>Cycle:</strong></td><td>${calculation.billing_cycle.name} (${calculation.billing_cycle.cycle_type})</td></tr>
+              <tr><td><strong>Period:</strong></td><td>${calculation.billing_cycle.start_date} to ${calculation.billing_cycle.end_date}</td></tr>
+              <tr><td><strong>Due Date:</strong></td><td>${calculation.billing_cycle.due_date}</td></tr>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Add action buttons
+    content += `
+      <div class="row mt-4">
+        <div class="col-12 text-end">
+          <button class="btn btn-success" id="saveAsDraftBtn" data-property="${property.property_id}" data-tax="${amounts.base_tax}" data-penalties="${amounts.penalties}" data-discounts="${amounts.discounts}">
+            <i class="fas fa-save"></i> Save as Draft Bill
+          </button>
+          <button class="btn btn-primary" id="recalculateBtn">
+            <i class="fas fa-redo"></i> Recalculate
+          </button>
+        </div>
+      </div>
+    `;
+    
+    $('#resultsContent').html(content);
+    $('#calculationResults').show();
+    
+    // Scroll to results
+    $('html, body').animate({
+      scrollTop: $('#calculationResults').offset().top - 100
+    }, 500);
+  }
+
+  // Clear results
+  $('#clearResultsBtn').click(function() {
+    $('#calculationResults').hide();
+    $('#resultsContent').empty();
+  });
+
+  // Save as draft bill
+  $(document).on('click', '#saveAsDraftBtn', function() {
+    const propertyId = $(this).data('property');
+    const taxAmount = $(this).data('tax');
+    const penaltyAmount = $(this).data('penalties');
+    const discountAmount = $(this).data('discounts');
+    
+    // Find the property ID from the property list
+    const property = allProperties.find(p => p.property_id === propertyId);
+    if (!property) {
+      showMessage('danger', 'Property not found');
+      return;
+    }
+    
+    const billingCycleId = $('#billingCycleSelect').val() || null;
+    
+    $.ajax({
+      url: '/api/tax/save-draft/',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        property_id: property.id,
+        billing_cycle_id: billingCycleId,
+        tax_amount: taxAmount,
+        penalty_amount: penaltyAmount,
+        discount_amount: discountAmount,
+        notes: 'Created from tax calculation'
+      }),
+      success: function(response) {
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: response.message,
+            timer: 2000,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error saving draft bill';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  });
+
+  // Recalculate button
+  $(document).on('click', '#recalculateBtn', function() {
+    $('#calculateTaxModal').modal('show');
+  });
+
+  // View tax history
+  $(document).on('click', '.history-btn', function() {
+    const propertyId = $(this).data('property');
+    
+    $.ajax({
+      url: `/api/tax/history/${propertyId}/`,
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          let content = `
+            <h6>Tax Calculation History - ${response.property_id}</h6>
+            <p><strong>Address:</strong> ${response.property_address}</p>
+          `;
+          
+          if (response.history.length > 0) {
+            content += `
+              <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                  <thead>
+                    <tr>
+                      <th>Bill Number</th>
+                      <th>Billing Cycle</th>
+                      <th>Tax Amount</th>
+                      <th>Penalty</th>
+                      <th>Discount</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Generated Date</th>
+                      <th>Due Date</th>
+                      <th>Generated By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+            `;
+            
+            response.history.forEach(bill => {
+              content += `
+                <tr>
+                  <td>${bill.bill_number}</td>
+                  <td>${bill.billing_cycle}</td>
+                  <td>₵${parseFloat(bill.tax_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                  <td>₵${parseFloat(bill.penalty_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                  <td>₵${parseFloat(bill.discount_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                  <td class="fw-bold">₵${parseFloat(bill.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                  <td><span class="badge bg-${getStatusClass(bill.status)}">${bill.status.toUpperCase()}</span></td>
+                  <td>${bill.generated_date}</td>
+                  <td>${bill.due_date}</td>
+                  <td>${bill.generated_by}</td>
+                </tr>
+              `;
+            });
+            
+            content += `
+                  </tbody>
+                </table>
+              </div>
+            `;
+          } else {
+            content += '<p class="text-muted">No tax calculation history found for this property.</p>';
+          }
+          
+          $('#taxHistoryContent').html(content);
+          $('#taxHistoryModal').modal('show');
+        } else {
+          showMessage('danger', response.error);
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error loading tax history');
+      }
+    });
+  });
+
+  function getStatusClass(status) {
+    const classes = {
+      'draft': 'secondary',
+      'generated': 'info',
+      'sent': 'primary',
+      'paid': 'success',
+      'overdue': 'danger',
+      'cancelled': 'dark'
+    };
+    return classes[status] || 'secondary';
+  }
+
+  // Recalculate from table
+  $(document).on('click', '.calculate-btn', function() {
+    const propertyId = $(this).data('property');
+    const property = allProperties.find(p => p.property_id === propertyId);
+    
+    if (property) {
+      $('#propertySelect').val(property.id);
+      $('#calculateTaxModal').modal('show');
+    }
+  });
+
+  // Bulk calculation functionality
+  $('#selectPropertiesBtn').click(function() {
+    loadPropertiesForSelection();
+    $('#propertiesSelectionModal').modal('show');
+  });
+
+  function loadPropertiesForSelection() {
+    const tbody = $('#propertiesSelectionTable tbody');
+    tbody.empty();
+    
+    allProperties.forEach(property => {
+      const isSelected = selectedProperties.some(p => p.id === property.id);
+      const row = `
+        <tr>
+          <td>
+            <input type="checkbox" class="property-checkbox" value="${property.id}" ${isSelected ? 'checked' : ''}>
+          </td>
+          <td>${property.property_id}</td>
+          <td>${property.address}</td>
+          <td>${property.zone_name}</td>
+          <td>${property.property_type_name}</td>
+          <td>₵${parseFloat(property.assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          <td>${getCurrentRateForProperty(property)}</td>
+        </tr>
+      `;
+      tbody.append(row);
+    });
+    
+    updateSelectedPropertiesCount();
+  }
+
+  function getCurrentRateForProperty(property) {
+    // This would need to be implemented based on your current rates
+    return 'N/A';
+  }
+
+  $('#selectAllProperties').change(function() {
+    const isChecked = $(this).is(':checked');
+    $('.property-checkbox').prop('checked', isChecked);
+    
+    if (isChecked) {
+      selectedProperties = [...allProperties];
+    } else {
+      selectedProperties = [];
+    }
+    
+    updateSelectedPropertiesList();
+    updateSelectedPropertiesCount();
+  });
+
+  $(document).on('change', '.property-checkbox', function() {
+    const propertyId = parseInt($(this).val());
+    const property = allProperties.find(p => p.id === propertyId);
+    
+    if ($(this).is(':checked')) {
+      if (!selectedProperties.some(p => p.id === propertyId)) {
+        selectedProperties.push(property);
+      }
+    } else {
+      selectedProperties = selectedProperties.filter(p => p.id !== propertyId);
+    }
+    
+    updateSelectedPropertiesList();
+    updateSelectedPropertiesCount();
+  });
+
+  function updateSelectedPropertiesList() {
+    const container = $('#selectedPropertiesList');
+    const list = $('#selectedPropertiesList .list-group');
+    
+    if (selectedProperties.length > 0) {
+      let html = '<div class="list-group">';
+      selectedProperties.forEach(property => {
+        html += `
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>${property.property_id}</strong> - ${property.address}
+              <br><small class="text-muted">${property.zone_name} | ${property.property_type_name} | Assessed: ₵${parseFloat(property.assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-property" data-id="${property.id}">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.html(html).show();
+    } else {
+      container.hide();
+    }
+  }
+
+  function updateSelectedPropertiesCount() {
+    $('#selectedPropertiesCount').text(`${selectedProperties.length} properties selected`);
+  }
+
+  $(document).on('click', '.remove-property', function() {
+    const propertyId = parseInt($(this).data('id'));
+    selectedProperties = selectedProperties.filter(p => p.id !== propertyId);
+    
+    $(`.property-checkbox[value="${propertyId}"]`).prop('checked', false);
+    
+    updateSelectedPropertiesList();
+    updateSelectedPropertiesCount();
+  });
+
+  $('#confirmPropertiesSelection').click(function() {
+    $('#propertiesSelectionModal').modal('hide');
+    updateSelectedPropertiesList();
+    updateSelectedPropertiesCount();
+  });
+
+  // Bulk calculate form submission
+  $('#bulkCalculateForm').submit(function(e) {
+    e.preventDefault();
+    
+    const billingCycleId = $('#bulkBillingCycleSelect').val() || null;
+    
+    if (selectedProperties.length === 0) {
+      showMessage('warning', 'Please select at least one property');
+      return;
+    }
+    
+    const propertyIds = selectedProperties.map(p => p.id);
+    
+    $.ajax({
+      url: '/api/tax/bulk-calculate/',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        property_ids: propertyIds,
+        billing_cycle_id: billingCycleId
+      }),
+      success: function(response) {
+        if (response.success) {
+          displayBulkCalculationResults(response);
+          $('#bulkCalculateModal').modal('hide');
+          table.ajax.reload();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error in bulk calculation';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  });
+
+  function displayBulkCalculationResults(response) {
+    const calculations = response.calculations;
+    const totals = response.totals;
+    
+    let content = `
+      <h6>Bulk Tax Calculation Results</h6>
+      <p><strong>Properties Processed:</strong> ${calculations.length}</p>
+      
+      <div class="table-responsive">
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Property ID</th>
+              <th>Address</th>
+              <th>Zone</th>
+              <th>Property Type</th>
+              <th class="text-right">Assessed Value</th>
+              <th class="text-right">Tax Rate</th>
+              <th class="text-right">Base Tax</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    calculations.forEach(calc => {
+      content += `
+        <tr>
+          <td>${calc.property_id}</td>
+          <td>${calc.address}</td>
+          <td>${calc.zone}</td>
+          <td>${calc.property_type}</td>
+          <td class="text-right">₵${parseFloat(calc.assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          <td class="text-right">${parseFloat(calc.tax_rate).toFixed(4)}%</td>
+          <td class="text-right fw-bold">₵${parseFloat(calc.base_tax).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        </tr>
+      `;
+    });
+    
+    content += `
+          </tbody>
+          <tfoot class="table-primary fw-bold">
+            <tr>
+              <td colspan="4" class="text-right">TOTALS:</td>
+              <td class="text-right">₵${parseFloat(totals.total_assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+              <td></td>
+              <td class="text-right">₵${parseFloat(totals.total_base_tax).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
+    
+    if (response.errors && response.errors.length > 0) {
+      content += `
+        <div class="alert alert-warning mt-3">
+          <h6>Errors Encountered:</h6>
+          <ul>
+            ${response.errors.map(error => `<li>${error}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+    
+    $('#resultsContent').html(content);
+    $('#calculationResults').show();
+    
+    $('html, body').animate({
+      scrollTop: $('#calculationResults').offset().top - 100
+    }, 500);
+  }
+
+  // Tax scenario functionality
+  $('#scenarioForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+      assessed_value: $('#scenarioForm input[name="assessed_value"]').val(),
+      zone_id: $('#scenarioZoneSelect').val(),
+      property_type_id: $('#scenarioPropertyTypeSelect').val(),
+      proposed_rate: $('#scenarioForm input[name="proposed_rate"]').val() || null,
+      include_penalties: $('#scenarioPenalties').is(':checked'),
+      penalty_amount: $('#scenarioForm input[name="penalty_amount"]').val() || 0,
+      include_discounts: $('#scenarioDiscounts').is(':checked'),
+      discount_percentage: $('#scenarioForm input[name="discount_percentage"]').val() || 0
+    };
+    
+    if (!formData.assessed_value || !formData.zone_id || !formData.property_type_id) {
+      showMessage('warning', 'Please fill all required fields');
+      return;
+    }
+    
+    $.ajax({
+      url: '/api/tax/simulate/',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          displayScenarioResults(response.scenario);
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.error
+          });
+        }
+      },
+      error: function(xhr) {
+        let errorMsg = 'Error running scenario';
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMsg
+        });
+      }
+    });
+  });
+
+  function displayScenarioResults(scenario) {
+    const current = scenario.current_scenario;
+    const proposed = scenario.proposed_scenario;
+    const comparison = scenario.comparison;
+    const parameters = scenario.parameters;
+    
+    let content = `
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header bg-secondary text-white">
+              <h6 class="mb-0">Current Scenario</h6>
+            </div>
+            <div class="card-body">
+              <table class="table table-sm">
+                <tr><td><strong>Tax Rate:</strong></td><td>${current.tax_rate}%</td></tr>
+                <tr><td><strong>Tax Amount:</strong></td><td class="fw-bold">₵${parseFloat(current.tax_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                <tr><td><strong>Description:</strong></td><td>${current.description}</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-0">Proposed Scenario</h6>
+            </div>
+            <div class="card-body">
+              <table class="table table-sm">
+                <tr><td><strong>Tax Rate:</strong></td><td>${proposed.tax_rate}%</td></tr>
+                <tr><td><strong>Base Tax:</strong></td><td>₵${parseFloat(proposed.tax_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                <tr><td><strong>Penalties:</strong></td><td>₵${parseFloat(proposed.penalty_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                <tr><td><strong>Discounts:</strong></td><td class="text-success">-₵${parseFloat(proposed.discount_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                <tr class="fw-bold"><td><strong>Final Amount:</strong></td><td>₵${parseFloat(proposed.final_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="card ${comparison.is_increase ? 'border-danger' : 'border-success'}">
+            <div class="card-header ${comparison.is_increase ? 'bg-danger text-white' : 'bg-success text-white'}">
+              <h6 class="mb-0">Comparison</h6>
+            </div>
+            <div class="card-body">
+              <table class="table table-sm">
+                <tr>
+                  <td><strong>Amount Difference:</strong></td>
+                  <td class="fw-bold ${comparison.is_increase ? 'text-danger' : 'text-success'}">
+                    ${comparison.is_increase ? '+' : ''}₵${parseFloat(comparison.amount_difference).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Percentage Change:</strong></td>
+                  <td class="fw-bold ${comparison.is_increase ? 'text-danger' : 'text-success'}">
+                    ${comparison.is_increase ? '+' : ''}${parseFloat(comparison.percentage_change).toFixed(2)}%
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-3">
+        <div class="col-12">
+          <h6>Scenario Parameters</h6>
+          <table class="table table-sm">
+            <tr><td><strong>Assessed Value:</strong></td><td>₵${parseFloat(parameters.assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+            <tr><td><strong>Zone:</strong></td><td>${parameters.zone}</td></tr>
+            <tr><td><strong>Property Type:</strong></td><td>${parameters.property_type}</td></tr>
+            <tr><td><strong>Include Penalties:</strong></td><td>${parameters.include_penalties ? 'Yes' : 'No'}</td></tr>
+            <tr><td><strong>Include Discounts:</strong></td><td>${parameters.include_discounts ? 'Yes' : 'No'}</td></tr>
+          </table>
+        </div>
+      </div>
+    `;
+    
+    $('#scenarioResultsContent').html(content);
+    $('#scenarioResults').show();
+  }
+
+  // Update current rate when zone and property type are selected
+  $('#scenarioZoneSelect, #scenarioPropertyTypeSelect').change(function() {
+    const zoneId = $('#scenarioZoneSelect').val();
+    const propertyTypeId = $('#scenarioPropertyTypeSelect').val();
+    
+    if (zoneId && propertyTypeId) {
+      // This would need to call an API to get the current rate
+      // For now, we'll just show a placeholder
+      $('#currentRateDisplay').val('Please run simulation to see current rate');
+    } else {
+      $('#currentRateDisplay').val('');
+    }
+  });
+
+  // Generate summary report
+  $('#generateSummaryBtn').click(function() {
+    $.ajax({
+      url: '/api/tax/summary-report/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          displaySummaryReport(response);
+        } else {
+          showMessage('danger', response.error);
+        }
+      },
+      error: function(xhr) {
+        showMessage('danger', 'Error generating summary report');
+      }
+    });
+  });
+
+  function displaySummaryReport(response) {
+    const summary = response.summary;
+    const totals = response.totals;
+    currentSummaryData = response;
+    
+    let content = `
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6>Tax Summary Report</h6>
+        <small class="text-muted">Generated: ${response.report_date}</small>
+      </div>
+      
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+              <h4>${totals.total_properties}</h4>
+              <p class="mb-0">Total Properties</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-success text-white">
+            <div class="card-body text-center">
+              <h4>₵${parseFloat(totals.total_assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</h4>
+              <p class="mb-0">Total Assessed Value</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-info text-white">
+            <div class="card-body text-center">
+              <h4>₵${parseFloat(totals.total_expected_tax).toLocaleString(undefined, {minimumFractionDigits: 2})}</h4>
+              <p class="mb-0">Total Expected Tax</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    if (summary.length > 0) {
+      content += `
+        <div class="table-responsive">
+          <table class="table table-sm table-striped" id="summaryTable">
+            <thead>
+              <tr>
+                <th>Zone</th>
+                <th>Property Type</th>
+                <th class="text-center">Property Count</th>
+                <th class="text-right">Total Assessed Value</th>
+                <th class="text-right">Total Expected Tax</th>
+                <th class="text-right">Average Tax per Property</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      summary.forEach(item => {
+        const avgTax = parseFloat(item.total_expected_tax) / item.property_count;
+        content += `
+          <tr>
+            <td>${item.zone}</td>
+            <td>${item.property_type}</td>
+            <td class="text-center">${item.property_count}</td>
+            <td class="text-right">₵${parseFloat(item.total_assessed_value).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td class="text-right fw-bold">₵${parseFloat(item.total_expected_tax).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td class="text-right">₵${avgTax.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          </tr>
+        `;
+      });
+      
+      content += `
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      content += '<p class="text-muted">No data available for summary report.</p>';
+    }
+    
+    $('#summaryReportContent').html(content);
+    $('#summaryReportModal').modal('show');
+  }
+
+  // Export summary report
+  $('#exportSummaryBtn').click(function() {
+    if (!currentSummaryData) {
+      showMessage('warning', 'No data to export');
+      return;
+    }
+    
+    // Create CSV content
+    let csvContent = "Zone,Property Type,Property Count,Total Assessed Value,Total Expected Tax,Average Tax per Property\n";
+    
+    currentSummaryData.summary.forEach(item => {
+      const avgTax = parseFloat(item.total_expected_tax) / item.property_count;
+      csvContent += `"${item.zone}","${item.property_type}",${item.property_count},${item.total_assessed_value},${item.total_expected_tax},${avgTax.toFixed(2)}\n`;
+    });
+    
+    // Add totals
+    csvContent += `\n"TOTALS","",${currentSummaryData.totals.total_properties},${currentSummaryData.totals.total_assessed_value},${currentSummaryData.totals.total_expected_tax},""\n`;
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tax_summary_report_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showMessage('success', 'Summary report exported successfully');
+  });
+
+  // Initialize page
+  loadProperties();
+  loadBillingCycles();
+  loadZonesAndPropertyTypes();
+});
+</script>
+
+<style>
+#calculationsTable tbody tr td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.btn-sm {
+  margin: 1px;
+}
+
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table-responsive {
+  max-height: 600px;
+}
+
+#selectedPropertiesList {
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+}
+
+.list-group-item {
+  border: none;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+.badge {
+  font-size: 0.75em;
+}
+</style>
+{% endblock %}
