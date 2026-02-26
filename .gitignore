@@ -76,3 +76,5 @@ target/
 *.pmtiles
 data/
 static/tiles/
+.DS_Store
+**/.DS_Store
