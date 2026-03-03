@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Generate PMTiles using tippecanoe'
+    help = 'Generate PMTiles using tippecanoe with full property attributes for popups'
 
     def add_arguments(self, parser):
         parser.add_argument('--output', type=str, default='custom_properties_v1.pmtiles')
@@ -66,17 +66,26 @@ class Command(BaseCommand):
         # Method 4: Create point from lat/long if available
         if property_obj.latitude and property_obj.longitude:
             try:
+                # Try to convert to float, but if it fails, skip
+                lat = float(property_obj.latitude)
+                lng = float(property_obj.longitude)
                 return {
                     "type": "Point",
-                    "coordinates": [
-                        float(property_obj.longitude),
-                        float(property_obj.latitude)
-                    ]
+                    "coordinates": [lng, lat]
                 }
             except (ValueError, TypeError):
                 pass
         
         return None
+
+    def safe_float_conversion(self, value):
+        """Safely convert a value to float, return None if conversion fails"""
+        if value is None or value == '':
+            return None
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
 
     def handle(self, *args, **options):
         output_file = options['output']
@@ -85,6 +94,7 @@ class Command(BaseCommand):
         with tempfile.NamedTemporaryFile(mode='w', suffix='.geojson', delete=False) as tmp_file:
             features = []
             
+            # Use select_related to fetch related objects efficiently
             properties = Property.objects.all()
             total = properties.count()
             
@@ -102,28 +112,62 @@ class Command(BaseCommand):
                         skipped += 1
                         continue
                     
-                    # Skip Point geometries if you only want polygons
-                    # if geom.get('type') == 'Point':
-                    #     skipped += 1
-                    #     continue
+                    # Safely convert latitude and longitude
+                    lat = self.safe_float_conversion(property.latitude)
+                    lng = self.safe_float_conversion(property.longitude)
                     
-                    # Create feature with minimal properties
+                    # Create feature with comprehensive properties for popups
                     feature = {
                         "type": "Feature",
                         "geometry": geom,
                         "properties": {
+                            # Core identifiers
                             "id": property.id,
+                            
+                            # Location information - ensure all values are strings
+                            "address": str(property.address or property.addressv1 or "N/A").strip(),
+                            "district": str(property.district or "N/A").strip(),
+                            "region": str(property.region or "N/A").strip(),
+                            "postcode": str(property.postcode or "N/A").strip(),
+                            "street": str(property.street or "N/A").strip(),
+                            "gpsname": str(property.gpsname or "N/A").strip(),
+                            
+                            # Zone information - comment out for now to isolate issue
+                            # "zone": str(property.zone.name) if property.zone else "N/A",
+                            # "zone_code": str(property.zone.code) if property.zone else "N/A",
+                            
+                            # Property type information - comment out for now
+                            # "property_type": str(property.property_type.name) if property.property_type else "N/A",
+                            # "property_type_code": str(property.property_type.code) if property.property_type else "N/A",
+                            
+                            # Status - comment out for now
+                            # "status": str(property.status or "active"),
+                            
+                            # Geographic codes
+                            "g_code": str(property.g_code or "N/A").strip(),
                         }
                     }
                     
-                    # Add essential fields only
-                    if property.address:
-                        feature["properties"]["address"] = property.address[:]
-                    elif property.addressv1:
-                        feature["properties"]["address"] = property.addressv1[:]
+                    # Add coordinates only if they converted successfully
+                    if lat is not None and lng is not None:
+                        feature["properties"]["latitude"] = lat
+                        feature["properties"]["longitude"] = lng
                     
-                    if property.district:
-                        feature["properties"]["district"] = property.district
+                    # Safely add numeric fields
+                    area = self.safe_float_conversion(property.area)
+                    if area is not None:
+                        feature["properties"]["area"] = area
+                    
+                    area_in_me = self.safe_float_conversion(property.area_in_me)
+                    if area_in_me is not None:
+                        feature["properties"]["area_in_me"] = area_in_me
+                    
+                    # Add marker color
+                    # if property.property_type and property.property_type.color:
+                    #     feature["properties"]["marker_color"] = str(property.property_type.color)
+                    # else:
+                    #     # Default color
+                    #     feature["properties"]["marker_color"] = "#0dae48"
                     
                     features.append(feature)
                     processed += 1
@@ -137,6 +181,10 @@ class Command(BaseCommand):
             
             self.stdout.write(f"Final: Processed {processed} properties, Skipped {skipped}")
             
+            if processed == 0:
+                self.stdout.write(self.style.ERROR("No valid geometries found! Exiting."))
+                return
+            
             # Write GeoJSON
             geojson = {
                 "type": "FeatureCollection",
@@ -144,6 +192,10 @@ class Command(BaseCommand):
             }
             json.dump(geojson, tmp_file)
             tmp_file_path = tmp_file.name
+            
+            # Check file size
+            file_size = os.path.getsize(tmp_file_path)
+            self.stdout.write(f"Temporary GeoJSON file size: {file_size} bytes")
         
         # Use tippecanoe to generate PMTiles
         output_path = os.path.join(settings.BASE_DIR, 'static', 'tiles', output_file)
@@ -158,6 +210,7 @@ class Command(BaseCommand):
             self.stdout.write("  macOS: brew install tippecanoe")
             return
         
+        # Use the same tippecanoe command as the working version
         cmd = [
             'tippecanoe',
             '-o', output_path,
@@ -165,7 +218,6 @@ class Command(BaseCommand):
             '--maximum-zoom=20',
             '--minimum-zoom=5',
             '--drop-densest-as-needed',
-            # '--simplification=10',
             '--detect-shared-borders',
             '-f',  # Force overwrite
             tmp_file_path
@@ -175,7 +227,8 @@ class Command(BaseCommand):
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True)
             self.stdout.write(self.style.SUCCESS(f"Successfully generated {output_path}"))
-            self.stdout.write(f"tippecanoe output: {result.stdout}")
+            if result.stdout:
+                self.stdout.write(f"tippecanoe output: {result.stdout}")
         except subprocess.CalledProcessError as e:
             self.stdout.write(self.style.ERROR(f"Tippecanoe failed: {e.stderr}"))
         finally:

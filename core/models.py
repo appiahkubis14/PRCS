@@ -220,10 +220,12 @@ class Property(TimeStampModel):
     longitude = models.DecimalField(max_digits=15, decimal_places=12, null=True, blank=True)  # Point longitude
 
 
-    # def generate_property_id(self):
-    #     # Generate a random property ID
-    #     property_id = secrets.token_hex(10)
-    #     return property_id
+    class Meta:
+        indexes = [
+            models.Index(fields=['latitude', 'longitude']),
+            models.Index(fields=['district']),
+            models.Index(fields=['zone']),
+        ]
   
 
     def __str__(self):

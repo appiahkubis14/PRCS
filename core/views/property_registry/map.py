@@ -360,7 +360,6 @@ def get_districts_geojson(request):
         logger.error(f"Error in get_districts_geojson: {str(e)}")
         return JsonResponse({"error": str(e), "status": "error"}, status=500)
 
-
 @login_required
 def get_bops_geojson(request):
     """API endpoint to get Bops (businesses) as GeoJSON for the map.
@@ -370,52 +369,115 @@ def get_bops_geojson(request):
         from django.db.models import Q
         # Use all_objects to avoid is_deleted filter (column may not exist on lanma_businesses).
         # Do NOT select geom - DB may contain invalid/empty strings that raise WKT errors when deserialized.
-        bops_qs = Bops.all_objects.filter(
-            Q(centroid__isnull=False) & ~Q(centroid='')
-        ).only(
-            'id', 'centroid', 'account_number', 'business_name', 'business_category',
-            'business_class', 'location', 'address', 'division', 'block', 'owner_name'
-        )
+        bops_qs = Bops.all_objects.all()
+        
+        # Debug: Print first few records to see structure
+        print(f"Total records: {bops_qs.count()}")
+        if bops_qs.exists():
+            sample = bops_qs.first()
+            print(f"Sample record ID: {sample.id}")
+            print(f"Available attributes: {dir(sample)}")
+            print(f"Centroid value: {getattr(sample, 'centroid', 'NOT FOUND')}")
+            print(f"Location value: {sample.location if hasattr(sample, 'location') else 'NOT FOUND'}")
+            print(f"Address value: {sample.address if hasattr(sample, 'address') else 'NOT FOUND'}")
+        
         features = []
         for bop in bops_qs:
             geometry = None
-            if bop.centroid and ',' in bop.centroid:
+            
+            # Try multiple possible field names for coordinates
+            centroid_value = None
+            
+            # Check for centroid field
+            if hasattr(bop, 'centroid') and bop.centroid:
+                centroid_value = bop.centroid
+            # Check for geom field as fallback
+            elif hasattr(bop, 'geom') and bop.geom:
+                # If geom is a Point object with coordinates
                 try:
-                    parts = bop.centroid.split(',')
-                    if len(parts) == 2:
-                        lat, lon = float(parts[0].strip()), float(parts[1].strip())
-                        geometry = {"type": "Point", "coordinates": [lon, lat]}
-                except (ValueError, TypeError):
+                    if hasattr(bop.geom, 'coords') and bop.geom.coords:
+                        coords = bop.geom.coords
+                        if len(coords) >= 2:
+                            geometry = {"type": "Point", "coordinates": [coords[0], coords[1]]}
+                except:
                     pass
+            # Check for lat/lon fields
+            elif hasattr(bop, 'latitude') and hasattr(bop, 'longitude'):
+                if bop.latitude and bop.longitude:
+                    try:
+                        lat = float(bop.latitude)
+                        lon = float(bop.longitude)
+                        geometry = {"type": "Point", "coordinates": [lon, lat]}
+                    except (ValueError, TypeError):
+                        pass
+            
+            # Process centroid if it's a string
+            if centroid_value and isinstance(centroid_value, str) and ',' in centroid_value:
+                try:
+                    parts = centroid_value.split(',')
+                    if len(parts) == 2:
+                        # Try to determine if it's lat,lon or lon,lat format
+                        first, second = float(parts[0].strip()), float(parts[1].strip())
+                        
+                        # Usually latitude is between -90 and 90, longitude between -180 and 180
+                        if -90 <= first <= 90 and -180 <= second <= 180:
+                            # Format is likely lat,lon
+                            geometry = {"type": "Point", "coordinates": [second, first]}
+                        elif -180 <= first <= 180 and -90 <= second <= 90:
+                            # Format is likely lon,lat
+                            geometry = {"type": "Point", "coordinates": [first, second]}
+                        else:
+                            # If we can't determine, assume lat,lon (most common)
+                            geometry = {"type": "Point", "coordinates": [second, first]}
+                except (ValueError, TypeError):
+                    print(f"Error parsing centroid for bop {bop.id}: {centroid_value}")
+                    pass
+            
+            # Skip if no valid geometry found
             if not geometry:
+                print(f"Skipping bop {bop.id} - no valid coordinates found")
                 continue
+            
+            # Create property dictionary with safe access
+            properties = {
+                "id": bop.id,
+                "account_number": getattr(bop, 'account_number', '') or '',
+                "business_name": getattr(bop, 'business_name', '') or '',
+                "business_category": getattr(bop, 'business_category', '') or '',
+                "business_class": getattr(bop, 'business_class', '') or '',
+                "location": getattr(bop, 'location', '') or '',
+                "address": getattr(bop, 'address', '') or '',
+                "division": getattr(bop, 'division', '') or '',
+                "block": getattr(bop, 'block', '') or '',
+                "owner_name": getattr(bop, 'owner_name', '') or '',
+            }
+            
             feature = {
                 "type": "Feature",
                 "geometry": geometry,
-                "properties": {
-                    "id": bop.id,
-                    "account_number": bop.account_number or "",
-                    "business_name": bop.business_name or "",
-                    "business_category": bop.business_category or "",
-                    "business_class": bop.business_class or "",
-                    "location": bop.location or "",
-                    "address": bop.address or "",
-                    "division": bop.division or "",
-                    "block": bop.block or "",
-                    "owner_name": bop.owner_name or "",
-                }
+                "properties": properties
             }
             features.append(feature)
+        
         geojson = {
             "type": "FeatureCollection",
             "features": features,
-            "metadata": {"total": len(features), "timestamp": timezone.now().isoformat()}
+            "metadata": {
+                "total": len(features),
+                "total_records": bops_qs.count(),
+                "timestamp": timezone.now().isoformat()
+            }
         }
+
+        print(f"Features found: {len(features)} out of {bops_qs.count()} total records")
+        if len(features) == 0:
+            print("No features found. Check the centroid field name and format in your database.")
+        
         return JsonResponse(geojson, json_dumps_params={'ensure_ascii': False})
+        
     except Exception as e:
         logger.error(f"Error in get_bops_geojson: {str(e)}\n{traceback.format_exc()}")
         return JsonResponse({"error": str(e), "status": "error"}, status=500)
-
 
 @login_required
 def get_property_details(request, property_id):
@@ -482,37 +544,84 @@ def search_properties(request):
         if not query or len(query) < 2:
             return JsonResponse({"results": [], "status": "success"})
         
-        # Search in multiple fields
-        properties = Property.objects.filter(
+        # Build search query
+        search_filter = (
             Q(address__icontains=query) |
             Q(addressv1__icontains=query) |
             Q(street__icontains=query) |
             Q(gpsname__icontains=query) |
             Q(district__icontains=query) |
             Q(region__icontains=query)
-        )[:20]
+        )
+        
+        # Try to search by ID if query is numeric
+        if query.isdigit():
+            search_filter |= Q(id__exact=int(query))
+        
+        # Also search by custom property ID formats
+        # Remove common prefixes to search by ID
+        clean_query = query.upper().replace('PROP-', '').replace('GM', '').strip()
+        if clean_query.isdigit():
+            search_filter |= Q(id__exact=int(clean_query))
+        
+        properties = Property.objects.filter(search_filter).select_related('zone', 'property_type')[:20]
         
         results = []
         for property in properties:
-            # Generate property_id from ID since the field doesn't exist
-            property_id = f"PROP-{property.id}"
+            # Generate display ID
+            display_id = f"PROP-{property.id}"
             
-            results.append({
+            # Check if this was an exact ID match for highlighting
+            is_id_match = False
+            if query.isdigit() and property.id == int(query):
+                is_id_match = True
+            elif clean_query.isdigit() and property.id == int(clean_query):
+                is_id_match = True
+            
+            result = {
                 "id": property.id,
-                "property_id": property_id,  # Use generated ID
+                "display_id": display_id,
                 "address": property.address or property.addressv1 or "",
                 "district": property.district or "",
                 "zone": property.zone.name if property.zone else "",
+                "zone_code": property.zone.code if property.zone else "",
                 "property_type": property.property_type.name if property.property_type else "",
+                "property_type_code": property.property_type.code if property.property_type else "",
                 "latitude": float(property.latitude) if property.latitude else None,
                 "longitude": float(property.longitude) if property.longitude else None,
                 "has_geom": bool(property.geom),
                 "has_point": bool(property.latitude and property.longitude),
                 "area": float(property.area) if property.area else None,
-                "area_in_me": float(property.area_in_me) if property.area_in_me else None
-            })
+                "area_in_me": float(property.area_in_me) if property.area_in_me else None,
+                "status": property.status or "active",
+                "is_id_match": is_id_match
+            }
+            
+            # Add matching field info for debugging
+            if is_id_match:
+                result["match_type"] = "id"
+            elif property.address and query.lower() in property.address.lower():
+                result["match_type"] = "address"
+            elif property.district and query.lower() in property.district.lower():
+                result["match_type"] = "district"
+            elif property.region and query.lower() in property.region.lower():
+                result["match_type"] = "region"
+            elif property.zone and property.zone.name and query.lower() in property.zone.name.lower():
+                result["match_type"] = "zone"
+            
+            results.append(result)
         
-        return JsonResponse({"results": results, "status": "success"})
+        # Log what we found
+        logger.info(f"Search for '{query}' found {len(results)} results")
+        if results:
+            logger.info(f"First result: ID {results[0]['id']} - {results[0]['address'][:50]}")
+        
+        return JsonResponse({
+            "results": results, 
+            "status": "success",
+            "query": query,
+            "count": len(results)
+        })
     
     except Exception as e:
         logger.error(f"Error in search_properties: {str(e)}")

@@ -536,7 +536,7 @@ class BopsAdmin(ImportExportModelAdmin):
     
     # List Display
     list_display = (
-        'account_number', 'business_name', 'owner_name', 'business_category', 
+       'centroid', 'account_number', 'business_name', 'owner_name', 'business_category', 
         'business_class', 'location', 'division', 'flat_rate', 'created_at'
     )
     

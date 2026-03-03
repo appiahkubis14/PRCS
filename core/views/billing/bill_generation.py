@@ -649,7 +649,7 @@ def bop_easy_collectible_list(request):
                     if business_id_list:
                         bop_easy_collectibles = bop_easy_collectibles.filter(business__id__in=business_id_list)
                 except (ValueError, TypeError):
-                    pass  # Ignore invalid business_ids
+                    pass
         
         # Order by bill number
         bop_easy_collectibles = bop_easy_collectibles.order_by('bill_number')

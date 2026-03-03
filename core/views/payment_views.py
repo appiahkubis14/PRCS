@@ -82,13 +82,13 @@ def kowri_bill_lookup(request: HttpRequest) -> JsonResponse:
         # Extract parameters based on request method
         if request.method == 'GET':
             bill_reference = request.GET.get('reference')
-            bill_type = request.GET.get('type', 'property')
+            bill_type = request.GET.get('type', 'business')
             provider_id = request.GET.get('provider_id')
         else:
             try:
                 data = json.loads(request.body)
                 bill_reference = data.get('reference')
-                bill_type = data.get('type', 'property')
+                bill_type = data.get('type', 'business')
                 provider_id = data.get('provider_id')
             except json.JSONDecodeError as e:
                 logger.error(f"[{request_id}] Invalid JSON: {str(e)}")

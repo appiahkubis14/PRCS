@@ -7,7 +7,10 @@ from django.http import JsonResponse
 from datetime import datetime, timedelta
 from core.models import Bops, BopsBills, PaymentTransaction, PaymentLinkClick
 import json
+from django.contrib.auth.decorators import login_required
 
+
+@login_required
 def revenue_dashboard(request):
     """Main revenue collection dashboard"""
     context = {

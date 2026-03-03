@@ -15,7 +15,7 @@ from core.views.payment_views import *
 from core.views.billing.payment_monitoring import *
 from core.views.billing.payment_track import *
 from core.views.dashboard.dashboard import *
-from core.views.views_tiles import get_properties_points, serve_pmtiles
+from core.views.views_tiles import get_properties_points, pmtiles_options, properties_simple_geojson, property_geojson_for_highlight, serve_pmtiles
 
 
 urlpatterns = [
@@ -168,5 +168,9 @@ urlpatterns = [
 
 
     path('tiles/<str:filename>', serve_pmtiles, name='serve_pmtiles'),
+    # Add OPTIONS handler for CORS preflight
+    path('tiles/<str:filename>', pmtiles_options, name='pmtiles-options'),
      path('api/properties/points/', get_properties_points, name='properties-points'),
+     path('api/properties/geojson/simple/', properties_simple_geojson, name='properties-simple-geojson'),
+     path('api/properties/<int:property_id>/geojson/', property_geojson_for_highlight, name='property-geojson'),
 ]

@@ -13,15 +13,13 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('input_file', type=str, help='Path to input GeoTIFF file')
         parser.add_argument('--output', type=str, default='drone.pmtiles', help='Output PMTiles filename')
-        parser.add_argument('--min-zoom', type=int, default=10, help='Minimum zoom level')
+        parser.add_argument('--min-zoom', type=int, default=5, help='Minimum zoom level')
         parser.add_argument('--max-zoom', type=int, default=20, help='Maximum zoom level')
         parser.add_argument('--name', type=str, default='Drone Orthomosaic', help='Name in metadata')
         parser.add_argument('--description', type=str, default='Converted from GeoTIFF using rio-pmtiles', help='Description in metadata')
         parser.add_argument('--format', type=str, default='PNG', choices=['PNG', 'JPEG', 'WEBP'], help='Tile image format')
         parser.add_argument('--tile-size', type=int, default=256, help='Tile size in pixels')
-        parser.add_argument('--resampling', type=str, default='cubic', 
-                          choices=['nearest', 'bilinear', 'cubic', 'cubic_spline', 'lanczos', 'average'],
-                          help='Resampling method')
+        parser.add_argument('--resampling', type=str, default='cubic', choices=['nearest', 'bilinear', 'cubic', 'cubic_spline', 'lanczos', 'average'],help='Resampling method')
         parser.add_argument('--quality', type=int, default=75, help='JPEG/WEBP quality (10-100)')
         parser.add_argument('--workers', type=int, default=4, help='Number of worker threads')
         parser.add_argument('--overlay', action='store_true', default=True, help='Export as overlay (not baselayer)')
@@ -155,6 +153,7 @@ class Command(BaseCommand):
             '--tile-size', str(tile_size),
             '--resampling', resampling,
             '--name', name,
+            '--quality', str(quality),
             '--description', description,
         ]
         

@@ -18,3 +18,36 @@ python manage.py generate_pmtiles --type vector --output properties.pmtiles
 
 # For drone orthophoto
 python manage.py generate_pmtiles --type raster --input /path/to/drone.tif --output drone.pmtiles --max-zoom 20
+
+
+# If you want to include points as well
+python manage.py generate_pmtiles --output properties.pmtiles --min-zoom 3 --max-zoom 25 --base-zoom 16 --simplification 1.0 --include-points
+
+
+
+# Most optimized version (smallest file)
+python manage.py generate_pmtiles --output properties_optimized.pmtiles --min-zoom 3 --max-zoom 25 --include-points --optimize --max-tile-bytes 25000
+
+# Balanced version (good quality/size ratio)
+python manage.py generate_pmtiles \
+    --output properties_balanced.pmtiles \
+    --min-zoom 3 \
+    --max-zoom 25 \
+    --include-points \
+    --optimize \
+    --max-tile-bytes 50000
+
+# High quality version (larger file but more detail)
+python manage.py generate_pmtiles \
+    --output properties_high_quality.pmtiles \
+    --min-zoom 3 \
+    --max-zoom 25 \
+    --include-points \
+    --max-tile-bytes 100000
+
+
+
+
+    ############################################################################################
+
+    python manage.py generate_pmtiles --output properties_high_quality.pmtiles --min-zoom 3  --max-zoom 25 --include-points --quality high

@@ -202,8 +202,8 @@ class KowriPaymentService:
                 'bill_reference': bill.bill_number,
                 'bill_type': 'business',
                 'amount_due': str(bill.total_amount),
-                'amount_paid': str(bill.paid_amount) if hasattr(bill, 'paid_amount') else '0.00',
-                'balance_due': str(bill.total_amount - (bill.paid_amount if hasattr(bill, 'paid_amount') else 0)),
+                'amount_paid': str(bill.tax_amount) if hasattr(bill, 'tax_amount') else '0.00',
+                'balance_due': str(bill.total_amount - (bill.tax_amount if hasattr(bill, 'tax_amount') else 0)),
                 'currency': 'GHS',
                 'payer_name': bill.business.business_name,
                 'payer_phone': bill.business.phone_number or bill.business.phone_number_primary or '',
@@ -259,6 +259,7 @@ class KowriPaymentService:
             return False, f"Invalid bill type. Must be one of: {', '.join(self.ALLOWED_BILL_TYPES)}"
         
         return True, "Valid"
+    
     
     @transaction.atomic
     def process_payment_notification(self, notification_data: Dict[str, Any]) -> Dict[str, Any]:
