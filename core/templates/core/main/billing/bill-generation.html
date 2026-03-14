@@ -1,419 +1,1282 @@
-<!-- templates/billing/generation.html -->
 {% extends 'main/base.html' %}
 {% load i18n static %}
 
 {% block content %}
-<div class="container-fluid">
-  <!-- Header Section -->
-  <!-- <div class="row mb-4">
-    <div class="col-12">
-      <div class="page-header d-flex align-items-center justify-content-between">
-        <div>
-          <h2 class="page-title mb-1">Bill Generation</h2>
-          <p class="text-muted mb-0">Generate and manage business operating permit bills</p>
-        </div>
-        <div class="header-actions">
-          <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
-            <i class="fas fa-calendar-alt me-2"></i>{{ current_year|default:2024 }} Billing Year
-          </span>
-        </div>
-      </div>
-    </div>
-  </div> -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
-  <!-- Main Control Card -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card control-card">
-        <div class="card-body p-4">
-          <!-- Business Selection Section -->
-          <div class="row g-4">
-            <!-- Left Column - Business Selection -->
-            <div class="col-xl-5 col-lg-12">
-              <div class="selection-panel h-100">
-                <div class="panel-header mb-3">
-                  <div class="d-flex align-items-center">
-                    <div class="icon-wrapper bg-primary bg-opacity-10 rounded-3 p-2 me-3">
-                      <i class="fas fa-building text-primary fs-5"></i>
-                    </div>
-                    <div>
-                      <h6 class="fw-semibold mb-1">Select Businesses</h6>
-                      <p class="text-muted small mb-0">Choose one or multiple businesses for billing</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="panel-content">
-                  <!-- Custom dropdown container -->
-                  <div class="business-select-wrapper">
-                    <select name="business_id" class="business-multiselect" id="businessSelect" multiple="multiple" style="width: 100%;">
-                      <option value="">-- Select Business --</option>
-                    </select>
-                  </div>
-                  
-                  <div class="selection-actions mt-3 d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBusinesses">
-                      <i class="fas fa-check-circle me-1"></i> Select All
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBusinesses">
-                      <i class="fas fa-times-circle me-1"></i> Deselect All
-                    </button>
-                    <div class="ms-auto">
-                      <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" id="selectedBusinessesCount">
-                        <i class="fas fa-check-circle me-1"></i>0 selected
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+<style>
+  :root {
+    --green: #0dae48;
+    --green-dark: #089c3d;
+    --green-light: #e6f9ee;
+    --green-glow: rgba(13, 174, 72, 0.15);
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-700: #334155;
+    --slate-900: #0f172a;
+    --white: #ffffff;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    --shadow-green: 0 8px 32px rgba(13,174,72,0.18);
+  }
 
-            <!-- Middle Column - Filters -->
-            <div class="col-xl-4 col-lg-6">
-              <div class="filter-panel h-100">
-                <div class="panel-header mb-3">
-                  <div class="d-flex align-items-center">
-                    <div class="icon-wrapper bg-info bg-opacity-10 rounded-3 p-2 me-3">
-                      <i class="fas fa-sliders-h text-info fs-5"></i>
-                    </div>
-                    <div>
-                      <h6 class="fw-semibold mb-1">Filter Options</h6>
-                      <p class="text-muted small mb-0">Narrow down by division and block</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="panel-content">
-                  <div class="filter-group">
-                    <div class="mb-3">
-                      <label class="form-label small fw-semibold text-uppercase text-muted mb-2">
-                        <i class="fas fa-building me-1"></i>Division
-                      </label>
-                      <select class="form-select modern-select" id="divisionSelect">
-                        <option value="">All Divisions</option>
-                      </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                      <label class="form-label small fw-semibold text-uppercase text-muted mb-2">
-                        <i class="fas fa-cubes me-1"></i>Block
-                      </label>
-                      <select class="form-select modern-select" id="blockSelect">
-                        <option value="">All Blocks</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label class="form-label small fw-semibold text-uppercase text-muted mb-2">
-                        <i class="fas fa-calendar me-1"></i>Billing Year
-                      </label>
-                      <select class="form-select modern-select" id="billingYearSelect" required>
-                        <option value="">Select Year</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+  * { box-sizing: border-box; }
 
-            <!-- Right Column - Actions -->
-            <div class="col-xl-3 col-lg-6">
-              <div class="action-panel h-100">
-                <div class="panel-header mb-3">
-                  <div class="d-flex align-items-center">
-                    <div class="icon-wrapper bg-success bg-opacity-10 rounded-3 p-2 me-3">
-                      <i class="fas fa-bolt text-success fs-5"></i>
-                    </div>
-                    <div>
-                      <h6 class="fw-semibold mb-1">Quick Actions</h6>
-                      <p class="text-muted small mb-0">Generate and download bills</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="panel-content">
-                  <div class="action-buttons d-grid gap-3">
-                    <button class="btn btn-primary btn-lg generate-btn" id="generateBillBtn">
-                      <i class="fas fa-file-invoice me-2"></i>
-                      <span>Generate Bills</span>
-                    </button>
-                    <button class="btn btn-outline-primary btn-lg download-btn" id="download-btn">
-                      <i class="fas fa-download me-2"></i>
-                      <span>Download Bills</span>
-                    </button>
-                    <button class="btn btn-outline-secondary btn-lg view-btn" id="viewBillsBtn">
-                      <i class="fas fa-eye me-2"></i>
-                      <span>View Bills</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  body, .billing-page {
+    padding-left: 20px;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--slate-50);
+    color: var(--slate-900);
+  }
 
-  <!-- Bills Table Section -->
- <!-- Bills Table Section - Replace the existing table section with this -->
-<div class="row">
-  <div class="col-12">
-    <div class="card table-card">
-      <div class="card-header bg-white" style="display: flex;justify-content: space-between;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-  <div>
-    <h5 class="card-title mb-1">
-      <i class="fas fa-file-invoice text-primary me-2"></i>
-      Generated Bills
-    </h5>
-    <!-- <p class="text-muted small mb-0">View and manage all generated bills</p> -->
-  </div>
-  
-  <!-- Search Box - Middle -->
-  <div class="search-box" style="flex: 1; max-width: 400px; min-width: 250px;">
-    <div class="input-group input-group-sm">
-      <span class="input-group-text bg-white border-end-0">
-        <i class="fas fa-search text-muted"></i>
-      </span>
-      <input type="text" 
-             class="form-control border-start-0" 
-             id="billSearchInput" 
-             placeholder="Search bills...">
-      <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  </div>
-  
-  <!-- Actions - Right -->
-  <div style="display: flex; gap: 0.5rem; align-items: center;">
-    <div class="view-toggle btn-group" role="group">
-      <button type="button" class="btn btn-sm btn-outline-primary active" id="gridViewBtn">
-        <i class="fas fa-th-large"></i>
-      </button>
-      <button type="button" class="btn btn-sm btn-outline-primary" id="listViewBtn">
-        <i class="fas fa-list"></i>
-      </button>
-    </div>
-    <button class="btn btn-sm btn-outline-secondary refresh-btn" onclick="loadBopsBills()">
-      <i class="fas fa-sync-alt me-1"></i> Refresh
-    </button>
-  </div>
-</div>
+  /* ─── PAGE HEADER ─── */
+  .billing-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .billing-header-left h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin: 0 0 0.2rem 0;
+    letter-spacing: -0.5px;
+  }
+  .billing-header-left p {
+    margin: 0;
+    color: var(--slate-500);
+    font-size: 0.9rem;
+  }
+  .year-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.45rem 1rem;
+    border-radius: 30px;
+    border: 1px solid rgba(13,174,72,0.2);
+  }
 
-<!-- Search Stats Row (moved outside the flex container) -->
-<div class="search-stats d-flex justify-content-between align-items-center mt-3 px-2">
-  <div class="results-count">
-    <span id="visibleBillsCount">0</span> bills visible
-    <span id="totalBillsCount" class="text-muted ms-1">(0 total)</span>
-  </div>
-  <div id="searchTermDisplay" class="text-muted small"></div>
-</div>
-      </div>
-      <div class="card-body p-3">
-        <!-- Search Stats -->
-        <div class="search-stats d-flex justify-content-between align-items-center mb-3 px-2">
-          <div class="results-count">
-            <span id="visibleBillsCount">0</span> bills visible
-            <span id="totalBillsCount" class="text-muted ms-1">(0 total)</span>
-          </div>
-          <div id="searchTermDisplay" class="text-muted small"></div>
-        </div>
+  /* ─── CONTROL PANEL ─── */
+  .control-panel {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--slate-200);
+    margin-bottom: 1.75rem;
+    overflow: hidden;
+  }
+  .control-panel-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr 260px;
+    gap: 0;
+  }
+  .cp-section {
+    padding: 1.5rem;
+    position: relative;
+  }
+  .cp-section + .cp-section::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 1rem; bottom: 1rem;
+    width: 1px;
+    background: var(--slate-200);
+  }
+  .cp-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.1rem;
+  }
+  .cp-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .cp-icon.green { background: var(--green-light); color: var(--green); }
+  .cp-icon.blue  { background: #e0f2fe; color: #0284c7; }
+  .cp-icon.amber { background: #fef3c7; color: #d97706; }
+  .cp-section-header h6 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--slate-700);
+    margin: 0 0 0.1rem 0;
+  }
+  .cp-section-header p {
+    font-size: 0.78rem;
+    color: var(--slate-400);
+    margin: 0;
+  }
+
+  /* Select2 overrides */
+  .select2-container--bootstrap-5 .select2-selection {
+    border: 1.5px solid var(--slate-200) !important;
+    border-radius: var(--radius-sm) !important;
+    min-height: 42px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+    border-color: var(--green) !important;
+    box-shadow: 0 0 0 3px var(--green-glow) !important;
+  }
+  .select2-container--bootstrap-5 .select2-dropdown {
+    border: 1.5px solid var(--green) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-lg) !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  .select2-container--bootstrap-5 .select2-results__option--highlighted {
+    background: var(--green-light) !important;
+    color: var(--green-dark) !important;
+  }
+  .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+    background: var(--green) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: white !important;
+    font-size: 0.8rem;
+    padding: 3px 8px !important;
+  }
+  .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+    color: rgba(255,255,255,0.8) !important;
+  }
+
+  /* Form controls */
+  .form-select-clean {
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.85rem;
+    font-size: 0.9rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--slate-700);
+    background: var(--white);
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: auto;
+  }
+  .form-select-clean:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-glow);
+  }
+  .form-label-clean {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--slate-400);
+    margin-bottom: 0.4rem;
+  }
+
+  /* Selection meta */
+  .sel-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .sel-btns { display: flex; gap: 0.4rem; }
+  .btn-xs {
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    border: 1.5px solid var(--slate-200);
+    background: var(--white);
+    color: var(--slate-500);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-xs:hover { border-color: var(--green); color: var(--green); }
+  .sel-count-badge {
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--green-light);
+    color: var(--green-dark);
+    padding: 0.28rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid rgba(13,174,72,0.15);
+  }
+
+  /* Action buttons column */
+  .cp-section.actions-col {
+    background: linear-gradient(160deg, #f8fdf9 0%, var(--white) 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    justify-content: center;
+  }
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+    border: none;
+    width: 100%;
+    text-align: center;
+  }
+  .action-btn.primary {
+    background: var(--green);
+    color: white;
+    box-shadow: var(--shadow-green);
+  }
+  .action-btn.primary:hover {
+    background: var(--green-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(13,174,72,0.25);
+  }
+  .action-btn.secondary {
+    background: var(--white);
+    color: var(--green);
+    border: 1.5px solid var(--green);
+  }
+  .action-btn.secondary:hover {
+    background: var(--green-light);
+    transform: translateY(-1px);
+  }
+  .action-btn.ghost {
+    background: var(--white);
+    color: var(--slate-500);
+    border: 1.5px solid var(--slate-200);
+  }
+  .action-btn.ghost:hover {
+    border-color: var(--slate-400);
+    color: var(--slate-700);
+  }
+
+  /* ─── BILLS SECTION ─── */
+  .bills-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--slate-200);
+    overflow: hidden;
+  }
+  .bills-section-header {
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid var(--slate-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    background: var(--white);
+  }
+  .bills-section-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .bills-section-header-left .icon {
+    width: 34px; height: 34px;
+    background: var(--green-light);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--green);
+    font-size: 0.85rem;
+  }
+  .bills-section-header-left h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.1rem 0;
+    color: var(--slate-900);
+  }
+  .bills-section-header-left span {
+    font-size: 0.78rem;
+    color: var(--slate-400);
+  }
+  .bills-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  /* Search */
+  .search-wrap {
+    position: relative;
+    min-width: 220px;
+  }
+  .search-wrap i.search-ico {
+    position: absolute;
+    left: 0.7rem; top: 50%;
+    transform: translateY(-50%);
+    color: var(--slate-400);
+    font-size: 0.8rem;
+    pointer-events: none;
+  }
+  .search-input {
+    padding: 0.48rem 2rem 0.48rem 2.1rem;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+    transition: all 0.2s;
+    color: var(--slate-700);
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-glow);
+  }
+  .search-clear {
+    position: absolute;
+    right: 0.6rem; top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--slate-400);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0;
+    display: none;
+  }
+  .search-clear.visible { display: block; }
+
+  /* View toggle */
+  .view-toggle {
+    display: flex;
+    background: var(--slate-100);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-toggle button {
+    width: 30px; height: 30px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    color: var(--slate-400);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.18s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .view-toggle button.active {
+    background: var(--white);
+    color: var(--green);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Refresh btn */
+  .btn-refresh {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--slate-500);
+    font-size: 0.825rem;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-refresh:hover { border-color: var(--green); color: var(--green); }
+
+  /* Stats bar */
+  .bills-stats-bar {
+    padding: 0.6rem 1.5rem;
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.82rem;
+    color: var(--slate-500);
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: 20px;
+    padding: 0.2rem 0.65rem;
+    font-weight: 500;
+    font-size: 0.78rem;
+  }
+  .stat-pill .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  #searchTermDisplay { margin-left: auto; font-style: italic; color: var(--slate-400); }
+
+  /* ─── BILLS GRID ─── */
+  .bills-body { padding: 1.25rem; }
+
+  .bills-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.25rem !important;
+    width: 100%;
+  }
+  @media (max-width: 800px) { .bills-grid { grid-template-columns: 1fr !important; } }
+
+  /* Each receipt gets wrapped in this cell */
+  .receipt-cell {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    background: #fffaf0;
+  }
+  .receipt-cell:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.14);
+  }
+
+  /* Force injected .receipt to fill its cell — override its own width */
+  .receipt-cell .receipt {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Kill the <br> spacers between receipts from the template */
+  .bills-grid br { display: none !important; }
+
+  /* ─── BILL CARD ─── */
+  .bill-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .bill-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--green);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .bill-card:hover {
+    border-color: rgba(13,174,72,0.3);
+    box-shadow: 0 8px 32px rgba(13,174,72,0.1), 0 2px 8px rgba(0,0,0,0.06);
+    transform: translateY(-2px);
+  }
+  .bill-card:hover::before { opacity: 1; }
+
+  /* Card top bar */
+  .bc-top {
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--slate-100);
+    background: var(--slate-50);
+  }
+  .bc-bill-no {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--green-dark);
+    letter-spacing: 0.3px;
+  }
+  .bc-actions {
+    display: flex;
+    gap: 0.3rem;
+    position: relative;
+    z-index: 2;
+  }
+  .bc-action-btn {
+    width: 28px; height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--slate-400);
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s;
+    box-shadow: var(--shadow-sm);
+  }
+  .bc-action-btn:hover { transform: scale(1.1); }
+  .bc-action-btn.view:hover  { background: var(--green); color: white; }
+  .bc-action-btn.edit:hover  { background: #f59e0b; color: white; }
+  .bc-action-btn.del:hover   { background: #ef4444; color: white; }
+
+  /* Card body */
+  .bc-body {
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  /* Status + badge row */
+  .bc-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .status-pill.draft      { background: #f1f5f9; color: #64748b; }
+  .status-pill.generated  { background: #e0f2fe; color: #0284c7; }
+  .status-pill.sent       { background: #ede9fe; color: #7c3aed; }
+  .status-pill.paid       { background: #dcfce7; color: #16a34a; }
+  .status-pill.overdue    { background: #fee2e2; color: #dc2626; }
+  .status-pill.cancelled  { background: #f1f5f9; color: #374151; }
+
+  /* Info grid */
+  .bc-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 1rem;
+  }
+  .bc-field { display: flex; flex-direction: column; gap: 0.15rem; }
+  .bc-field-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--slate-400);
+  }
+  .bc-field-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--slate-700);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Amounts strip */
+  .bc-amounts {
+    background: var(--slate-50);
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 0.85rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem 1rem;
+  }
+  .bc-amount-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--slate-500);
+  }
+  .bc-amount-item.total-row {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--slate-200);
+    padding-top: 0.4rem;
+    margin-top: 0.1rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--slate-900);
+  }
+  .bc-amount-item.total-row .bc-amount-val { color: var(--green); font-size: 1rem; }
+  .bc-amount-val { font-weight: 600; font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+
+  /* Card footer */
+  .bc-footer {
+    padding: 0.65rem 1rem;
+    border-top: 1px solid var(--slate-100);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--slate-400);
+    background: var(--slate-50);
+  }
+  .bc-footer span { display: flex; align-items: center; gap: 0.3rem; }
+
+  /* ─── LIST VIEW ─── */
+  .bills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .bill-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .bill-list-item:hover {
+    border-color: rgba(13,174,72,0.3);
+    box-shadow: var(--shadow-sm);
+    transform: translateX(2px);
+  }
+  .bli-status { flex-shrink: 0; }
+  .bli-info { flex: 1; min-width: 0; }
+  .bli-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.2rem;
+  }
+  .bli-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--green-dark);
+  }
+  .bli-owner {
+    font-size: 0.85rem;
+    color: var(--slate-700);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bli-meta {
+    font-size: 0.75rem;
+    color: var(--slate-400);
+    display: flex;
+    gap: 0.75rem;
+  }
+  .bli-amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+  .bli-actions {
+    display: flex;
+    gap: 0.3rem;
+    flex-shrink: 0;
+  }
+
+  /* ─── EMPTY / LOADING / ERROR STATES ─── */
+  .state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 3rem 2rem;
+    grid-column: 1 / -1;
+  }
+  .state-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .state-icon.empty   { background: var(--green-light); color: var(--green); }
+  .state-icon.error   { background: #fee2e2; color: #dc2626; }
+  .state-icon.loading { background: var(--slate-100); color: var(--slate-400); }
+  .state-box h5 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--slate-700);
+    margin: 0;
+  }
+  .state-box p {
+    font-size: 0.875rem;
+    color: var(--slate-400);
+    max-width: 340px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Spinner */
+  .spin {
+    display: inline-block;
+    width: 36px; height: 36px;
+    border: 3px solid var(--slate-200);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── TOAST ─── */
+  .toast-stack {
+    position: fixed;
+    top: 1.25rem; right: 1.25rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+  .toast-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1.1rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    border-left: 4px solid var(--green);
+    min-width: 280px;
+    max-width: 380px;
+    pointer-events: auto;
+    animation: slideInRight 0.3s ease;
+  }
+  .toast-item.error   { border-color: #ef4444; }
+  .toast-item.warning { border-color: #f59e0b; }
+  .toast-icon { font-size: 1rem; }
+  .toast-text { font-size: 0.875rem; font-weight: 500; color: var(--slate-700); flex: 1; }
+  @keyframes slideInRight {
+    from { transform: translateX(120%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes fadeOut {
+    to { opacity: 0; transform: translateX(120%); }
+  }
+
+  /* ─── SWEETALERT OVERRIDES ─── */
+  .swal2-popup {
+    border-radius: var(--radius-xl) !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  .swal2-confirm {
+    background: var(--green) !important;
+    border-radius: var(--radius-sm) !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 600 !important;
+  }
+  .swal2-cancel {
+    border-radius: var(--radius-sm) !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+
+  /* Enlarged bill */
+  .enlarged-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; text-align: left; }
+  .enlarged-section {
+    background: var(--slate-50);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
+  }
+  .enlarged-section h6 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--slate-400);
+    margin: 0 0 0.85rem 0;
+  }
+  .einfo-item { display: flex; flex-direction: column; margin-bottom: 0.65rem; }
+  .einfo-item:last-child { margin-bottom: 0; }
+  .einfo-label { font-size: 0.72rem; color: var(--slate-400); margin-bottom: 0.15rem; }
+  .einfo-val { font-size: 0.9rem; font-weight: 500; color: var(--slate-700); }
+  .eamount-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px dashed var(--slate-200); font-size: 0.875rem; }
+  .eamount-row:last-child { border-bottom: none; font-weight: 700; font-size: 1rem; color: var(--green); }
+  .eamount-row:last-child span:first-child { color: var(--slate-700); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 992px) {
+    .control-panel-body { grid-template-columns: 1fr 1fr; }
+    .cp-section.actions-col { grid-column: 1 / -1; }
+    .cp-section.actions-col .action-buttons-row { display: flex; gap: 0.65rem; }
+    .cp-section.actions-col .action-buttons-row .action-btn { flex: 1; }
+  }
+  @media (max-width: 768px) {
+    .control-panel-body { grid-template-columns: 1fr; }
+    .cp-section + .cp-section::before { display: none; }
+    .billing-header { flex-direction: column; align-items: flex-start; }
+    .bills-section-header { flex-direction: column; align-items: flex-start; }
+    .bills-header-right { width: 100%; justify-content: space-between; }
+    .search-wrap { flex: 1; min-width: 0; }
+    .enlarged-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .bc-info-grid { grid-template-columns: 1fr; }
+    .bc-amounts { grid-template-columns: 1fr; }
+  }
+</style>
+
+ <style>
+        :root {
+            --paper-color: #fffaf0;
+            --line-color: #d16b4a; /* The orange security ink */
+        }
+
+       
+        /* The Main Receipt Body */
+        .receipt {
+            width: 90%;
+            /* height: 420px; */
+            background-color: var(--paper-color);
+            display: flex;
+            position: relative;
+            border-left: 28px solid #ddd;
+            border-right: 28px solid #ddd;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* Complex Security Wave Pattern */
+            /* background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(209, 107, 74, 0.08) 1px, rgba(209, 107, 74, 0.08) 2px),
+                radial-gradient(circle at 50% 50%, rgba(209, 107, 74, 0.1) 0%, transparent 60%); */
+            background-size: 100% 3px, 400px 400px;
+        }
+
+        /* Tractor Feed Holes (CSS Generated) */
+        .receipt::before, .receipt::after {
+            content: "○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ○";
+            position: absolute;
+            width: 20px;
+            left: -24px;
+            top: 15px;
+            font-size: 24px;
+            color: #777;
+            line-height: 1.2;
+            word-break: break-all;
+            text-align: center;
+        }
+        .receipt::after { left: auto; right: -24px; }
+
+        .main-section {
+            flex: 2.2;
+            padding: 20px 30px;
+            border-right: 2px dashed #888;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         
-        <!-- Bills Container - Will be populated with either grid or list view -->
-        <div id="billsTableContainer" class="bills-container">
-          <!-- Bills will be loaded here -->
+        /* Coat of Arms & Seal Styling */
+        .logo-container { width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; }
+        .logo-container svg { width: 100%; height: auto; }
+
+        .assembly-title { text-align: center; flex: 1; }
+        .assembly-title h1 { margin: 0; font-size: 24px; font-weight: 800; color: #111; letter-spacing: 0.5px; }
+        
+        .black-bill-box { 
+            background: #000; 
+            color: #fff; 
+            padding: 4px 15px; 
+            display: inline-block; 
+            font-weight: bold; 
+            margin-top: 8px; 
+            font-size: 15px; 
+            border-radius: 3px;
+        }
+
+        /* Form Layout */
+        .form-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; margin-top: 15px; }
+        
+        .field { margin-bottom: 8px; display: flex; align-items: flex-end; }
+        .field label { font-size: 12px; font-weight: bold; color: #333; width: 110px; }
+        .input-line { border-bottom: 1px solid #333; flex: 1; height: 18px; position: relative; padding-left: 10px; box-sizing: border-box; }
+        .input-box { border: 1px solid #000; background: rgba(255,255,255,0.6); height: 26px; flex: 1; padding-left: 10px; box-sizing: border-box; }
+
+        .table-area { border-collapse: collapse; width: 100%; }
+        .table-area td { border: 1px solid #000; height: 28px; background: rgba(255,255,255,0.7); padding: 0 8px 0 12px; font-weight: bold; font-size: 13px; }
+        .table-area .label-cell { border: none; background: transparent; text-align: left; width: 140px; padding-right: 10px; }
+
+        /* Stub Section */
+        .stub { flex: 1; padding: 20px; position: relative; }
+        .stub-header { text-align: center; font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+        .stub-bill-type { border: 1.5px solid #000; text-align: center; font-size: 10px; padding: 2px; font-weight: bold; margin-bottom: 15px; }
+        
+        .stub-field { margin-bottom: 12px; }
+        .stub-field label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 2px; }
+        .stub-input { border: 1px solid #000; height: 22px; background: #fff; width: 100%; padding-left: 10px; box-sizing: border-box; }
+
+        .footer-note { 
+            position: absolute; 
+            bottom: 20px; 
+            width: 85%; 
+            text-align: center; 
+            font-size: 10px; 
+            color: #444; 
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        hr { border: 0; border-top: 1.5px solid #000; margin: 15px 0; }
+
+        .logo-left {
+            position: absolute;
+            left: 1%;
+            top: 25px;
+            width: 78px;
+        }
+       
+        .logo-right {
+            position: absolute;
+            right: 34%;
+            top: 13px;
+            width: 70px;
+        }
+
+        #download-btn {
+            {% comment %} margin: 15px 20px; {% endcomment %}
+            padding: 12px 28px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #0dae48 0%, #0a8a38 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(13, 174, 72, 0.4);
+        }
+        #download-btn:hover { opacity: 0.9; }
+        #download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        #progress-container {
+            display: none;
+            width: 360px;
+            margin: 10px 20px 20px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        #progress-container.show { display: block; }
+        .progress-label { text-align: center; margin-bottom: 8px; font-weight: bold; font-size: 13px; }
+        .progress-bar-wrapper { width: 100%; height: 24px; border-radius: 12px; overflow: hidden; background: #e9ecef; }
+        .progress-bar-fill { height: 100%; border-radius: 12px; transition: width 0.3s ease; background: linear-gradient(90deg, #0dae48, #ffff07); }
+        .progress-status { text-align: center; margin-top: 6px; font-size: 12px; color: #555; }
+    </style>
+
+<div class="billing-page">
+  <!-- Header -->
+  <div class="billing-header">
+    <div class="billing-header-left">
+      <h1><i class="fas fa-file-invoice" style="color:var(--green);margin-right:0.5rem;font-size:1.3rem;"></i>Bill Generation</h1>
+      <p>Generate and manage business operating permit bills</p>
+    </div>
+    <div class="year-badge">
+      <i class="fas fa-calendar-check"></i>
+      <span id="activeBillingYearLabel">2024 Billing Year</span>
+    </div>
+  </div>
+
+  <!-- Control Panel -->
+  <div class="control-panel">
+    <div class="control-panel-body">
+
+      <!-- Businesses -->
+      <div class="cp-section">
+        <div class="cp-section-header">
+          <div class="cp-icon green"><i class="fas fa-building"></i></div>
+          <div>
+            <h6>Select Businesses</h6>
+            <p>Choose one or multiple for billing</p>
+          </div>
         </div>
+        <select name="business_id" id="businessSelect" multiple="multiple" style="width:100%"></select>
+        <div class="sel-meta">
+          <div class="sel-btns">
+            <button class="btn-xs" id="selectAllBusinesses"><i class="fas fa-check-circle me-1"></i>All</button>
+            <button class="btn-xs" id="deselectAllBusinesses"><i class="fas fa-times me-1"></i>Clear</button>
+          </div>
+          <span class="sel-count-badge" id="selectedBusinessesCount">0 selected</span>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="cp-section">
+        <div class="cp-section-header">
+          <div class="cp-icon blue"><i class="fas fa-sliders-h"></i></div>
+          <div>
+            <h6>Filter Options</h6>
+            <p>Narrow by division, block &amp; year</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div>
+            <label class="form-label-clean"><i class="fas fa-sitemap me-1"></i>Division</label>
+            <select class="form-select-clean" id="divisionSelect">
+              <option value="">All Divisions</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label-clean"><i class="fas fa-cubes me-1"></i>Block</label>
+            <select class="form-select-clean" id="blockSelect">
+              <option value="">All Blocks</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label-clean"><i class="fas fa-calendar-alt me-1"></i>Billing Year</label>
+            <select class="form-select-clean" id="billingYearSelect">
+              <option value="">Select Year</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="cp-section actions-col">
+        <div class="cp-section-header">
+          <div class="cp-icon amber"><i class="fas fa-bolt"></i></div>
+          <div>
+            <h6>Quick Actions</h6>
+            <p>Generate &amp; download bills</p>
+          </div>
+        </div>
+        <div class="action-buttons-row" style="display:flex;flex-direction:column;gap:0.65rem;">
+          <button class="action-btn primary" id="generateBillBtn">
+            <i class="fas fa-file-invoice"></i> Generate Bills
+          </button>
+          <button class="action-btn secondary" id="download-btn">
+            <i class="fas fa-download"></i> Download Bills
+          </button>
+          <button class="action-btn ghost" id="viewBillsBtn">
+            <i class="fas fa-eye"></i> View Bills
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bills Section -->
+  <div class="bills-section">
+    <div class="bills-section-header">
+      <div class="bills-section-header-left">
+        <div class="icon"><i class="fas fa-receipt"></i></div>
+        <div>
+          <h5>Generated Bills</h5>
+          <span>View and manage all generated bills</span>
+        </div>
+      </div>
+      <div class="bills-header-right">
+        <div class="search-wrap">
+          <i class="fas fa-search search-ico"></i>
+          <input type="text" class="search-input" id="billSearchInput" placeholder="Search bills…">
+          <button class="search-clear" id="clearSearchBtn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="view-toggle">
+          <button id="gridViewBtn" class="active" title="Grid View"><i class="fas fa-th-large"></i></button>
+          <button id="listViewBtn" title="List View"><i class="fas fa-list"></i></button>
+        </div>
+        <button class="btn-refresh" onclick="loadBopsBills()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="bills-stats-bar">
+      <span class="stat-pill"><span class="dot"></span><span id="visibleBillsCount">0</span> visible</span>
+      <span style="color:var(--slate-300)">|</span>
+      <span><span id="totalBillsCount">0</span> total</span>
+      <span id="searchTermDisplay"></span>
+    </div>
+
+    <div class="bills-body">
+      <div id="billsTableContainer" class="bills-grid">
+        <!-- loaded via JS -->
       </div>
     </div>
   </div>
 </div>
 
-<!-- Add this template for bill cards (will be used by JavaScript) -->
+<!-- Toast Stack -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- Hidden iframe for downloads -->
+<iframe id="bop-download-iframe" style="display:none;"></iframe>
+
+<!-- Templates -->
 <template id="billCardTemplate">
   <div class="bill-card">
-    <div class="bill-card-header">
-      <div class="bill-status-wrapper">
-        <span class="bill-status-badge"></span>
-      </div>
-      <div class="bill-actions">
-        <button class="btn-action view-bill" title="View Details">
-          <i class="fas fa-eye"></i>
-        </button>
-        <button class="btn-action edit-bill" title="Edit Bill">
-          <i class="fas fa-edit"></i>
-        </button>
-        <button class="btn-action delete-bill" title="Delete Bill">
-          <i class="fas fa-trash"></i>
-        </button>
+    <div class="bc-top">
+      <span class="bc-bill-no bill-number"></span>
+      <div class="bc-actions">
+        <button class="bc-action-btn view view-bill" title="View"><i class="fas fa-eye"></i></button>
+        <button class="bc-action-btn edit edit-bill" title="Edit"><i class="fas fa-pen"></i></button>
+        <button class="bc-action-btn del delete-bill" title="Delete"><i class="fas fa-trash"></i></button>
       </div>
     </div>
-    
-    <div class="bill-card-body">
-      <div class="bill-number-section">
-        <span class="bill-number-label">Bill Number</span>
-        <h6 class="bill-number"></h6>
+    <div class="bc-body">
+      <div class="bc-status-row">
+        <span class="status-pill bill-status-badge"></span>
       </div>
-      
-      <div class="bill-details-grid">
-        <div class="detail-item">
-          <span class="detail-label">Property ID</span>
-          <span class="detail-value property-id"></span>
+      <div class="bc-info-grid">
+        <div class="bc-field">
+          <span class="bc-field-label">Property ID</span>
+          <span class="bc-field-value property-id"></span>
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Owner</span>
-          <span class="detail-value owner-name"></span>
+        <div class="bc-field">
+          <span class="bc-field-label">Owner</span>
+          <span class="bc-field-value owner-name"></span>
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Billing Cycle</span>
-          <span class="detail-value billing-cycle"></span>
+        <div class="bc-field">
+          <span class="bc-field-label">Billing Cycle</span>
+          <span class="bc-field-value billing-cycle"></span>
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Due Date</span>
-          <span class="detail-value due-date"></span>
+        <div class="bc-field">
+          <span class="bc-field-label">Due Date</span>
+          <span class="bc-field-value due-date"></span>
         </div>
       </div>
-      
-      <div class="bill-amounts">
-        <div class="amount-row">
-          <span>Tax Amount:</span>
-          <span class="tax-amount"></span>
+      <div class="bc-amounts">
+        <div class="bc-amount-item">
+          <span>Tax</span>
+          <span class="bc-amount-val tax-amount"></span>
         </div>
-        <div class="amount-row">
-          <span>Penalty:</span>
-          <span class="penalty-amount"></span>
+        <div class="bc-amount-item">
+          <span>Penalty</span>
+          <span class="bc-amount-val penalty-amount"></span>
         </div>
-        <div class="amount-row">
-          <span>Discount:</span>
-          <span class="discount-amount"></span>
+        <div class="bc-amount-item">
+          <span>Discount</span>
+          <span class="bc-amount-val discount-amount"></span>
         </div>
-        <div class="amount-row total">
-          <span>Total Amount:</span>
-          <span class="total-amount"></span>
-        </div>
-      </div>
-      
-      <div class="bill-footer">
-        <div class="generated-info">
-          <i class="fas fa-calendar-alt me-1"></i>
-          <span class="generated-date"></span>
-        </div>
-        <div class="created-by">
-          <i class="fas fa-user me-1"></i>
-          <span class="creator"></span>
+        <div class="bc-amount-item total-row">
+          <span>Total</span>
+          <span class="bc-amount-val total-amount"></span>
         </div>
       </div>
+    </div>
+    <div class="bc-footer">
+      <span><i class="fas fa-calendar-alt"></i><span class="generated-date"></span></span>
+      <span><i class="fas fa-user"></i><span class="creator"></span></span>
     </div>
   </div>
 </template>
 
-<!-- Add this template for list view (alternative) -->
 <template id="billListItemTemplate">
   <div class="bill-list-item">
-    <div class="list-item-status">
-      <span class="status-badge"></span>
-    </div>
-    <div class="list-item-info">
-      <div class="info-row">
-        <span class="bill-number"></span>
-        <span class="property-info"></span>
+    <div class="bli-status"><span class="status-pill status-badge"></span></div>
+    <div class="bli-info">
+      <div class="bli-main">
+        <span class="bli-num bill-number"></span>
+        <span class="bli-owner owner-name"></span>
       </div>
-      <div class="info-row">
-        <span class="owner-info"></span>
-        <span class="cycle-info"></span>
+      <div class="bli-meta">
+        <span><i class="fas fa-hashtag me-1"></i><span class="property-id"></span></span>
+        <span><i class="fas fa-calendar me-1"></i><span class="billing-cycle"></span></span>
       </div>
     </div>
-    <div class="list-item-amount">
-      <span class="amount"></span>
-    </div>
-    <div class="list-item-actions">
-      <button class="btn-action view-bill" title="View Details"><i class="fas fa-eye"></i></button>
-      <button class="btn-action edit-bill" title="Edit Bill"><i class="fas fa-edit"></i></button>
-      <button class="btn-action delete-bill" title="Delete Bill"><i class="fas fa-trash"></i></button>
+    <div class="bli-amount total-amount"></div>
+    <div class="bli-actions">
+      <button class="bc-action-btn view view-bill" title="View"><i class="fas fa-eye"></i></button>
+      <button class="bc-action-btn edit edit-bill" title="Edit"><i class="fas fa-pen"></i></button>
+      <button class="bc-action-btn del delete-bill" title="Delete"><i class="fas fa-trash"></i></button>
     </div>
   </div>
 </template>
-</div>
 
-<!-- Modals (unchanged) -->
-<!-- Generate Bill Modal -->
-<div class="modal fade" id="generateBillModal" tabindex="-1" aria-labelledby="generateBillModalLabel" aria-hidden="true">
+<!-- Modals (Generate, Edit, View – unchanged structure, just kept minimal) -->
+<div class="modal fade" id="generateBillModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="generateBillModalLabel">Generate New Bill</h5>
+    <div class="modal-content" style="border-radius:16px;border:none;box-shadow:0 24px 80px rgba(0,0,0,0.12);">
+      <div class="modal-header" style="border-bottom:1px solid #f1f5f9;">
+        <h5 class="modal-title" style="font-family:'DM Sans',sans-serif;font-weight:700;">Generate New Bill</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form method="POST" id="generateBillForm">
           {% csrf_token %}
-          
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Property*</label>
+              <label class="form-label-clean">Property*</label>
               <select name="property_id" class="form-select" id="propertySelect" required>
                 <option value="">-- Select Property --</option>
               </select>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Billing Cycle*</label>
+              <label class="form-label-clean">Billing Cycle*</label>
               <select name="billing_cycle_id" class="form-select" id="billingCycleSelect" required>
                 <option value="">-- Select Billing Cycle --</option>
               </select>
             </div>
           </div>
-          
           <div class="row mb-3">
             <div class="col-md-12">
-              <button type="button" class="btn btn-outline-secondary" id="calculateTaxBtn">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="calculateTaxBtn">
                 <i class="fas fa-calculator"></i> Calculate Tax
               </button>
             </div>
           </div>
-          
           <div class="row mb-3">
             <div class="col-md-4">
-              <label class="form-label">Assessed Value (₵)</label>
+              <label class="form-label-clean">Assessed Value (₵)</label>
               <input type="text" id="assessedValue" class="form-control" readonly>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Tax Rate (%)</label>
+              <label class="form-label-clean">Tax Rate (%)</label>
               <input type="text" id="taxRate" class="form-control" readonly>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Tax Amount (₵)*</label>
+              <label class="form-label-clean">Tax Amount (₵)*</label>
               <input type="number" name="tax_amount" id="taxAmount" class="form-control" required step="0.01" min="0" readonly>
             </div>
           </div>
-          
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Penalty Amount (₵)</label>
+              <label class="form-label-clean">Penalty Amount (₵)</label>
               <input type="number" name="penalty_amount" id="penaltyAmount" class="form-control" value="0" step="0.01" min="0">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Discount Amount (₵)</label>
+              <label class="form-label-clean">Discount Amount (₵)</label>
               <input type="number" name="discount_amount" id="discountAmount" class="form-control" value="0" step="0.01" min="0">
             </div>
           </div>
-          
           <div class="row mb-3">
-            <div class="col-md-12">
-              <label class="form-label">Total Amount (₵)</label>
+            <div class="col-12">
+              <label class="form-label-clean">Total Amount (₵)</label>
               <input type="text" id="totalAmount" class="form-control bg-light" readonly>
             </div>
           </div>
-          
           <div class="row mb-3">
             <div class="col-12">
-              <label class="form-label">Notes</label>
-              <textarea name="notes" class="form-control" rows="3" placeholder="Additional notes..."></textarea>
+              <label class="form-label-clean">Notes</label>
+              <textarea name="notes" class="form-control" rows="3" placeholder="Additional notes…"></textarea>
             </div>
           </div>
-          
-          <div class="text-end mt-4">
-            <button type="submit" class="btn btn-primary">
+          <div class="text-end mt-3">
+            <button type="submit" class="action-btn primary" style="width:auto;display:inline-flex;padding:0.65rem 1.5rem;">
               <i class="fas fa-file-invoice"></i> Generate Bill
             </button>
           </div>
@@ -423,124 +1286,24 @@
   </div>
 </div>
 
-<!-- Bulk Generate Modal -->
-<div class="modal fade" id="bulkGenerateModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Bulk Generate Bills</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form id="bulkGenerateForm">
-          {% csrf_token %}
-          
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label">Billing Cycle*</label>
-              <select name="billing_cycle_id" class="form-select" id="bulkBillingCycleSelect" required>
-                <option value="">-- Select Billing Cycle --</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Properties to Bill</label>
-              <button type="button" class="btn btn-outline-primary w-100" id="selectPropertiesBtn">
-                <i class="fas fa-list"></i> Select Properties
-              </button>
-              <small class="form-text text-muted" id="selectedPropertiesCount">0 properties selected</small>
-            </div>
-          </div>
-          
-          <div class="row mb-3">
-            <div class="col-12">
-              <div id="selectedPropertiesList" class="border p-3" style="max-height: 200px; overflow-y: auto; display: none;">
-                <!-- Selected properties will be listed here -->
-              </div>
-            </div>
-          </div>
-          
-          <div class="text-end mt-4">
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-bolt"></i> Generate Bills
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Properties Selection Modal -->
-<div class="modal fade" id="propertiesSelectionModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Select Properties for Billing</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="table-responsive">
-          <table id="propertiesSelectionTable" class="table table-sm table-striped">
-            <thead>
-              <tr>
-                <th><input type="checkbox" id="selectAllProperties"></th>
-                <th>PROPERTY ID</th>
-                <th>ADDRESS</th>
-                <th>ZONE</th>
-                <th>PROPERTY TYPE</th>
-                <th>ASSESSED VALUE (₵)</th>
-                <th>OWNER</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Properties will be loaded here -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="confirmPropertiesSelection">Confirm Selection</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- View Bill Modal -->
-<div class="modal fade" id="viewBillModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Bill Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="billDetailsContent">
-        <!-- Bill details will be loaded here -->
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Edit Bill Modal -->
 <div class="modal fade" id="editBillModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Bill</h5>
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:1px solid #f1f5f9;">
+        <h5 class="modal-title" style="font-family:'DM Sans',sans-serif;font-weight:700;">Edit Bill</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="editBillForm">
           {% csrf_token %}
           <input type="hidden" name="bill_id" id="editBillId">
-          
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Bill Number</label>
+              <label class="form-label-clean">Bill Number</label>
               <input type="text" id="editBillNumber" class="form-control" readonly>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Status</label>
+              <label class="form-label-clean">Status</label>
               <select name="status" class="form-control" id="editBillStatus" required>
                 <option value="draft">Draft</option>
                 <option value="generated">Generated</option>
@@ -551,38 +1314,34 @@
               </select>
             </div>
           </div>
-          
           <div class="row mb-3">
             <div class="col-md-4">
-              <label class="form-label">Tax Amount (₵)</label>
+              <label class="form-label-clean">Tax Amount (₵)</label>
               <input type="text" id="editTaxAmount" class="form-control" readonly>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Penalty Amount (₵)</label>
+              <label class="form-label-clean">Penalty Amount (₵)</label>
               <input type="number" name="penalty_amount" id="editPenaltyAmount" class="form-control" step="0.01" min="0">
             </div>
             <div class="col-md-4">
-              <label class="form-label">Discount Amount (₵)</label>
+              <label class="form-label-clean">Discount Amount (₵)</label>
               <input type="number" name="discount_amount" id="editDiscountAmount" class="form-control" step="0.01" min="0">
             </div>
           </div>
-          
           <div class="row mb-3">
-            <div class="col-md-12">
-              <label class="form-label">Total Amount (₵)</label>
+            <div class="col-12">
+              <label class="form-label-clean">Total Amount (₵)</label>
               <input type="text" id="editTotalAmount" class="form-control bg-light" readonly>
             </div>
           </div>
-          
           <div class="row mb-3">
             <div class="col-12">
-              <label class="form-label">Notes</label>
+              <label class="form-label-clean">Notes</label>
               <textarea name="notes" id="editBillNotes" class="form-control" rows="3"></textarea>
             </div>
           </div>
-          
-          <div class="text-end mt-4">
-            <button type="submit" class="btn btn-primary">
+          <div class="text-end mt-3">
+            <button type="submit" class="action-btn primary" style="width:auto;display:inline-flex;padding:0.65rem 1.5rem;">
               <i class="fas fa-save"></i> Save Changes
             </button>
           </div>
@@ -592,2164 +1351,517 @@
   </div>
 </div>
 
-<!-- Message Container -->
-<div id="messageContainer" class="mt-3"></div>
-
-<!-- Hidden iframe for downloads -->
-<iframe id="bop-download-iframe" style="display:none;"></iframe>
-
 <!-- Scripts -->
 <script src="/static/assets/libs/jquery/jquery.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-$(document).ready(function () {
-  // ==================== STATE MANAGEMENT ====================
-  let currentViewMode = 'grid'; // 'grid' or 'list'
-  let selectedProperties = [];
-  let allProperties = [];
+$(function () {
+  /* ─── STATE ─── */
+  let currentViewMode = 'grid';
+  let allBills = [];
 
-  // ==================== INITIALIZATION ====================
-  function initializePage() {
-    initializeSelect2();
-    loadBillingYears();
-    loadDivisions();
-    setupEventListeners();
-    // Load initial bills after a short delay
-    setTimeout(loadBopsBills, 500);
-  }
+  /* ─── INIT ─── */
+  initSelect2();
+  loadBillingYears();
+  loadDivisions();
+  setupEvents();
+  setTimeout(loadBopsBills, 400);
 
-  // ==================== SELECT2 INITIALIZATION ====================
-  function initializeSelect2() {
+  /* ─── SELECT2 ─── */
+  function initSelect2() {
     $('#businessSelect').select2({
       theme: 'bootstrap-5',
-      placeholder: 'Search and select business(es)...',
+      placeholder: 'Search and select business(es)…',
       allowClear: true,
       width: '100%',
       multiple: true,
       closeOnSelect: false,
-      dropdownParent: $('.business-select-wrapper'),
-      dropdownCssClass: 'business-dropdown',
       ajax: {
         url: '/api/bops/list/',
         dataType: 'json',
         delay: 250,
-        data: function (params) {
-          return {
-            search: params.term || '',
-            page: params.page || 1
-          };
-        },
-        processResults: function (data, params) {
+        data: p => ({ search: p.term || '', page: p.page || 1 }),
+        processResults(data, params) {
           params.page = params.page || 1;
-          
-          if (!data.success || !data.bops || !Array.isArray(data.bops)) {
-            return { results: [] };
-          }
-          
-          const results = data.bops.map(function(bop) {
-            const businessName = bop.business_name || bop.display_text || bop.account_number || 'Business';
-            return {
-              id: bop.id,
-              text: businessName,
-              account_number: bop.account_number,
-              business_name: bop.business_name,
-              block: bop.block,
-              division: bop.division
-            };
-          });
-          
+          if (!data.success || !Array.isArray(data.bops)) return { results: [] };
           return {
-            results: results,
-            pagination: {
-              more: (params.page * 30) < (data.total || 0)
-            }
+            results: data.bops.map(b => ({
+              id: b.id, text: b.business_name || b.account_number || 'Business',
+              account_number: b.account_number, business_name: b.business_name,
+              block: b.block, division: b.division
+            })),
+            pagination: { more: (params.page * 30) < (data.total || 0) }
           };
         },
         cache: true
       },
       minimumInputLength: 0,
-      templateResult: formatBusinessResult,
-      templateSelection: formatBusinessSelection
+      templateResult: fmtBizResult,
+      templateSelection: fmtBizSelect
     });
-
-    $('#businessSelect').on('change', function() {
-      updateSelectedBusinessesCount();
-    });
+    $('#businessSelect').on('change', updateSelCount);
   }
 
-  function formatBusinessResult(business) {
-    if (business.loading) {
-      return $('<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div>');
+  function fmtBizResult(b) {
+    if (b.loading) return $('<div class="text-muted small">Loading…</div>');
+    return $(`<div class="d-flex align-items-center gap-2">
+      <i class="fas fa-building text-success"></i>
+      <div><div class="fw-semibold small">${b.business_name||b.text}</div>
+      ${b.account_number?`<div class="text-muted" style="font-size:.75rem">${b.account_number}</div>`:''}</div>
+    </div>`);
+  }
+  function fmtBizSelect(b) {
+    if (!b.id) return b.text;
+    return $('<span>' + (b.business_name || b.text) + '</span>');
+  }
+
+  /* ─── UTILS ─── */
+  function fc(amount) {
+    return amount ? '₵' + parseFloat(amount).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }) : '₵0.00';
+  }
+
+  function statusPillClass(status) {
+    const map = { draft:'draft', generated:'generated', sent:'sent', paid:'paid', overdue:'overdue', cancelled:'cancelled' };
+    return map[status] || 'draft';
+  }
+  function statusIcon(status) {
+    const map = { draft:'fa-file', generated:'fa-file-invoice', sent:'fa-paper-plane', paid:'fa-check-circle', overdue:'fa-exclamation-triangle', cancelled:'fa-ban' };
+    return map[status] || 'fa-file';
+  }
+
+  function toast(msg, type='success') {
+    const icons = { success:'fas fa-check-circle text-success', error:'fas fa-times-circle text-danger', warning:'fas fa-exclamation-triangle text-warning' };
+    const el = $(`<div class="toast-item ${type}">
+      <i class="${icons[type]||icons.success} toast-icon"></i>
+      <span class="toast-text">${msg}</span>
+    </div>`);
+    $('#toastStack').append(el);
+    setTimeout(() => { el.css('animation','fadeOut 0.3s ease forwards'); setTimeout(()=>el.remove(),300); }, 4000);
+  }
+
+  function getCSRF() {
+    for (let c of document.cookie.split(';')) {
+      c = c.trim();
+      if (c.startsWith('csrftoken=')) return c.slice('csrftoken='.length);
     }
-    
-    const $container = $('<div class="business-option">');
-    const businessName = business.business_name || business.text || 'Business';
-    const accountNumber = business.account_number || '';
-    
-    $container.html(`
-      <div class="d-flex align-items-center">
-        <div class="business-icon me-2">
-          <i class="fas fa-building text-primary"></i>
-        </div>
-        <div>
-          <div class="fw-semibold">${businessName}</div>
-          ${accountNumber ? `<small class="text-muted">${accountNumber}</small>` : ''}
-        </div>
-      </div>
-    `);
-    
-    return $container;
+    return null;
   }
 
-  function formatBusinessSelection(business) {
-    if (!business.id) return business.text;
-    const businessName = business.business_name || business.text || 'Business';
-    return $('<span class="selected-business">' + businessName + '</span>');
-  }
-
-  // ==================== UI UTILITIES ====================
-  function formatCurrency(amount) {
-    return amount ? '₵' + parseFloat(amount).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }) : '₵0.00';
-  }
-
-  function getStatusClass(status) {
-    const classes = {
-      'draft': { bg: 'secondary', icon: 'fa-file' },
-      'generated': { bg: 'info', icon: 'fa-file-invoice' },
-      'sent': { bg: 'primary', icon: 'fa-paper-plane' },
-      'paid': { bg: 'success', icon: 'fa-check-circle' },
-      'overdue': { bg: 'danger', icon: 'fa-exclamation-triangle' },
-      'cancelled': { bg: 'dark', icon: 'fa-ban' }
-    };
-    return classes[status] || { bg: 'secondary', icon: 'fa-file' };
-  }
-
-  function showMessage(type, message) {
-    $("#messageContainer").html(`
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    `);
-    setTimeout(() => {
-      $(".alert").fadeOut("slow");
-    }, 5000);
-  }
-
-  function getCSRFToken() {
-    let cookieValue = null;
-    let cookies = document.cookie.split(";");
-    for (let cookie of cookies) {
-      cookie = cookie.trim();
-      if (cookie.startsWith("csrftoken=")) {
-        cookieValue = cookie.substring("csrftoken=".length);
-        break;
-      }
-    }
-    return cookieValue;
-  }
-
-  // Apply CSRF Token to AJAX Requests
   $.ajaxSetup({
-    beforeSend: function (xhr, settings) {
-      if (!this.crossDomain && settings.type !== "GET") {
-        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
-      }
-    },
+    beforeSend(xhr, s) {
+      if (!this.crossDomain && s.type !== 'GET') xhr.setRequestHeader('X-CSRFToken', getCSRF());
+    }
   });
 
-  function updateSelectedBusinessesCount() {
-    const selected = $('#businessSelect').val();
-    const count = selected ? selected.length : 0;
-    $('#selectedBusinessesCount').html(`<i class="fas fa-check-circle me-1"></i>${count} selected`);
+  function updateSelCount() {
+    const n = ($('#businessSelect').val() || []).length;
+    $('#selectedBusinessesCount').text(n + ' selected');
   }
 
   function getBillingYear() {
-    const select = $('#billingYearSelect');
-    const selectedYear = select.val();
-    return selectedYear && selectedYear !== '' ? parseInt(selectedYear) : new Date().getFullYear();
+    const v = $('#billingYearSelect').val();
+    return v && v !== '' ? parseInt(v) : new Date().getFullYear();
   }
 
-  // ==================== DATA LOADING ====================
+  /* ─── LOADERS ─── */
   function loadBillingYears() {
     $.ajax({
-      url: '/api/bops-bills/years/',
-      type: 'GET',
-      success: function(response) {
-        if (response.success) {
-          const select = $('#billingYearSelect');
-          select.empty().append('<option value="">Select Year</option>');
-          
-          const currentYear = new Date().getFullYear();
-          
-          response.years.forEach(year => {
-            select.append(`<option value="${year}" ${year === currentYear ? 'selected' : ''}>${year}</option>`);
-          });
-        }
+      url: '/api/bops-bills/years/', type: 'GET',
+      success(r) {
+        const s = $('#billingYearSelect').empty().append('<option value="">Select Year</option>');
+        const cur = new Date().getFullYear();
+        (r.years || []).forEach(y => s.append(`<option value="${y}" ${y===cur?'selected':''}>${y}</option>`));
+        $('#activeBillingYearLabel').text(`${cur} Billing Year`);
       },
-      error: function() {
-        const select = $('#billingYearSelect');
-        const currentYear = new Date().getFullYear();
-        select.empty().append(`<option value="${currentYear}" selected>${currentYear}</option>`);
+      error() {
+        const cur = new Date().getFullYear();
+        $('#billingYearSelect').empty().append(`<option value="${cur}" selected>${cur}</option>`);
       }
     });
   }
 
   function loadDivisions() {
-    const divisionSelect = $('#divisionSelect');
-    divisionSelect.empty().append('<option value="">All Divisions</option>');
+    $.ajax({
+      url: '/api/bops-bills/divisions/', type: 'GET',
+      success(r) {
+        const s = $('#divisionSelect').empty().append('<option value="">All Divisions</option>');
+        if (r.success && Array.isArray(r.divisions)) r.divisions.forEach(d => s.append(`<option value="${d}">${d}</option>`));
+      }
+    });
+  }
+
+  function loadBlocksForDivision(div) {
+    const s = $('#blockSelect').empty().append('<option value="">All Blocks</option>');
+    if (!div || !div.trim()) return;
+    $.ajax({
+      url: '/api/bops-bills/blocks-by-division/', type: 'GET', data: { division: div.trim() },
+      success(r) {
+        if (r.success && Array.isArray(r.blocks)) r.blocks.forEach(b => s.append(`<option value="${b}">${b}</option>`));
+      }
+    });
+  }
+
+  /* ─── LOAD BILLS ─── */
+  function loadBopsBills() {
+    const year = getBillingYear(), block = $('#blockSelect').val()||'', div = $('#divisionSelect').val()||'', biz = $('#businessSelect').val()||[];
+    let q = `billing_year=${year}`;
+    if (block) q += `&block=${encodeURIComponent(block)}`;
+    if (div)   q += `&division=${encodeURIComponent(div)}`;
+    if (biz.length) q += `&business_ids=${biz.join(',')}`;
+
+    showLoading();
 
     $.ajax({
-      url: '/api/bops-bills/divisions/',
-      type: 'GET',
-      success: function(response) {
-        if (response.success && Array.isArray(response.divisions)) {
-          response.divisions.forEach(function(division) {
-            divisionSelect.append(`<option value="${division}">${division}</option>`);
-          });
+      url: `/bopeasycollectible/?${q}`, type: 'GET',
+      success(r) {
+        // Parse the returned HTML and extract .receipt elements
+        const parsed = $($.parseHTML(r, document, true));
+        const receipts = parsed.find('.receipt').length
+          ? parsed.find('.receipt')
+          : parsed.filter('.receipt');
+
+        const c = $('#billsTableContainer').empty().attr('class', 'bills-grid');
+
+        if (!receipts.length) {
+          showEmpty();
+          return;
         }
+
+        receipts.each(function() {
+          // Wrap each receipt in a grid-cell div so the 2-col grid applies
+          const wrapper = $('<div class="receipt-cell"></div>');
+          wrapper.append($(this).clone());
+          c.append(wrapper);
+        });
+
+        updateStats(receipts.length, receipts.length);
+
+        // Re-run any scripts from the response (e.g. download button logic)
+        parsed.find('script').each(function() {
+          if ($(this).attr('src')) return; // skip external, already loaded
+          try { $.globalEval($(this).text()); } catch(e) {}
+        });
       },
-      error: function() {
-        console.error('Error loading divisions');
-      }
+      error() { showError(); }
     });
   }
 
-  // function loadBlocksForDivision(division) {
-  //   const blockSelect = $('#blockSelect');
-  //   blockSelect.empty().append('<option value="">All Blocks</option>');
-
-  //   if (!division || division.trim() === '') {
-  //     return;
-  //   }
-
-  //   $.ajax({
-  //     url: '/api/bops-bills/blocks-by-division/',
-  //     type: 'GET',
-  //     data: { division: division.trim() },
-  //     success: function(response) {
-  //       if (response.success && Array.isArray(response.blocks)) {
-  //         response.blocks.forEach(function(block) {
-  //           blockSelect.append(`<option value="${block}">${block}</option>`);
-  //         });
-  //       }
-  //     },
-  //     error: function() {
-  //       console.error('Error loading blocks');
-  //     }
-  //   });
-  // }
-
-   // Load Blocks into #blockSelect based on selected division
-  function loadBlocksForDivision(division) {
-    const blockSelect = $('#blockSelect');
-    if (!blockSelect.length) return;
-    
-    blockSelect.empty().append('<option value="">-- Select Block --</option>');
-
-    if (!division || String(division).trim() === '') {
-      return;
-    }
-
-    division = String(division).trim();
-    
-    $.ajax({
-      url: '/api/bops-bills/blocks-by-division/',
-      type: 'GET',
-      data: { division: division },
-      dataType: 'json',
-      success: function(response) {
-        if (response && response.success && Array.isArray(response.blocks)) {
-          response.blocks.forEach(function(block) {
-            blockSelect.append($('<option></option>').val(block).text(block));
-          });
-        }
-      },
-      error: function(xhr, status, err) {
-        console.error('Error loading blocks for blockSelect:', status, err, xhr.responseText);
-      }
-    });
+  /* ─── RENDER ─── */
+  function showLoading() {
+    const c = $('#billsTableContainer');
+    c.attr('class', 'bills-grid');
+    c.html(`<div class="state-box"><div class="spin"></div><h5>Loading Bills</h5><p>Fetching your bills…</p></div>`);
   }
-  
-
-  // ==================== BILL RENDERING ====================
-  // function loadBopsBills() {
-  //   const billingYear = getBillingYear();
-  //   const selectedBlock = $('#blockSelect').val() || '';
-  //   const selectedDivision = $('#divisionSelect').val() || '';
-  //   const selectedBusinesses = $('#businessSelect').val() || [];
-    
-  //   let queryParams = `billing_year=${billingYear}`;
-  //   if (selectedBlock) {
-  //     queryParams += `&block=${encodeURIComponent(selectedBlock)}`;
-  //   }
-  //   if (selectedDivision) {
-  //     queryParams += `&division=${encodeURIComponent(selectedDivision)}`;
-  //   }
-  //   if (selectedBusinesses && selectedBusinesses.length > 0) {
-  //     queryParams += `&business_ids=${selectedBusinesses.join(',')}`;
-  //   }
-    
-  //   $('#billsTableContainer').html(`
-  //     <div class="loading-state">
-  //       <div class="spinner-border text-primary" role="status">
-  //         <span class="visually-hidden">Loading...</span>
-  //       </div>
-  //       <p class="text-muted mt-2">Loading bills...</p>
-  //     </div>
-  //   `);
-    
-  //   $.ajax({
-  //     url: `/api/bops-bills/list/?${queryParams}`,
-  //     type: 'GET',
-  //     success: function(response) {
-  //       if (response.success && response.bills && response.bills.length > 0) {
-  //         if (currentViewMode === 'grid') {
-  //           renderBillsGrid(response.bills);
-  //         } else {
-  //           renderBillsList(response.bills);
-  //         }
-  //       } else {
-  //         renderEmptyState();
-  //       }
-  //     },
-  //     error: function(xhr) {
-  //       console.error('Error loading bills:', xhr);
-  //       $('#billsTableContainer').html(`
-  //         <div class="error-state">
-  //           <div class="error-icon">
-  //             <i class="fas fa-exclamation-triangle text-danger"></i>
-  //           </div>
-  //           <h5>Error Loading Bills</h5>
-  //           <p class="text-muted">There was a problem loading the bills. Please try again.</p>
-  //           <button class="btn btn-outline-primary" onclick="loadBopsBills()">
-  //             <i class="fas fa-sync-alt me-2"></i>Retry
-  //           </button>
-  //         </div>
-  //       `);
-  //     }
-  //   });
-  // }
-
-
-  // no show the actual template but shrink it a bit to cover 2 in a row
-function loadBopsBills() {
-    const billingYear = getBillingYear();
-    const selectedBlock = $('#blockSelect').val() || '';
-    const selectedDivision = $('#divisionSelect').val() || '';
-    const selectedBusinesses = $('#businessSelect').val() || [];
-    
-    // Build query parameters
-    let queryParams = `billing_year=${billingYear}`;
-    if (selectedBlock) {
-      queryParams += `&block=${encodeURIComponent(selectedBlock)}`;
-    }
-    if (selectedDivision) {
-      queryParams += `&division=${encodeURIComponent(selectedDivision)}`;
-    }
-    if (selectedBusinesses && selectedBusinesses.length > 0) {
-      queryParams += `&business_ids=${selectedBusinesses.join(',')}`;
-    }
-    
-    // Show loading indicator
-    $('#billsTableContainer').html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Loading bills...</div>');
-    
-    $.ajax({
-      url: `/bopeasycollectible/?${queryParams}`,
-      type: 'GET',
-      success: function(response) {
-        $('#billsTableContainer').html(response);
-      },
-      error: function(xhr, status, error) {
-        console.error('Error loading bills:', error);
-        $('#billsTableContainer').html(
-          '<div class="alert alert-danger">Error loading bills. Please try again.</div>'
-        );
-      }
-    });
+  function showError() {
+    const c = $('#billsTableContainer');
+    c.attr('class', 'bills-grid');
+    c.html(`<div class="state-box">
+      <div class="state-icon error"><i class="fas fa-exclamation-triangle"></i></div>
+      <h5>Error Loading Bills</h5>
+      <p>Something went wrong. Please try again.</p>
+      <button class="action-btn ghost" style="width:auto;display:inline-flex;margin-top:.5rem;" onclick="loadBopsBills()">
+        <i class="fas fa-sync-alt"></i> Retry
+      </button>
+    </div>`);
   }
-
-
+  function showEmpty() {
+    $('#billsTableContainer').html(`<div class="state-box">
+      <div class="state-icon empty"><i class="fas fa-file-invoice"></i></div>
+      <h5>No Bills Found</h5>
+      <p>No bills match your current filters. Try adjusting your selection or generate new bills.</p>
+      <button class="action-btn primary" style="width:auto;display:inline-flex;margin-top:.5rem;" onclick="$('#generateBillBtn').click()">
+        <i class="fas fa-bolt"></i> Generate Bills
+      </button>
+    </div>`);
+  }
 
   function renderBillsGrid(bills) {
-    const container = $('#billsTableContainer');
-    container.empty();
-    
-    // Create fixed 2-column grid container
-    const gridContainer = $('<div class="bills-grid-container"></div>');
-    
-    bills.forEach((bill) => {
-      const template = document.getElementById('billCardTemplate');
-      const card = $(template.content.cloneNode(true));
-      
-      // Set status badge
-      const status = getStatusClass(bill.status);
-      card.find('.bill-status-badge')
-        .addClass(`bg-${status.bg}`)
-        .html(`<i class="fas ${status.icon} me-1"></i>${bill.status.toUpperCase()}`);
-      
-      // Set bill number
-      card.find('.bill-number').text(bill.bill_number || 'N/A');
-      
-      // Set details
-      card.find('.property-id').text(bill.property_id || 'N/A');
-      card.find('.owner-name').text(bill.owner_name || 'N/A');
-      card.find('.billing-cycle').text(bill.billing_cycle || 'N/A');
-      card.find('.due-date').text(bill.due_date || 'N/A');
-      
-      // Set amounts
-      card.find('.tax-amount').text(formatCurrency(bill.tax_amount));
-      card.find('.penalty-amount').text(formatCurrency(bill.penalty_amount));
-      card.find('.discount-amount').text(formatCurrency(bill.discount_amount));
-      card.find('.total-amount').text(formatCurrency(bill.total_amount));
-      
-      // Set footer
-      card.find('.generated-date').text(bill.generated_date || 'N/A');
-      card.find('.creator').text(bill.created_by || 'N/A');
-      
-      // Set data attributes
-      const billCard = card.find('.bill-card');
-      billCard.attr('data-bill-id', bill.id);
-      
-      // Add click handler for enlarging
-      billCard.on('click', function(e) {
-        if (!$(e.target).closest('.btn-action').length) {
-          enlargeBill(bill.id);
-        }
-      });
-      
-      // Action buttons (stop propagation to prevent card click)
-      card.find('.view-bill').on('click', (e) => {
-        e.stopPropagation();
-        viewBill(bill.id);
-      });
-      
-      card.find('.edit-bill').on('click', (e) => {
-        e.stopPropagation();
-        editBill(bill.id);
-      });
-      
-      card.find('.delete-bill').on('click', (e) => {
-        e.stopPropagation();
-        deleteBill(bill.id);
-      });
-      
-      gridContainer.append(card);
+    const c = $('#billsTableContainer').empty().attr('class', 'bills-grid');
+    if (!bills || !bills.length) { showEmpty(); return; }
+    bills.forEach(bill => {
+      const tpl = document.getElementById('billCardTemplate');
+      const card = $(tpl.content.cloneNode(true));
+      const sc = statusPillClass(bill.status);
+      card.find('.bill-status-badge').addClass(sc).html(`<i class="fas ${statusIcon(bill.status)} me-1"></i>${(bill.status||'N/A').toUpperCase()}`);
+      card.find('.bill-number').text(bill.bill_number||'N/A');
+      card.find('.property-id').text(bill.property_id||'N/A');
+      card.find('.owner-name').text(bill.owner_name||'N/A');
+      card.find('.billing-cycle').text(bill.billing_cycle||'N/A');
+      card.find('.due-date').text(bill.due_date||'N/A');
+      card.find('.tax-amount').text(fc(bill.tax_amount));
+      card.find('.penalty-amount').text(fc(bill.penalty_amount));
+      card.find('.discount-amount').text(fc(bill.discount_amount));
+      card.find('.total-amount').text(fc(bill.total_amount));
+      card.find('.generated-date').text(bill.generated_date||'N/A');
+      card.find('.creator').text(bill.created_by||'N/A');
+      const bc = card.find('.bill-card');
+      bc.attr('data-bill-id', bill.id);
+      bc.on('click', e => { if (!$(e.target).closest('.bc-action-btn').length) viewBillEnlarged(bill.id); });
+      card.find('.view-bill').on('click', e => { e.stopPropagation(); viewBillEnlarged(bill.id); });
+      card.find('.edit-bill').on('click', e => { e.stopPropagation(); editBill(bill.id); });
+      card.find('.delete-bill').on('click', e => { e.stopPropagation(); deleteBill(bill.id); });
+      c.append(card);
     });
-    
-    container.append(gridContainer);
+    updateStats(bills.length, bills.length);
   }
 
   function renderBillsList(bills) {
-    const container = $('#billsTableContainer');
-    container.empty();
-    
-    const listContainer = $('<div class="bills-list-container"></div>');
-    
+    const c = $('#billsTableContainer').empty().attr('class', 'bills-list');
+    if (!bills || !bills.length) { showEmpty(); return; }
     bills.forEach(bill => {
-      const template = document.getElementById('billListItemTemplate');
-      const item = $(template.content.cloneNode(true));
-      
-      const status = getStatusClass(bill.status);
-      
-      item.find('.status-badge')
-        .addClass(`bg-${status.bg}`)
-        .html(`<i class="fas ${status.icon} me-1"></i>${bill.status.toUpperCase()}`);
-      
-      item.find('.bill-number').text(bill.bill_number || 'N/A');
-      item.find('.property-info').text(`${bill.property_id || 'N/A'} - ${bill.address || ''}`);
-      item.find('.owner-info').html(`<i class="fas fa-user me-1"></i>${bill.owner_name || 'N/A'}`);
-      item.find('.cycle-info').html(`<i class="fas fa-calendar me-1"></i>${bill.billing_cycle || 'N/A'}`);
-      item.find('.amount').text(formatCurrency(bill.total_amount));
-      
+      const tpl = document.getElementById('billListItemTemplate');
+      const item = $(tpl.content.cloneNode(true));
+      const sc = statusPillClass(bill.status);
+      item.find('.status-badge').addClass(sc).html(`<i class="fas ${statusIcon(bill.status)} me-1"></i>${(bill.status||'').toUpperCase()}`);
+      item.find('.bill-number').text(bill.bill_number||'N/A');
+      item.find('.owner-name').text(bill.owner_name||'N/A');
+      item.find('.property-id').text(bill.property_id||'N/A');
+      item.find('.billing-cycle').text(bill.billing_cycle||'N/A');
+      item.find('.total-amount').text(fc(bill.total_amount));
       item.find('.bill-list-item').attr('data-bill-id', bill.id);
-      
-      item.find('.view-bill').on('click', () => viewBill(bill.id));
+      item.find('.view-bill').on('click', () => viewBillEnlarged(bill.id));
       item.find('.edit-bill').on('click', () => editBill(bill.id));
       item.find('.delete-bill').on('click', () => deleteBill(bill.id));
-      
-      listContainer.append(item);
+      c.append(item);
     });
-    
-    container.append(listContainer);
+    updateStats(bills.length, bills.length);
   }
 
-  function renderEmptyState() {
-    $('#billsTableContainer').html(`
-      <div class="empty-state">
-        <div class="empty-state-icon">
-          <i class="fas fa-file-invoice"></i>
-        </div>
-        <h5>No Bills Found</h5>
-        <p class="text-muted">No bills match your current filters. Try adjusting your selection or generate new bills.</p>
-        <button class="btn btn-primary" onclick="$('#generateBillBtn').click()">
-          <i class="fas fa-bolt me-2"></i>Generate Bills
-        </button>
-      </div>
-    `);
+  function updateStats(visible, total) {
+    $('#visibleBillsCount').text(visible !== undefined ? visible : '0');
+    $('#totalBillsCount').text(total !== undefined ? total : '0');
   }
 
-  // ==================== BILL ACTIONS ====================
-  function enlargeBill(billId) {
-    Swal.fire({
-      title: 'Loading Bill Details...',
-      html: 'Please wait',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-    
+  /* ─── SEARCH ─── */
+  $('#billSearchInput').on('input', function() {
+    const term = $(this).val().trim().toLowerCase();
+    $('#clearSearchBtn').toggleClass('visible', term.length > 0);
+    if (!term) { $('#searchTermDisplay').text(''); filterBills(''); return; }
+    $('#searchTermDisplay').text(`Searching: "${term}"`);
+    filterBills(term);
+  });
+
+  $('#clearSearchBtn').on('click', function() {
+    $('#billSearchInput').val('').trigger('input');
+  });
+
+  function filterBills(term) {
+    if (currentViewMode === 'grid') {
+      const cards = $('#billsTableContainer .bill-card');
+      let visible = 0;
+      cards.each(function() {
+        const text = $(this).text().toLowerCase();
+        const show = !term || text.includes(term);
+        $(this).toggle(show);
+        if (show) visible++;
+      });
+      updateStats(visible, cards.length);
+    } else {
+      const items = $('#billsTableContainer .bill-list-item');
+      let visible = 0;
+      items.each(function() {
+        const text = $(this).text().toLowerCase();
+        const show = !term || text.includes(term);
+        $(this).toggle(show);
+        if (show) visible++;
+      });
+      updateStats(visible, items.length);
+    }
+  }
+
+  /* ─── BILL ACTIONS ─── */
+  function viewBillEnlarged(id) {
+    Swal.fire({ title:'Loading…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
     $.ajax({
-      url: `/api/bills/${billId}/`,
-      type: 'GET',
-      success: function(response) {
-        if (response.success) {
-          const bill = response.bill;
-          Swal.close();
-          
-          Swal.fire({
-            title: `
-              <div class="enlarged-bill-header">
-                <span class="bill-number-lg">${bill.bill_number || 'N/A'}</span>
-                <span class="badge bg-${getStatusClass(bill.status).bg} status-badge-lg">
-                  <i class="fas ${getStatusClass(bill.status).icon} me-1"></i>${(bill.status || 'N/A').toUpperCase()}
-                </span>
-              </div>
-            `,
-            html: `
-              <div class="enlarged-bill-container">
-                <!-- Property & Owner Section -->
-                <div class="enlarged-section">
-                  <h6 class="section-title">
-                    <i class="fas fa-building text-primary me-2"></i>Property Information
-                  </h6>
-                  <div class="info-grid">
-                    <div class="info-item">
-                      <span class="info-label">Property ID</span>
-                      <span class="info-value">${bill.property_id || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Address</span>
-                      <span class="info-value">${bill.address || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Owner</span>
-                      <span class="info-value">${bill.owner_name || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Owner Type</span>
-                      <span class="info-value">${bill.owner_type || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Billing Cycle Section -->
-                <div class="enlarged-section">
-                  <h6 class="section-title">
-                    <i class="fas fa-calendar-alt text-info me-2"></i>Billing Information
-                  </h6>
-                  <div class="info-grid">
-                    <div class="info-item">
-                      <span class="info-label">Billing Cycle</span>
-                      <span class="info-value">${bill.billing_cycle || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Generated Date</span>
-                      <span class="info-value">${bill.generated_date || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Due Date</span>
-                      <span class="info-value">${bill.due_date || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Generated By</span>
-                      <span class="info-value">${bill.created_by || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Amount Section -->
-                <div class="enlarged-section amount-section">
-                  <h6 class="section-title">
-                    <i class="fas fa-money-bill-wave text-success me-2"></i>Amount Details
-                  </h6>
-                  <div class="amount-details">
-                    <div class="amount-row">
-                      <span>Tax Amount:</span>
-                      <span class="amount-value">${formatCurrency(bill.tax_amount)}</span>
-                    </div>
-                    <div class="amount-row">
-                      <span>Penalty Amount:</span>
-                      <span class="amount-value">${formatCurrency(bill.penalty_amount)}</span>
-                    </div>
-                    <div class="amount-row">
-                      <span>Discount Amount:</span>
-                      <span class="amount-value">-${formatCurrency(bill.discount_amount)}</span>
-                    </div>
-                    <div class="amount-row total-row">
-                      <span>Total Amount:</span>
-                      <span class="total-value">${formatCurrency(bill.total_amount)}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                ${bill.notes ? `
-                <div class="enlarged-section">
-                  <h6 class="section-title">
-                    <i class="fas fa-sticky-note text-warning me-2"></i>Notes
-                  </h6>
-                  <p class="notes-text">${bill.notes}</p>
-                </div>
-                ` : ''}
-              </div>
-            `,
-            showCloseButton: true,
-            showConfirmButton: false,
-            showCancelButton: true,
-            cancelButtonText: 'Close',
-            showDenyButton: true,
-            denyButtonText: '<i class="fas fa-edit me-1"></i>Edit',
-            showConfirmButton: true,
-            confirmButtonText: '<i class="fas fa-download me-1"></i>Download',
-            customClass: {
-              popup: 'enlarged-bill-popup',
-              header: 'enlarged-bill-popup-header',
-              title: 'enlarged-bill-title',
-              htmlContainer: 'enlarged-bill-content'
-            }
-          }).then((result) => {
-            if (result.isDenied) {
-              editBill(billId);
-            } else if (result.isConfirmed) {
-              downloadSingleBill(billId);
-            }
-          });
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: response.error || 'Failed to load bill details'
-          });
-        }
-      },
-      error: function() {
+      url: `/api/bills/${id}/`, type:'GET',
+      success(r) {
+        if (!r.success) { Swal.fire('Error','Failed to load bill','error'); return; }
+        const b = r.bill;
+        const sc = statusPillClass(b.status);
         Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to load bill details. Please try again.'
+          title: `<div style="display:flex;align-items:center;gap:.75rem;font-family:'DM Sans',sans-serif;">
+            <span style="font-family:'DM Mono',monospace;font-size:1.1rem;color:#0dae48">${b.bill_number||'N/A'}</span>
+            <span class="status-pill ${sc}" style="font-size:.7rem"><i class="fas ${statusIcon(b.status)} me-1"></i>${(b.status||'').toUpperCase()}</span>
+          </div>`,
+          html: `<div class="enlarged-grid" style="font-family:'DM Sans',sans-serif;text-align:left;">
+            <div class="enlarged-section">
+              <h6><i class="fas fa-building me-1"></i>Property</h6>
+              <div class="einfo-item"><span class="einfo-label">Property ID</span><span class="einfo-val">${b.property_id||'N/A'}</span></div>
+              <div class="einfo-item"><span class="einfo-label">Address</span><span class="einfo-val">${b.address||'N/A'}</span></div>
+              <div class="einfo-item"><span class="einfo-label">Owner</span><span class="einfo-val">${b.owner_name||'N/A'}</span></div>
+              <div class="einfo-item"><span class="einfo-label">Owner Type</span><span class="einfo-val">${b.owner_type||'N/A'}</span></div>
+            </div>
+            <div class="enlarged-section">
+              <h6><i class="fas fa-calendar-alt me-1"></i>Billing</h6>
+              <div class="einfo-item"><span class="einfo-label">Billing Cycle</span><span class="einfo-val">${b.billing_cycle||'N/A'}</span></div>
+              <div class="einfo-item"><span class="einfo-label">Generated</span><span class="einfo-val">${b.generated_date||'N/A'}</span></div>
+              <div class="einfo-item"><span class="einfo-label">Due Date</span><span class="einfo-val">${b.due_date||'N/A'}</span></div>
+              <div class="einfo-item"><span class="einfo-label">Created By</span><span class="einfo-val">${b.created_by||'N/A'}</span></div>
+            </div>
+            <div class="enlarged-section" style="grid-column:1/-1;">
+              <h6><i class="fas fa-coins me-1"></i>Amounts</h6>
+              <div class="eamount-row"><span>Tax Amount</span><span style="font-family:'DM Mono',monospace">${fc(b.tax_amount)}</span></div>
+              <div class="eamount-row"><span>Penalty</span><span style="font-family:'DM Mono',monospace">${fc(b.penalty_amount)}</span></div>
+              <div class="eamount-row"><span>Discount</span><span style="font-family:'DM Mono',monospace">- ${fc(b.discount_amount)}</span></div>
+              <div class="eamount-row"><span>Total Amount</span><span style="font-family:'DM Mono',monospace;font-size:1.1rem">${fc(b.total_amount)}</span></div>
+            </div>
+            ${b.notes?`<div class="enlarged-section" style="grid-column:1/-1;"><h6><i class="fas fa-sticky-note me-1"></i>Notes</h6><p style="margin:0;color:#334155;line-height:1.6">${b.notes}</p></div>`:''}
+          </div>`,
+          showConfirmButton: true, confirmButtonText: '<i class="fas fa-download me-1"></i>Download',
+          showDenyButton: true, denyButtonText: '<i class="fas fa-pen me-1"></i>Edit',
+          showCancelButton: true, cancelButtonText: 'Close',
+          customClass: { popup:'enlarged-bill-popup' }
+        }).then(res => {
+          if (res.isConfirmed) downloadBill(id);
+          if (res.isDenied) editBill(id);
         });
-      }
+      },
+      error() { Swal.fire('Error','Failed to load bill details','error'); }
     });
   }
 
-  function downloadSingleBill(billId) {
+  function downloadBill(id) {
+    $('#bop-download-iframe').attr('src', `/api/bills/${id}/download/`);
+    toast('Download started!');
+  }
+
+  function editBill(id) {
+    toast('Edit functionality coming soon', 'warning');
+  }
+
+  function deleteBill(id) {
     Swal.fire({
-      title: 'Downloading Bill...',
-      html: 'Please wait',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-    
-    const iframe = document.getElementById('bop-download-iframe');
-    iframe.src = `/api/bills/${billId}/download/`;
-    
-    setTimeout(() => {
-      Swal.close();
-      Swal.fire({
-        icon: 'success',
-        title: 'Download Started',
-        text: 'Your bill download has been initiated.',
-        timer: 2000,
-        showConfirmButton: false
+      title: 'Delete Bill?', text: "This action cannot be undone.", icon: 'warning',
+      showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, delete',
+      customClass: { popup: 'swal2-popup' }
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      $.ajax({
+        url: `/api/bills/${id}/delete/`, type:'POST',
+        success(r) {
+          if (r.success) { toast('Bill deleted.'); loadBopsBills(); }
+          else Swal.fire('Error', r.error||'Failed to delete', 'error');
+        },
+        error() { Swal.fire('Error','Failed to delete bill','error'); }
       });
-    }, 1000);
-  }
-
-  function viewBill(billId) {
-    enlargeBill(billId);
-  }
-
-  function editBill(billId) {
-    // Placeholder for edit functionality
-    console.log('Edit bill:', billId);
-    showMessage('info', `Edit functionality for bill #${billId} will be implemented`);
-  }
-
-  function deleteBill(billId) {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#0dae48',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: `/api/bills/${billId}/delete/`,
-          type: 'POST',
-          success: function(response) {
-            if (response.success) {
-              Swal.fire(
-                'Deleted!',
-                'The bill has been deleted.',
-                'success'
-              );
-              loadBopsBills();
-            } else {
-              Swal.fire(
-                'Error!',
-                response.error || 'Failed to delete bill',
-                'error'
-              );
-            }
-          },
-          error: function() {
-            Swal.fire(
-              'Error!',
-              'Failed to delete bill. Please try again.',
-              'error'
-            );
-          }
-        });
-      }
     });
   }
 
-  // ==================== BILL GENERATION ====================
-  function generateBillsForBusinesses(businessIds, businessCount) {
-    if (!businessIds || !Array.isArray(businessIds) || businessIds.length === 0) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Invalid Input',
-        text: 'No valid businesses provided for bill generation.',
-        confirmButtonColor: '#0dae48'
-      });
-      return;
-    }
-    
-    const validBusinessIds = businessIds
-      .map(id => parseInt(id))
-      .filter(id => !isNaN(id) && id > 0);
-    
-    if (validBusinessIds.length === 0) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Invalid Business IDs',
-        text: 'No valid business IDs to generate bills for.',
-        confirmButtonColor: '#0dae48'
-      });
-      return;
-    }
-    
-    const billingYear = getBillingYear();
-    
+  /* ─── GENERATE ─── */
+  function generateBills(ids) {
+    const valid = ids.map(Number).filter(n => n > 0);
+    if (!valid.length) { toast('No valid businesses selected', 'error'); return; }
+    const year = getBillingYear();
     Swal.fire({
       title: 'Generate Bills?',
-      html: `Generate bills for <strong>${validBusinessIds.length}</strong> business(es) for the year <strong>${billingYear}</strong>?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Generate!',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#0dae48'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        Swal.fire({
-          title: 'Generating Bills...',
-          html: 'Please wait...',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-        
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30);
-        const dueDateStr = dueDate.toISOString().split('T')[0];
-        
-        const formData = {
-          business_ids: validBusinessIds,
-          billing_year: billingYear,
-          due_date: dueDateStr,
-          tax_amount: 0,
-          penalty_amount: 0,
-          discount_amount: 0,
-          notes: `Bulk generated for ${validBusinessIds.length} businesses`
-        };
-        
-        $.ajax({
-          url: '/api/bops-bills/generate/',
-          type: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify(formData),
-          success: function(response) {
-            if (response.success) {
-              let message = `<strong>${response.message}</strong>`;
-              
-              if (response.errors && response.errors.length > 0) {
-                message += `<br><br><strong>Errors (${response.errors.length}):</strong><br>`;
-                message += response.errors.slice(0, 5).join('<br>');
-                if (response.errors.length > 5) {
-                  message += `<br>... and ${response.errors.length - 5} more`;
-                }
-              }
-              
-              Swal.fire({
-                icon: 'success',
-                title: 'Bills Generated!',
-                html: message,
-                confirmButtonColor: '#0dae48'
-              }).then(() => {
-                loadBopsBills();
-              });
-            } else {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                html: response.error,
-                confirmButtonColor: '#0dae48'
-              });
-            }
-          },
-          error: function(xhr) {
-            let errorMsg = 'Error generating bills';
-            if (xhr.responseJSON && xhr.responseJSON.error) {
-              errorMsg = xhr.responseJSON.error;
-            }
-            
-            Swal.fire({
-              icon: 'error',
-              title: 'Error Generating Bills',
-              text: errorMsg,
-              confirmButtonColor: '#0dae48'
-            });
-          }
-        });
-      }
-    });
-  }
-
-  // ==================== EVENT LISTENERS ====================
-  function setupEventListeners() {
-    // Select All Businesses
-    $('#selectAllBusinesses').on('click', function() {
+      html: `Generate bills for <strong>${valid.length}</strong> business(es) for <strong>${year}</strong>?`,
+      icon: 'question', showCancelButton: true,
+      confirmButtonText: 'Generate!', confirmButtonColor: '#0dae48'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      Swal.fire({ title:'Generating…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+      const due = new Date(); due.setDate(due.getDate()+30);
       $.ajax({
-        url: '/api/bops/list/',
-        type: 'GET',
-        data: { search: '', page_size: 1000 },
-        success: function(response) {
-          if (response.success && response.bops.length > 0) {
-            const allIds = response.bops.map(bop => bop.id.toString());
-            
-            const select = $('#businessSelect');
-            select.empty();
-            
-            response.bops.forEach(function(bop) {
-              const option = new Option(
-                bop.business_name || bop.display_text || bop.account_number || 'Business',
-                bop.id,
-                true,
-                true
-              );
-              select.append(option);
-            });
-            
-            select.trigger('change');
-            updateSelectedBusinessesCount();
-            
-            Swal.fire({
-              icon: 'success',
-              title: 'Success',
-              text: `Selected all ${response.bops.length} businesses`,
-              timer: 2000,
-              showConfirmButton: false
-            });
+        url: '/api/bops-bills/generate/', type:'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ business_ids:valid, billing_year:year, due_date:due.toISOString().split('T')[0], tax_amount:0, penalty_amount:0, discount_amount:0 }),
+        success(r) {
+          if (r.success) {
+            let msg = r.message || 'Bills generated.';
+            if (r.errors && r.errors.length) msg += `<br><small class="text-muted">${r.errors.length} error(s)</small>`;
+            Swal.fire({ icon:'success', title:'Done!', html:msg, confirmButtonColor:'#0dae48' }).then(loadBopsBills);
+          } else {
+            Swal.fire({ icon:'error', title:'Error', html:r.error||'Failed', confirmButtonColor:'#0dae48' });
           }
         },
-        error: function() {
-          showMessage('danger', 'Error loading all businesses');
+        error(xhr) {
+          Swal.fire('Error', (xhr.responseJSON||{}).error||'Error generating bills', 'error');
         }
       });
     });
+  }
 
-    // Deselect All Businesses
+  /* ─── EVENTS ─── */
+  function setupEvents() {
+    /* Select All */
+    $('#selectAllBusinesses').on('click', function() {
+      $.ajax({
+        url: '/api/bops/list/', type:'GET', data:{ search:'', page_size:1000 },
+        success(r) {
+          if (!r.success || !r.bops.length) return;
+          const sel = $('#businessSelect').empty();
+          r.bops.forEach(b => sel.append(new Option(b.business_name||b.account_number||'Business', b.id, true, true)));
+          sel.trigger('change');
+          updateSelCount();
+          toast(`Selected ${r.bops.length} businesses`);
+        },
+        error() { toast('Error loading businesses', 'error'); }
+      });
+    });
+
+    /* Deselect All */
     $('#deselectAllBusinesses').on('click', function() {
       $('#businessSelect').val(null).trigger('change');
-      updateSelectedBusinessesCount();
-      
-      Swal.fire({
-        icon: 'info',
-        title: 'Deselected',
-        text: 'All businesses have been deselected',
-        timer: 1500,
-        showConfirmButton: false
-      });
+      updateSelCount();
     });
 
-    // Generate Bills Button
+    /* Generate */
     $('#generateBillBtn').on('click', function() {
-      const selectedBusinesses = $('#businessSelect').val();
-      const billingYear = getBillingYear();
-      const selectedBlock = $('#blockSelect').val();
-      const selectedDivision = $('#divisionSelect').val();
-      
-      if (!selectedBusinesses || selectedBusinesses.length === 0) {
-        Swal.fire({
-          title: 'Loading All Businesses...',
-          html: 'Please wait...',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-        
-        $.ajax({
-          url: '/api/bops/list/',
-          type: 'GET',
-          data: { search: '', page_size: 1000 },
-          success: function(response) {
-            Swal.close();
-            
-            if (response.success && response.bops.length > 0) {
-              let filteredBops = response.bops;
-              if (selectedBlock) {
-                filteredBops = filteredBops.filter(bop => bop.block === selectedBlock);
-              }
-              if (selectedDivision) {
-                filteredBops = filteredBops.filter(bop => bop.division === selectedDivision);
-              }
-
-              const allBusinessIds = filteredBops.map(bop => parseInt(bop.id)).filter(id => !isNaN(id));
-              
-              if (allBusinessIds.length === 0) {
-                Swal.fire({
-                  icon: 'warning',
-                  title: 'No Businesses Found',
-                  text: 'No businesses match the selected filters.',
-                  confirmButtonColor: '#0dae48'
-                });
-                return;
-              }
-              
-              Swal.fire({
-                title: 'Generate Bills for All?',
-                html: `Generate bills for <strong>${allBusinessIds.length}</strong> filtered business(es) for the year <strong>${billingYear}</strong>?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Generate!',
-                cancelButtonText: 'Cancel',
-                confirmButtonColor: '#0dae48'
-              }).then((result) => {
-                if (result.isConfirmed) {
-                  generateBillsForBusinesses(allBusinessIds, allBusinessIds.length);
-                }
-              });
-            } else {
-              Swal.fire({
-                icon: 'warning',
-                title: 'No Businesses Found',
-                text: 'No businesses available to generate bills for.',
-                confirmButtonColor: '#0dae48'
-              });
-            }
-          },
-          error: function() {
-            Swal.close();
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'Failed to load businesses.',
-              confirmButtonColor: '#0dae48'
-            });
-          }
-        });
-      } else {
-        generateBillsForBusinesses(selectedBusinesses, selectedBusinesses.length);
-      }
-    });
-
-    // Download Bills Button
-    $('#download-btn').on('click', function() {
-      const billingYear = getBillingYear();
-      const selectedBlock = $('#blockSelect').val() || '';
-      const selectedDivision = $('#divisionSelect').val() || '';
-      const selectedBusinesses = $('#businessSelect').val() || [];
-      
-      let queryParams = `billing_year=${billingYear}&download=1`;
-      if (selectedBlock) queryParams += `&block=${encodeURIComponent(selectedBlock)}`;
-      if (selectedDivision) queryParams += `&division=${encodeURIComponent(selectedDivision)}`;
-      if (selectedBusinesses && selectedBusinesses.length > 0) {
-        queryParams += `&business_ids=${selectedBusinesses.join(',')}`;
-      }
-      
-      $('#bop-download-iframe').attr('src', `/bopeasycollectible/?${queryParams}`);
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'Download Started',
-        text: 'Your bill download has been initiated.',
-        timer: 2000,
-        showConfirmButton: false
+      const sel = $('#businessSelect').val() || [];
+      if (sel.length) { generateBills(sel); return; }
+      Swal.fire({ title:'Loading…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+      $.ajax({
+        url:'/api/bops/list/', type:'GET', data:{ search:'', page_size:1000 },
+        success(r) {
+          Swal.close();
+          if (!r.success || !r.bops.length) { Swal.fire('Warning','No businesses found','warning'); return; }
+          let bops = r.bops;
+          const blk = $('#blockSelect').val(), div = $('#divisionSelect').val();
+          if (blk) bops = bops.filter(b => b.block === blk);
+          if (div) bops = bops.filter(b => b.division === div);
+          generateBills(bops.map(b => b.id));
+        },
+        error() { Swal.close(); Swal.fire('Error','Failed to load businesses','error'); }
       });
     });
 
-    // View Bills Button
-    $('#viewBillsBtn').on('click', function() {
-      loadBopsBills();
+    /* Download */
+    $('#download-btn').on('click', function() {
+      const year = getBillingYear(), blk = $('#blockSelect').val()||'', div = $('#divisionSelect').val()||'', biz = $('#businessSelect').val()||[];
+      let q = `billing_year=${year}&download=1`;
+      if (blk) q += `&block=${encodeURIComponent(blk)}`;
+      if (div) q += `&division=${encodeURIComponent(div)}`;
+      if (biz.length) q += `&business_ids=${biz.join(',')}`;
+      $('#bop-download-iframe').attr('src', `/bopeasycollectible/?${q}`);
+      toast('Download started!');
     });
 
-    // View Toggle
+    /* View */
+    $('#viewBillsBtn').on('click', loadBopsBills);
+
+    /* View Toggle */
     $('#gridViewBtn').on('click', function() {
-      $(this).addClass('active');
-      $('#listViewBtn').removeClass('active');
+      $(this).addClass('active'); $('#listViewBtn').removeClass('active');
       currentViewMode = 'grid';
       loadBopsBills();
     });
-
     $('#listViewBtn').on('click', function() {
-      $(this).addClass('active');
-      $('#gridViewBtn').removeClass('active');
+      $(this).addClass('active'); $('#gridViewBtn').removeClass('active');
       currentViewMode = 'list';
       loadBopsBills();
     });
 
-    // Division change handler
-    $('#divisionSelect').on('change', function() {
-      loadBlocksForDivision($(this).val());
-    });
+    /* Division → Block */
+    $('#divisionSelect').on('change', function() { loadBlocksForDivision($(this).val()); });
 
-    // Refresh button
-    $('.refresh-btn').on('click', function() {
-      loadBopsBills();
+    /* Year label update */
+    $('#billingYearSelect').on('change', function() {
+      const y = $(this).val() || new Date().getFullYear();
+      $('#activeBillingYearLabel').text(`${y} Billing Year`);
     });
   }
-
-  // ==================== START APPLICATION ====================
-  initializePage();
 });
 </script>
-<style>
-/* ==================== MODERN PROFESSIONAL STYLING ==================== */
-
-/* Page Header */
-.page-header {
-  padding: 1.5rem 0;
-}
-
-.page-title {
-  font-size: 2rem;
-  font-weight: 600;
-  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Control Card */
-.control-card {
-  border: none;
-  border-radius: 20px;
-  background: white;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.control-card:hover {
-  box-shadow: 0 15px 50px rgba(13, 174, 72, 0.12);
-}
-
-/* Panel Styles */
-.selection-panel,
-.filter-panel,
-.action-panel {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  height: 100%;
-}
-
-.selection-panel:hover,
-.filter-panel:hover,
-.action-panel:hover {
-  background: white;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-}
-
-.panel-header .icon-wrapper {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ==================== SELECT2 CUSTOM STYLING ==================== */
-.business-select-wrapper {
-  position: relative;
-  width: 100%;
-  z-index: 1000;
-}
-
-.select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option.select2-results__option--selected, .select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option[aria-selected=true]:not(.select2-results__option--highlighted) {
-  background: linear-gradient(135deg, rgba(13, 174, 72, 0.15) 0%, rgba(255, 255, 7, 0.15) 100%) !important;
-  color: #0dae48 !important;
-  font-weight: 500;
-}
-
-.select2-container--bootstrap-5 .select2-selection {
-  border: 2px solid #e9ecef !important;
-  border-radius: 12px !important;
-  min-height: 48px !important;
-  padding: 4px !important;
-  transition: all 0.3s ease;
-}
-
-.select2-container--bootstrap-5.select2-container--focus .select2-selection {
-  border-color: #0dae48 !important;
-  box-shadow: 0 0 0 4px rgba(13, 174, 72, 0.1) !important;
-}
-
-.select2-container--bootstrap-5 .select2-dropdown {
-  border: 2px solid #0dae48 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
-  margin-top: 4px !important;
-  overflow: hidden !important;
-  z-index: 1050 !important;
-}
-
-.business-dropdown {
-  max-height: 300px !important;
-  overflow-y: auto !important;
-  width: auto !important;
-  min-width: 100% !important;
-}
-
-.select2-container--bootstrap-5 .select2-results__options {
-  /* max-height: 300px !important; */
-  max-width: 650px !important;
-  width: 400px !important;
-  /* min-width: 100% !important; */
-  overflow-y: auto !important;
-}
-
-.select2-container--bootstrap-5 .select2-results__option {
-  padding: 10px 16px !important;
-  transition: all 0.2s ease;
-}
-
-.select2-container--bootstrap-5 .select2-results__option:hover {
-  background: linear-gradient(135deg, rgba(13, 174, 72, 0.08) 0%, rgba(255, 255, 7, 0.08) 100%) !important;
-}
-
-.select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
-  background: linear-gradient(135deg, rgba(13, 174, 72, 0.15) 0%, rgba(255, 255, 7, 0.15) 100%) !important;
-  color: #0dae48 !important;
-  font-weight: 500;
-}
-
-.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
-  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
-  border: none !important;
-  border-radius: 8px !important;
-  color: white !important;
-  padding: 4px 10px !important;
-  margin: 2px !important;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
-
-.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(13, 174, 72, 0.3);
-}
-
-.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
-  color: white !important;
-  margin-right: 4px;
-  transition: all 0.2s ease;
-}
-
-.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
-  color: #ffff07 !important;
-  transform: scale(1.1);
-}
-
-/* ==================== MODERN FORM SELECTS ==================== */
-.modern-select {
-  border: 2px solid #e9ecef !important;
-  border-radius: 12px !important;
-  padding: 12px 16px !important;
-  font-size: 0.95rem !important;
-  transition: all 0.3s ease !important;
-  background-color: white !important;
-  cursor: pointer !important;
-}
-
-.modern-select:hover {
-  border-color: #0dae48 !important;
-  background-color: #f8fafc !important;
-}
-
-.modern-select:focus {
-  border-color: #0dae48 !important;
-  box-shadow: 0 0 0 4px rgba(13, 174, 72, 0.1) !important;
-}
-
-/* ==================== ACTION BUTTONS ==================== */
-.generate-btn,
-.download-btn,
-.view-btn {
-  border-radius: 14px !important;
-  padding: 14px !important;
-  font-weight: 600 !important;
-  font-size: 1.1rem !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  position: relative;
-  overflow: hidden;
-}
-
-.generate-btn {
-  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
-  border: none !important;
-  box-shadow: 0 8px 20px rgba(13, 174, 72, 0.3) !important;
-}
-
-.generate-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(13, 174, 72, 0.4) !important;
-}
-
-.generate-btn::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 7, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.generate-btn:hover::after {
-  left: 100%;
-}
-
-.download-btn {
-  border: 2px solid #0dae48 !important;
-  color: #0dae48 !important;
-  background: white !important;
-}
-
-.download-btn:hover {
-  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
-  color: white !important;
-  border-color: transparent !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(13, 174, 72, 0.2) !important;
-}
-
-.view-btn {
-  border: 2px solid #6c757d !important;
-  color: #6c757d !important;
-  background: white !important;
-}
-
-.view-btn:hover {
-  background: #6c757d !important;
-  color: white !important;
-  border-color: transparent !important;
-  transform: translateY(-2px);
-}
-
-/* ==================== TABLE CARD ==================== */
-.table-card {
-  border: none;
-  border-radius: 20px;
-  background: white;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-.table-card .card-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.refresh-btn {
-  border-radius: 10px !important;
-  padding: 8px 16px !important;
-  transition: all 0.3s ease;
-}
-
-.refresh-btn:hover {
-  background: #0dae48 !important;
-  color: white !important;
-  border-color: #0dae48 !important;
-}
-
-/* ==================== SELECTION ACTIONS ==================== */
-.selection-actions .btn {
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-}
-
-.selection-actions .btn-outline-primary {
-  border-color: #0dae48;
-  color: #0dae48;
-}
-
-.selection-actions .btn-outline-primary:hover {
-  background: #0dae48;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(13, 174, 72, 0.3);
-}
-
-.selection-actions .btn-outline-secondary:hover {
-  background: #6c757d;
-  color: white;
-  transform: translateY(-2px);
-}
-
-/* ==================== BADGE STYLING ==================== */
-.badge.bg-primary.bg-opacity-10 {
-  background: rgba(13, 174, 72, 0.1) !important;
-  border-radius: 30px;
-  font-size: 0.9rem;
-}
-
-/* ==================== MESSAGE CONTAINER ==================== */
-#messageContainer {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
-  min-width: 300px;
-}
-
-.alert {
-  border-radius: 12px;
-  border: none;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* ==================== BILLS GRID LAYOUT - 2 PER ROW (FIXED) ==================== */
-.bills-grid-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.bill-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(13, 174, 72, 0.1);
-  overflow: hidden;
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-}
-
-.bill-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #0dae48 0%, #ffff07 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.bill-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(13, 174, 72, 0.15);
-  border-color: rgba(13, 174, 72, 0.3);
-}
-
-.bill-card:hover::before {
-  opacity: 1;
-}
-
-.bill-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, rgba(13, 174, 72, 0.02) 0%, rgba(255, 255, 7, 0.02) 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.bill-status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.4rem 1rem;
-  border-radius: 30px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.bill-actions {
-  display: flex;
-  gap: 0.5rem;
-  position: relative;
-  z-index: 2;
-}
-
-.btn-action {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: white;
-  color: #6c757d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.btn-action:hover {
-  transform: translateY(-2px);
-}
-
-.btn-action.view-bill:hover {
-  background: #0dae48;
-  color: white;
-}
-
-.btn-action.edit-bill:hover {
-  background: #ffc107;
-  color: white;
-}
-
-.btn-action.delete-bill:hover {
-  background: #dc3545;
-  color: white;
-}
-
-.bill-card-body {
-  padding: 1.5rem;
-  flex: 1;
-}
-
-.bill-number-section {
-  margin-bottom: 1.25rem;
-}
-
-.bill-number-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: #6c757d;
-  letter-spacing: 0.5px;
-}
-
-.bill-number {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #0dae48;
-  margin: 0.25rem 0 0 0;
-}
-
-.bill-details-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 12px;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.detail-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  color: #6c757d;
-  letter-spacing: 0.3px;
-  margin-bottom: 0.25rem;
-}
-
-.detail-value {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.bill-amounts {
-  background: linear-gradient(135deg, rgba(13, 174, 72, 0.03) 0%, rgba(255, 255, 7, 0.03) 100%);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.amount-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  font-size: 0.9rem;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
-}
-
-.amount-row:last-child {
-  border-bottom: none;
-}
-
-.amount-row.total {
-  font-weight: 600;
-  color: #0dae48;
-  font-size: 1rem;
-  margin-top: 0.25rem;
-  padding-top: 0.75rem;
-  border-top: 2px solid rgba(13, 174, 72, 0.2);
-}
-
-.bill-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 0.8rem;
-  color: #6c757d;
-  background: #f8fafc;
-}
-
-/* ==================== LIST VIEW STYLES ==================== */
-.bills-list-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.bill-list-item {
-  display: flex;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid rgba(13, 174, 72, 0.1);
-  transition: all 0.3s ease;
-}
-
-.bill-list-item:hover {
-  transform: translateX(4px);
-  border-color: #0dae48;
-  box-shadow: 0 4px 12px rgba(13, 174, 72, 0.1);
-}
-
-.list-item-status {
-  width: 120px;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 30px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.list-item-info {
-  flex: 1;
-  margin-left: 1.5rem;
-}
-
-.info-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.25rem;
-}
-
-.info-row:first-child .bill-number {
-  font-weight: 600;
-  color: #0dae48;
-  font-size: 0.95rem;
-}
-
-.info-row:first-child .property-info {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.info-row:last-child {
-  font-size: 0.8rem;
-  color: #6c757d;
-}
-
-.info-row:last-child span {
-  display: flex;
-  align-items: center;
-}
-
-.list-item-amount {
-  margin: 0 2rem;
-  font-weight: 600;
-  color: #0dae48;
-  font-size: 1.1rem;
-  min-width: 100px;
-  text-align: right;
-}
-
-.list-item-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* ==================== VIEW TOGGLE ==================== */
-.view-toggle .btn {
-  border-radius: 8px;
-  padding: 0.4rem 0.8rem;
-}
-
-.view-toggle .btn.active {
-  background: #0dae48;
-  color: white;
-  border-color: #0dae48;
-}
-
-/* ==================== LOADING, EMPTY, AND ERROR STATES ==================== */
-.loading-state,
-.empty-state,
-.error-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: white;
-  border-radius: 16px;
-  border: 2px dashed rgba(13, 174, 72, 0.2);
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-state-icon,
-.error-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  color: #0dae48;
-  opacity: 0.5;
-}
-
-.error-icon {
-  color: #dc3545;
-}
-
-.error-state {
-  border-color: #dc3545;
-}
-
-/* ==================== ENLARGED BILL MODAL STYLES ==================== */
-.enlarged-bill-popup {
-  width: 800px !important;
-  max-width: 90vw !important;
-  padding: 0 !important;
-  border-radius: 24px !important;
-  overflow: hidden !important;
-  animation: zoomIn 0.3s ease;
-}
-
-@keyframes zoomIn {
-  from {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.enlarged-bill-popup-header {
-  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%);
-  padding: 1.5rem !important;
-  margin: 0 !important;
-}
-
-.enlarged-bill-title {
-  color: white !important;
-  font-size: 1.5rem !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.enlarged-bill-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.bill-number-lg {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: white;
-}
-
-.status-badge-lg {
-  font-size: 1rem !important;
-  padding: 0.5rem 1.5rem !important;
-  border-radius: 30px !important;
-}
-
-.enlarged-bill-content {
-  padding: 2rem !important;
-  margin: 0 !important;
-}
-
-.enlarged-bill-container {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.enlarged-section {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 1.5rem;
-}
-
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 1.25rem;
-  display: flex;
-  align-items: center;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.info-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: #6c757d;
-  letter-spacing: 0.3px;
-}
-
-.info-value {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.amount-section {
-  background: linear-gradient(135deg, rgba(13, 174, 72, 0.05) 0%, rgba(255, 255, 7, 0.05) 100%);
-}
-
-.amount-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.amount-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
-}
-
-.amount-row:last-child {
-  border-bottom: none;
-}
-
-.amount-value {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.total-row {
-  margin-top: 0.5rem;
-  padding-top: 1rem;
-  border-top: 2px solid rgba(13, 174, 72, 0.2);
-  font-weight: 600;
-}
-
-.total-value {
-  font-size: 1.25rem;
-  color: #0dae48;
-  font-weight: 700;
-}
-
-.notes-text {
-  color: #2c3e50;
-  line-height: 1.6;
-  margin: 0;
-  padding: 0.5rem;
-  background: white;
-  border-radius: 8px;
-}
-
-/* ==================== SWEET ALERT CUSTOMIZATION ==================== */
-.swal2-popup {
-  border-radius: 20px !important;
-  padding: 2rem !important;
-}
-
-.swal2-title {
-  font-size: 1.5rem !important;
-  font-weight: 600 !important;
-}
-
-.swal2-confirm {
-  background: linear-gradient(135deg, #0dae48 0%, #089c3d 100%) !important;
-  border-radius: 12px !important;
-  padding: 10px 30px !important;
-  font-weight: 500 !important;
-}
-
-.swal2-cancel {
-  border-radius: 12px !important;
-  padding: 10px 30px !important;
-}
-
-/* ==================== RESPONSIVE DESIGN ==================== */
-@media (max-width: 1200px) {
-  .selection-panel,
-  .filter-panel,
-  .action-panel {
-    margin-bottom: 1rem;
-  }
-}
-
-@media (max-width: 992px) {
-  .bills-grid-container {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .bill-list-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .list-item-status {
-    width: auto;
-  }
-  
-  .list-item-info {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  .info-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-  
-  .list-item-amount {
-    margin: 0;
-    text-align: left;
-    width: 100%;
-  }
-  
-  .list-item-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-title {
-    font-size: 1.5rem;
-  }
-  
-  .action-buttons {
-    gap: 1rem;
-  }
-  
-  #messageContainer {
-    left: 20px;
-    right: 20px;
-    min-width: auto;
-  }
-  
-  .bill-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .bill-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  
-  .bill-details-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .enlarged-bill-popup {
-    width: 95vw !important;
-  }
-  
-  .enlarged-section {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .selection-actions {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .selection-actions .btn {
-    width: 100%;
-  }
-  
-  .view-toggle {
-    margin-top: 0.5rem;
-  }
-}
-
-/* ==================== UTILITY CLASSES ==================== */
-.spinner-border.text-primary {
-  color: #0dae48 !important;
-}
-
-.text-primary {
-  color: #0dae48 !important;
-}
-
-.bg-primary {
-  background-color: #0dae48 !important;
-}
-
-.btn-primary {
-  background-color: #0dae48 !important;
-  border-color: #0dae48 !important;
-}
-
-.btn-primary:hover {
-  background-color: #089c3d !important;
-  border-color: #089c3d !important;
-}
-
-.btn-outline-primary {
-  color: #0dae48 !important;
-  border-color: #0dae48 !important;
-}
-
-.btn-outline-primary:hover {
-  background-color: #0dae48 !important;
-  color: white !important;
-}
-
-/* Search Box Styling */
-.search-box {
-  min-width: 250px;
-}
-
-.search-box .input-group {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.search-box .input-group-text {
-  border: 1px solid #e9ecef;
-  background: white;
-  padding: 0.5rem 0.75rem;
-}
-
-.search-box .form-control {
-  border: 1px solid #e9ecef;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-}
-
-.search-box .form-control:focus {
-  border-color: #0dae48;
-  box-shadow: none;
-}
-
-.search-box .btn-outline-secondary {
-  border: 1px solid #e9ecef;
-  border-left: none;
-  background: white;
-}
-
-.search-box .btn-outline-secondary:hover {
-  background: #f8f9fa;
-  color: #dc3545;
-}
-
-/* Search Stats */
-.search-stats {
-  background: #f8fafc;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.results-count {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-/* Bill Template Wrapper */
-.bill-template-wrapper {
-  width: 100%;
-  height: 100%;
-  transition: all 0.3s ease;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #e9ecef;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.bill-template-wrapper:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(13, 174, 72, 0.15);
-  border-color: #0dae48;
-}
-
-/* Ensure the original bill template fills the wrapper */
-.bill-template-wrapper > * {
-  width: 100% !important;
-  height: 100% !important;
-  margin: 0 !important;
-  padding: 1rem !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Grid Container */
-.bills-grid-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-/* No Results State */
-.no-search-results {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 3rem 1rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin-top: 1rem;
-}
-
-.no-search-results .empty-state-icon {
-  font-size: 3rem;
-  color: #0dae48;
-  opacity: 0.3;
-  margin-bottom: 1rem;
-}
-
-/* Responsive */
-@media (max-width: 992px) {
-  .card-header .d-flex {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .table-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  
-  .search-box {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .search-box .input-group {
-    width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .bills-grid-container {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .bill-template-wrapper > * {
-    padding: 0.75rem !important;
-  }
-}
-</style>
 {% endblock %}

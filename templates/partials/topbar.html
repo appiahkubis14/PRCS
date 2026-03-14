@@ -24,13 +24,13 @@
         </div>
 
         <!-- Start Navigation Menu -->
-        <div class="d-flex justify-content-between menu-sm px-3 ms-auto">
+        <!-- <div class="d-flex justify-content-between menu-sm px-3 ms-auto">
             <div class="d-flex align-items-center gap-2">
-                <!-- Dynamic Menu Items as Dropdowns -->
+               
                 {% if sidebar_items %}
                     {% for item_name, item_data in sidebar_items.items %}
                         {% if item_data.sub_items %}
-                            <!-- Menu item with sub-items as dropdown -->
+                           
                             <div class="dropdown d-none d-lg-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle menu-dropdown-btn" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="{{ item_data.icon }} me-1"></i>
@@ -39,7 +39,7 @@
                                 <div class="dropdown-menu dropdown-menu-start dropdown-menu-animated">
                                     {% for sub_name, sub_data in item_data.sub_items.items %}
                                         {% if sub_data.sub_items %}
-                                            <!-- Nested sub-menu -->
+                                            
                                             <div class="dropdown-submenu">
                                                 <a href="javascript: void(0);" class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">
                                                     <i class="{{ sub_data.icon }} me-2"></i>
@@ -55,7 +55,7 @@
                                                 </div>
                                             </div>
                                         {% else %}
-                                            <!-- Regular sub-item -->
+                                            
                                             <a href="{{ sub_data.url }}" class="dropdown-item">
                                                 <i class="{{ sub_data.icon }} me-2"></i>
                                                 {{ sub_name }}
@@ -68,7 +68,7 @@
                                 </div>
                             </div>
                         {% else %}
-                            <!-- Simple menu item (no dropdown) -->
+                         
                             <a href="{{ item_data.url }}" class="btn btn-sm btn-outline-secondary menu-link-btn">
                                 <i class="{{ item_data.icon }} me-1"></i>
                                 {{ item_name }}
@@ -76,13 +76,13 @@
                         {% endif %}
                     {% endfor %}
                 {% else %}
-                    <!-- Default menu if no sidebar items -->
+                  
                     <a href="/" class="btn btn-sm btn-outline-secondary menu-link-btn">
                         <i class="fas fa-home me-1"></i>
                         Home
                     </a>
                 {% endif %}
-            </div>
+            </div> -->
 
             <!-- Right side icons (notification, profile, etc) -->
             <div class="d-flex align-items-center gap-2">

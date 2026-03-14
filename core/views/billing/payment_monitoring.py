@@ -25,7 +25,7 @@ def get_bops_bills_with_tracking(request):
         search = request.GET.get('search', '')
         
         # Base queryset
-        bills = BopsBills.objects.filter(is_deleted=False).select_related('business')
+        bills = BopsBills.objects.filter(is_deleted=False).select_related('business').order_by('last_clicked_at')
         
         # Apply filters
         if status:

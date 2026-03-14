@@ -1,692 +1,691 @@
-<!-- templates/dashboard/revenue_dashboard.html -->
 {% extends 'main/base.html' %}
 {% load i18n static %}
 
 {% block content %}
 
-<div class="container-fluid">
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Revenue Collection Dashboard</h1>
-        <div>
-            <button class="btn btn-sm btn-primary shadow-sm" id="refreshDashboard">
-                <i class="fas fa-sync-alt fa-sm text-white-50"></i> Refresh
-            </button>
-            <button class="btn btn-sm btn-success shadow-sm" id="exportReport">
-                <i class="fas fa-download fa-sm text-white-50"></i> Export Report
-            </button>
-        </div>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #f9fafb;
+    --border: #e8eaed;
+    --border-subtle: #f0f1f3;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --accent: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-dim: rgba(29,78,216,0.08);
+    --green: #059669;
+    --green-light: #ecfdf5;
+    --amber: #d97706;
+    --amber-light: #fffbeb;
+    --sky: #0284c7;
+    --sky-light: #f0f9ff;
+    --red: #dc2626;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+    --shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body, .container-fluid { background: var(--bg); color: var(--text-primary); font-family: 'DM Sans', sans-serif; }
+
+  .db-wrap { max-width: 1700px; margin: 0 auto; padding: 28px 24px; }
+
+  /* Header */
+  .db-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    background: #e2e8f0; padding: 12px 16px; border-radius: var(--radius);
+  }
+  .db-header-left h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.3px; }
+  .db-header-left p  { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+  .db-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* Buttons */
+  .btn-ctrl {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; font-size: 0.8rem; font-weight: 500; font-family: inherit;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-secondary); border-radius: var(--radius-sm);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none;
+  }
+  .btn-ctrl:hover { background: var(--surface-2); color: var(--text-primary); border-color: #cbd5e1; }
+  .btn-ctrl.primary { background: var(--text-primary); color: #fff; border-color: var(--text-primary); }
+  .btn-ctrl.primary:hover { background: #1f2937; }
+  .btn-ctrl i { font-size: 0.72rem; opacity: 0.7; }
+
+  /* Dropdown */
+  .dropdown { position: relative; }
+  .dropdown-menu {
+    position: absolute; top: calc(100% + 4px); right: 0; z-index: 200;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow);
+    min-width: 160px; display: none; padding: 4px;
+  }
+  .dropdown.open .dropdown-menu { display: block; }
+  .dropdown-item {
+    display: block; padding: 7px 10px; font-size: 0.8rem;
+    color: var(--text-secondary); border-radius: 4px; cursor: pointer; text-decoration: none; transition: all 0.1s;
+  }
+  .dropdown-item:hover, .dropdown-item.active { background: var(--accent-dim); color: var(--accent); }
+
+  /* Stat Cards */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 22px;
+    box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .stat-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: var(--radius) var(--radius) 0 0; }
+  .stat-card.c-blue::before  { background: var(--accent); }
+  .stat-card.c-green::before { background: var(--green); }
+  .stat-card.c-sky::before   { background: var(--sky); }
+  .stat-card.c-amber::before { background: var(--amber); }
+
+  .stat-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-value { font-size: 2rem; font-weight: 600; letter-spacing: -1px; line-height: 1; margin-bottom: 8px; font-family: 'DM Mono', monospace; }
+  .stat-sub   { font-size: 0.74rem; color: var(--text-muted); }
+  .stat-sub span { color: var(--text-secondary); font-weight: 500; }
+
+  .stat-icon { position: absolute; right: 18px; top: 18px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+  .c-blue  .stat-icon { background: var(--accent-light); color: var(--accent); }
+  .c-green .stat-icon { background: var(--green-light);  color: var(--green); }
+  .c-sky   .stat-icon { background: var(--sky-light);    color: var(--sky); }
+  .c-amber .stat-icon { background: var(--amber-light);  color: var(--amber); }
+
+  .prog-bar  { background: var(--border-subtle); border-radius: 99px; height: 3px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; background: var(--sky); }
+
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 20px; overflow: hidden; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border-subtle); }
+  .card-title  { font-size: 0.84rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .card-title i { color: var(--text-muted); font-size: 0.78rem; }
+
+  /* Chart pills */
+  .chart-pills { display: flex; gap: 4px; }
+  .chart-pill {
+    padding: 5px 12px; font-size: 0.73rem; font-weight: 500; font-family: inherit;
+    border: 1px solid var(--border); background: transparent; color: var(--text-secondary);
+    border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
+  }
+  .chart-pill.active { background: var(--text-primary); color: #fff; border-color: var(--text-primary); }
+
+  /* Legend */
+  .echart-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+  .legend-item   { display: flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--text-secondary); cursor: pointer; user-select: none; transition: opacity 0.2s; }
+  .legend-item.dimmed { opacity: 0.3; }
+  .legend-dot    { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* DataTables overrides */
+  .dataTables_wrapper { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--text-secondary); }
+  .dataTables_wrapper .dataTables_length,
+  .dataTables_wrapper .dataTables_filter { padding: 12px 16px 8px; }
+  .dataTables_wrapper .dataTables_length label,
+  .dataTables_wrapper .dataTables_filter label { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .dataTables_wrapper .dataTables_length select,
+  .dataTables_wrapper .dataTables_filter input {
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 5px 10px; outline: none; background: var(--surface); color: var(--text-primary);
+  }
+  .dataTables_wrapper .dataTables_filter input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+  .dataTables_wrapper .dataTables_info,
+  .dataTables_wrapper .dataTables_paginate { padding: 10px 16px; font-size: 0.75rem; color: var(--text-muted); }
+  .dataTables_wrapper .dataTables_paginate .paginate_button {
+    font-family: 'DM Sans', sans-serif; font-size: 0.75rem;
+    padding: 4px 9px !important; border-radius: var(--radius-sm) !important;
+    border: 1px solid transparent !important; color: var(--text-secondary) !important; cursor: pointer;
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: var(--surface-2) !important; border-color: var(--border) !important; color: var(--text-primary) !important; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--text-primary) !important; color: #fff !important; border-color: var(--text-primary) !important; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { opacity: 0.3 !important; cursor: default !important; }
+  table.dataTable { border: none !important; }
+  table.dataTable thead th {
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+    color: var(--text-muted); border-bottom: 1px solid var(--border) !important;
+    padding: 10px 14px !important; background: var(--surface); white-space: nowrap;
+  }
+  table.dataTable thead th.sorting::after,
+  table.dataTable thead th.sorting_asc::after,
+  table.dataTable thead th.sorting_desc::after { opacity: 0.4; font-size: 0.62rem; }
+  table.dataTable tbody td { padding: 13px 14px !important; border-bottom: 1px solid var(--border-subtle) !important; vertical-align: middle; }
+  table.dataTable tbody tr:last-child td { border-bottom: none !important; }
+  table.dataTable tbody tr:hover td { background: var(--surface-2) !important; }
+  table.dataTable tbody tr:hover .user-avatar { background: var(--accent); color: #fff; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; font-size: 0.68rem; font-weight: 600;
+    border-radius: 4px; letter-spacing: 0.2px; white-space: nowrap;
+  }
+  .badge i { font-size: 0.62rem; }
+  .badge-submit   { background: var(--green-light);  color: var(--green); }
+  .badge-save     { background: var(--sky-light);    color: var(--sky); }
+  .badge-pass     { background: var(--amber-light);  color: var(--amber); }
+  .badge-revisit  { background: var(--accent-dim);   color: var(--accent); }
+  .badge-approved { background: var(--green-light);  color: var(--green); }
+  .badge-pending  { background: var(--amber-light);  color: var(--amber); }
+  .badge-rejected { background: #fef2f2;             color: var(--red); }
+  .badge-secondary { background: #f3f4f6;            color: var(--text-secondary); }
+
+  /* Row indicators */
+  .row-submit  td:first-child { border-left: 3px solid var(--green)  !important; }
+  .row-save    td:first-child { border-left: 3px solid var(--sky)    !important; }
+  .row-pass    td:first-child { border-left: 3px solid var(--amber)  !important; }
+  .row-revisit td:first-child { border-left: 3px solid var(--accent) !important; }
+
+  /* Projection bar */
+  .proj-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .proj-bar      { flex: 1; background: var(--border-subtle); border-radius: 99px; height: 4px; overflow: hidden; }
+  .proj-bar-fill { height: 100%; background: var(--accent); border-radius: 99px; }
+  .proj-pct      { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); font-family: 'DM Mono', monospace; min-width: 32px; text-align: right; }
+
+  /* User pill */
+  .user-pill   { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 30px; height: 30px; border-radius: 8px; background: var(--accent-dim); color: var(--accent); font-size: 0.68rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+
+  .cell-primary { font-weight: 600; color: var(--text-primary); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+  .cell-num     { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--text-primary); font-weight: 500; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box  { background: var(--surface); border-radius: var(--radius); box-shadow: 0 20px 60px rgba(0,0,0,0.15); width: 760px; max-width: 95vw; overflow: hidden; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; border-bottom: 1px solid var(--border); }
+  .modal-head h5 { font-size: 0.88rem; font-weight: 600; }
+  .modal-close   { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; }
+  .modal-close:hover { color: var(--text-primary); }
+  .modal-body { padding: 0; max-height: 65vh; overflow-y: auto; }
+  .modal-foot { padding: 12px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
+
+  /* Responsive */
+  @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 520px)  { .stat-grid { grid-template-columns: 1fr; } .db-header { flex-direction: column; align-items: flex-start; } }
+</style>
+
+<div class="db-wrap">
+
+  <!-- Header -->
+  <div class="db-header">
+    <div class="db-header-left">
+      <h1>Field Collection</h1>
+      <p>Monitor data collection progress across all field teams</p>
     </div>
-
-    <!-- Stats Cards -->
-    <div class="row" id="statsCards">
-        <!-- Total Revenue Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow-sm h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total Revenue (All Time)</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalBillAmount">GH₵0</div>
-                            <div class="text-xs text-muted mt-1">
-                                <span id="totalBills">0</span> bills from <span id="totalBusinesses">0</span> businesses
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="db-controls">
+      <div class="dropdown" id="userDropdown">
+        <button class="btn-ctrl" onclick="toggleDropdown('userDropdown')">
+          <i class="fas fa-user"></i> <span id="selectedUser">All Users</span> <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="dropdown-menu">
+          <a class="dropdown-item user-filter active" data-user="all" href="#">All Users</a>
+          {% for collector in field_collectors %}
+          <a class="dropdown-item user-filter" data-user="{{ collector.id }}" href="#">{{ collector.username }}</a>
+          {% endfor %}
         </div>
-
-        <!-- Collected Revenue Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow-sm h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Collected Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="paidAmount">GH₵0</div>
-                            <div class="row align-items-center no-gutters mt-1">
-                                <div class="col-auto">
-                                    <div class="text-xs font-weight-bold text-success mr-2" id="collectionRate">0%</div>
-                                </div>
-                                <div class="col">
-                                    <div class="progress" style="height: 5px;">
-                                        <div class="progress-bar bg-success" role="progressbar" id="collectionProgress" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-xs text-muted mt-1">
-                                <span id="paidCount">0</span> paid bills
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="dropdown" id="periodDropdown">
+        <button class="btn-ctrl" onclick="toggleDropdown('periodDropdown')">
+          <i class="fas fa-calendar-alt"></i> <span id="selectedPeriod">30 days</span> <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="dropdown-menu">
+          <a class="dropdown-item period-filter" data-days="7" href="#">7 days</a>
+          <a class="dropdown-item period-filter active" data-days="30" href="#">30 days</a>
+          <a class="dropdown-item period-filter" data-days="90" href="#">90 days</a>
         </div>
-
-        <!-- This Month Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow-sm h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                This Month</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="monthPaymentAmount">GH₵0</div>
-                            <div class="text-xs text-muted mt-1">
-                                <span id="monthCount">0</span> new bills (GH₵<span id="monthAmount">0</span>)
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- At Risk Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow-sm h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                At Risk</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="overdueCount">0</div>
-                            <div class="text-xs text-muted mt-1">
-                                Overdue: GH₵<span id="overdueAmount">0</span>
-                            </div>
-                            <div class="text-xs text-muted">
-                                <i class="fas fa-eye text-warning"></i> <span id="visitedNotPaid">0</span> visited, not paid
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
+      <button class="btn-ctrl" id="snapshotsBtn"><i class="fas fa-camera"></i> Snapshots</button>
+      <button class="btn-ctrl primary" id="refreshDashboard"><i class="fas fa-sync-alt"></i> Refresh</button>
     </div>
+  </div>
 
-   <!-- Charts Row -->
-<div class="row">
-    <!-- Revenue Trend Chart -->
-    <div class="col-xl-8 col-lg-7 mb-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">Revenue Trend (Last 30 Days)</h6>
-                <div class="dropdown no-arrow">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="revenuePeriodDropdown" data-bs-toggle="dropdown">
-                        Last 30 Days
-                    </button>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item revenue-period" data-days="7" href="#">Last 7 Days</a>
-                        <a class="dropdown-item revenue-period active" data-days="30" href="#">Last 30 Days</a>
-                        <a class="dropdown-item revenue-period" data-days="90" href="#">Last 90 Days</a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body" style="position: relative; height: 350px;">
-                <canvas id="revenueChart" width="800" height="300" style="display: block; max-width: 100%; height: 100% !important;"></canvas>
-            </div>
-        </div>
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card c-blue">
+      <div class="stat-icon"><i class="fas fa-building"></i></div>
+      <div class="stat-label">Total Properties</div>
+      <div class="stat-value" id="totalProperties">0</div>
+      <div class="stat-sub"><span id="submittedProperties">0</span> submitted</div>
     </div>
+    <div class="stat-card c-green">
+      <div class="stat-icon"><i class="fas fa-store"></i></div>
+      <div class="stat-label">BOPs Collected</div>
+      <div class="stat-value" id="totalBops">0</div>
+      <div class="stat-sub"><span id="bopsWithBills">0</span> with bills</div>
+    </div>
+    <div class="stat-card c-sky">
+      <div class="stat-icon"><i class="fas fa-forward"></i></div>
+      <div class="stat-label">Total Passes</div>
+      <div class="stat-value" id="totalPasses">0</div>
+      <div style="margin:8px 0 4px;"><div class="prog-bar"><div class="prog-fill" id="passProgress" style="width:0%"></div></div></div>
+      <div class="stat-sub"><span id="passedProperties">0</span> passed · <span id="incompletePasses">0</span> incomplete</div>
+    </div>
+    <div class="stat-card c-amber">
+      <div class="stat-icon"><i class="fas fa-users"></i></div>
+      <div class="stat-label">Owners Collected</div>
+      <div class="stat-value" id="totalOwners">0</div>
+      <div class="stat-sub"><span id="uniqueOwners">0</span> unique</div>
+    </div>
+  </div>
 
-    <!-- Status Distribution Chart -->
-    <div class="col-xl-4 col-lg-5 mb-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Bill Status Distribution</h6>
-            </div>
-            <div class="card-body" style="position: relative; height: 400px;">
-                <canvas id="statusChart" width="400" height="280" style="display: block; max-width: 100%; height: 280px !important;"></canvas>
-                <div class="mt-4 text-center small" id="statusLegend" style="position: absolute; bottom: 15px; left: 0; right: 0;"></div>
-            </div>
-        </div>
+  <!-- Chart -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-line"></i> Daily Collection Trend</div>
+      <div class="chart-pills">
+        <button class="chart-pill active" data-mode="line">Line</button>
+        <button class="chart-pill" data-mode="bar">Bar</button>
+        <button class="chart-pill" data-mode="stack">Stacked</button>
+      </div>
     </div>
+    <div class="card-body">
+      <div id="collectionChart" style="height:340px;width:100%;"></div>
+      <div class="echart-legend" id="echartLegend">
+        <div class="legend-item" data-series="Properties"><div class="legend-dot" style="background:#1d4ed8"></div> Properties</div>
+        <div class="legend-item" data-series="BOPs"><div class="legend-dot" style="background:#059669"></div> BOPs</div>
+        <div class="legend-item" data-series="Passes"><div class="legend-dot" style="background:#0284c7"></div> Passes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projections -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-bar"></i> Monthly Projections</div>
+      <span style="font-size:0.72rem;color:var(--text-muted);">Based on current pace</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table id="projectionsTable" class="display" style="width:100%">
+        <thead><tr><th>Month</th><th>Properties</th><th>BOPs</th><th>Owners</th><th>Progress</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Activities -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-history"></i> Recent Field Activities</div>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table id="activitiesTable" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th>Collector</th><th>Property ID</th><th>Property Part</th>
+            <th>Activity Type</th><th>Status</th><th>Visited</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
-
-
-    <!-- Second Row -->
-    <div class="row">
-        <!-- Top Payers -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top Paying Businesses</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover" id="topPayersTable">
-                            <thead>
-                                <tr>
-                                    <th>Business</th>
-                                    <th class="text-right">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td colspan="2" class="text-center text-muted">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Most Overdue -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-danger">Most Overdue Bills</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover" id="overdueTable">
-                            <thead>
-                                <tr>
-                                    <th>Business</th>
-                                    <th class="text-right">Amount</th>
-                                    <th>Days</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-info">Recent Activity</h6>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush" id="recentActivity">
-                        <div class="text-center text-muted py-3">Loading...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- Snapshots Modal -->
+<div class="modal-overlay" id="snapshotsModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h5>End of Month Snapshots</h5>
+      <button class="modal-close" id="closeModal">&times;</button>
     </div>
-
-    <!-- Revenue by Category -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Revenue by Business Category</h6>
-                </div>
-                <div class="card-body" style="position: relative; height: 300px;">
-                    <canvas id="categoryChart" width="800" height="300" style="display: block; max-width: 100%;"></canvas>
-                </div>
-            </div>
-        </div>
+    <div class="modal-body">
+      <table id="snapshotsTable" class="display" style="width:100%">
+        <thead><tr><th>Month</th><th>Properties</th><th>BOPs</th><th>Owners</th><th>Completion</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
+    <div class="modal-foot">
+      <button class="btn-ctrl" id="closeModalBtn">Close</button>
+    </div>
+  </div>
 </div>
 
 <!-- Scripts -->
-<script src="/static/assets/libs/jquery/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 
 <script>
-$(document).ready(function() {
-    // Chart instances - store them globally
-    let revenueChart = null;
-    let statusChart = null;
-    let categoryChart = null;
-    
-    // Flag to track if charts are initialized
-    let chartsInitialized = false;
-    
-    // Function to destroy existing charts properly
-    function destroyCharts() {
-        if (revenueChart) {
-            revenueChart.destroy();
-            revenueChart = null;
-        }
-        if (statusChart) {
-            statusChart.destroy();
-            statusChart = null;
-        }
-        if (categoryChart) {
-            categoryChart.destroy();
-            categoryChart = null;
-        }
+$(document).ready(function () {
+
+  let currentUserId = 'all';
+  let currentDays   = 30;
+  let currentMode   = 'line';
+  let chartInst     = null;
+  let trendData     = [];
+  let hiddenSeries  = new Set();
+  let dtActivities  = null;
+  let dtProjections = null;
+  let dtSnapshots   = null;
+
+  /* ── Dropdown ── */
+  window.toggleDropdown = function(id) {
+    document.querySelectorAll('.dropdown').forEach(d => { if (d.id !== id) d.classList.remove('open'); });
+    document.getElementById(id).classList.toggle('open');
+  };
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+  });
+
+  /* ── DataTables init ── */
+  function dtDefaults(extraOpts) {
+    return Object.assign({
+      pageLength: 7,
+      language: { search: '', searchPlaceholder: 'Search…' },
+      dom: '<"dt-top"lf>t<"dt-bottom"ip>'
+    }, extraOpts);
+  }
+
+  dtActivities = $('#activitiesTable').DataTable(dtDefaults({
+    data: [],
+    columns: [
+      { data: 'collector_html', orderable: false },
+      { data: 'property_html' },
+      { data: 'part_html', orderable: false },
+      { data: 'type_html', orderable: false },
+      { data: 'status_html', orderable: false },
+      { data: 'visited_html' }
+    ],
+    order: [[5, 'desc']],
+    language: { search: '', searchPlaceholder: 'Search activities…', emptyTable: 'No recent activities' },
+    createdRow: function(row, data) {
+      if (data.row_class) $(row).addClass(data.row_class);
     }
-    
-    // Load all dashboard data
-    function loadDashboardData() {
-        $.ajax({
-            url: '/api/dashboard/stats/',
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    updateStatsCards(response.stats);
-                    
-                    // Only update status chart if data exists
-                    if (response.stats.status_distribution) {
-                        updateStatusChart(response.stats.status_distribution);
-                    }
-                    
-                    updateRecentActivity(response.recent_activity);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Dashboard stats error:', error);
-                showMessage('error', 'Failed to load dashboard data');
-            }
-        });
-        
-        loadRevenueTrends(30);
-        loadTopPerformers();
-    }
-    
-    // Update stats cards
-    function updateStatsCards(stats) {
-        $('#totalBillAmount').text('GH₵' + (stats.total_bill_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
-        $('#totalBills').text(stats.total_bills || 0);
-        $('#totalBusinesses').text(stats.total_businesses || 0);
-        
-        $('#paidAmount').text('GH₵' + (stats.paid_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
-        $('#paidCount').text(stats.paid_count || 0);
-        $('#collectionRate').text((stats.collection_rate || 0) + '%');
-        $('#collectionProgress').css('width', (stats.collection_rate || 0) + '%');
-        
-        $('#monthPaymentAmount').text('GH₵' + (stats.month_payment_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
-        $('#monthCount').text(stats.month_count || 0);
-        $('#monthAmount').text((stats.month_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
-        
-        $('#overdueCount').text(stats.overdue_count || 0);
-        $('#overdueAmount').text((stats.overdue_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2}));
-        $('#visitedNotPaid').text(stats.visited_not_paid || 0);
-    }
-    
-    // Load revenue trends
-    function loadRevenueTrends(days) {
-        $.ajax({
-            url: '/api/dashboard/revenue-trends/',
-            method: 'GET',
-            data: { days: days },
-            success: function(response) {
-                if (response.success) {
-                    updateRevenueChart(response.daily_revenue || []);
-                    updateCategoryChart(response.category_revenue || []);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Revenue trends error:', error);
-            }
-        });
-    }
-    
-    // Load top performers
-    function loadTopPerformers() {
-        $.ajax({
-            url: '/api/dashboard/top-performers/',
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    updateTopPayers(response.top_payers || []);
-                    updateOverdueTable(response.most_overdue || []);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Top performers error:', error);
-            }
-        });
-    }
-    
-    // Update revenue chart
-    function updateRevenueChart(data) {
-        const ctx = document.getElementById('revenueChart').getContext('2d');
-        
-        // Destroy existing chart if it exists
-        if (revenueChart) {
-            revenueChart.destroy();
-        }
-        
-        // Prepare data
-        const labels = data.map(d => d.date || '');
-        const values = data.map(d => d.amount || 0);
-        
-        // Create new chart
-        revenueChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Daily Revenue (GH₵)',
-                    data: values,
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                    borderWidth: 2,
-                    pointRadius: 2,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'GH₵' + value.toLocaleString();
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-    
-    // Update status chart
-    function updateStatusChart(data) {
-        const ctx = document.getElementById('statusChart').getContext('2d');
-        
-        // Destroy existing chart if it exists
-        if (statusChart) {
-            statusChart.destroy();
-        }
-        
-        const total = data.reduce((sum, item) => sum + (item.count || 0), 0);
-        
-        // Create new chart
-        statusChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.map(d => d.status || 'Unknown'),
-                datasets: [{
-                    data: data.map(d => d.count || 0),
-                    backgroundColor: data.map(d => d.color || '#858796'),
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw;
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${context.label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        
-        // Update legend
-        let legendHtml = '';
-        data.forEach(item => {
-            const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : 0;
-            legendHtml += `<span class="mr-3"><i class="fas fa-circle" style="color: ${item.color || '#858796'}"></i> ${item.status || 'Unknown'}: ${item.count || 0} (${percentage}%)</span>`;
-        });
-        $('#statusLegend').html(legendHtml || 'No data available');
-    }
-    
-    // Update category chart
-    function updateCategoryChart(data) {
-        const ctx = document.getElementById('categoryChart').getContext('2d');
-        
-        // Destroy existing chart if it exists
-        if (categoryChart) {
-            categoryChart.destroy();
-        }
-        
-        const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#5a5c69', '#858796'];
-        const labels = data.map(d => d.category || 'Unknown');
-        const values = data.map(d => d.amount || 0);
-        
-        // Create new chart
-        categoryChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Revenue (GH₵)',
-                    data: values,
-                    backgroundColor: data.map((d, i) => colors[i % colors.length]),
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'GH₵' + value.toLocaleString();
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-    
-    // Update top payers table
-    function updateTopPayers(data) {
-        const tbody = $('#topPayersTable tbody');
-        tbody.empty();
-        
-        if (!data || data.length === 0) {
-            tbody.append('<tr><td colspan="2" class="text-center text-muted">No data available</td></tr>');
-            return;
-        }
-        
-        data.forEach(item => {
-            tbody.append(`
-                <tr>
-                    <td>${item.name || 'N/A'}</td>
-                    <td class="text-right font-weight-bold">GH₵${(item.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                </tr>
-            `);
-        });
-    }
-    
-    // Update overdue table
-    function updateOverdueTable(data) {
-        const tbody = $('#overdueTable tbody');
-        tbody.empty();
-        
-        if (!data || data.length === 0) {
-            tbody.append('<tr><td colspan="3" class="text-center text-muted">No overdue bills</td></tr>');
-            return;
-        }
-        
-        data.forEach(item => {
-            const days = item.days_overdue || 0;
-            const daysClass = days > 30 ? 'text-danger' : (days > 15 ? 'text-warning' : '');
-            tbody.append(`
-                <tr>
-                    <td>${item.business || 'N/A'}</td>
-                    <td class="text-right">GH₵${(item.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                    <td class="${daysClass} font-weight-bold">${days}d</td>
-                </tr>
-            `);
-        });
-    }
-    
-    // Update recent activity
-    function updateRecentActivity(data) {
-        const container = $('#recentActivity');
-        container.empty();
-        
-        if (!data || data.length === 0) {
-            container.append('<div class="text-center text-muted py-3">No recent activity</div>');
-            return;
-        }
-        
-        data.forEach(item => {
-            const icon = item.type === 'payment' ? 'check-circle' : 'eye';
-            const color = item.type === 'payment' ? 'success' : 'info';
-            
-            container.append(`
-                <div class="list-group-item border-0 pl-0">
-                    <div class="row">
-                        <div class="col-auto">
-                            <i class="fas fa-${icon} text-${color}"></i>
-                        </div>
-                        <div class="col">
-                            <div class="small text-gray-600">${item.time || ''}</div>
-                            <div class="font-weight-bold">${item.description || ''}</div>
-                        </div>
-                    </div>
-                </div>
-            `);
-        });
-    }
-    
-    // Show message function
-    function showMessage(type, message) {
-        // Implement your message display logic here
-        console.log(type, message);
-    }
-    
-    // Refresh button
-    $('#refreshDashboard').click(function() {
-        const $btn = $(this);
-        $btn.html('<i class="fas fa-spinner fa-spin"></i> Refreshing...');
-        
-        // Destroy charts before reloading
-        destroyCharts();
-        
-        // Reload all data
-        loadDashboardData();
-        
-        setTimeout(() => {
-            $btn.html('<i class="fas fa-sync-alt"></i> Refresh');
-        }, 1000);
+  }));
+
+  dtProjections = $('#projectionsTable').DataTable(dtDefaults({
+    data: [],
+    columns: [
+      { data: 'month' },
+      { data: 'properties_fmt' },
+      { data: 'bops_fmt' },
+      { data: 'owners_fmt' },
+      { data: 'progress_html', orderable: false }
+    ],
+    order: [[0, 'asc']],
+    language: { search: '', searchPlaceholder: 'Search…', emptyTable: 'No projection data' }
+  }));
+
+  /* ── Load ── */
+  loadDashboardData();
+
+  function loadDashboardData() {
+    $.ajax({
+      url: '/api/field-dashboard/stats/',
+      method: 'GET',
+      data: { user_id: currentUserId, days: currentDays },
+      success: function(r) {
+        if (!r.success) return;
+        updateStatsCards(r.stats);
+        if (r.projections) populateProjections(r.projections);
+        else loadProjections();
+        loadCollectionTrend();
+      }
     });
-    
-    // Period selector
-    $('.revenue-period').click(function(e) {
-        e.preventDefault();
-        $('.revenue-period').removeClass('active');
-        $(this).addClass('active');
-        
-        const days = $(this).data('days');
-        $('#revenuePeriodDropdown').text($(this).text());
-        
-        // Destroy revenue chart before reloading
-        if (revenueChart) {
-            revenueChart.destroy();
-            revenueChart = null;
+    loadActivities();
+  }
+
+  /* ── Stats ── */
+  function updateStatsCards(s) {
+    $('#totalProperties').text((s.total_properties||0).toLocaleString());
+    $('#submittedProperties').text((s.submitted_properties||0).toLocaleString());
+    $('#totalBops').text((s.total_bops||0).toLocaleString());
+    $('#bopsWithBills').text((s.bops_with_bills||0).toLocaleString());
+    $('#totalPasses').text((s.total_passes||0).toLocaleString());
+    $('#passedProperties').text((s.passed_properties||0).toLocaleString());
+    $('#incompletePasses').text((s.incomplete_passes||0).toLocaleString());
+    const pct = s.total_passes ? Math.round((s.passed_properties / s.total_passes) * 100) : 0;
+    $('#passProgress').css('width', pct + '%');
+    $('#totalOwners').text((s.total_owners||0).toLocaleString());
+    $('#uniqueOwners').text((s.unique_owners||0).toLocaleString());
+  }
+
+  /* ── ECharts ── */
+  function loadCollectionTrend() {
+    $.ajax({
+      url: '/api/field-dashboard/collection-trend/',
+      method: 'GET',
+      data: { user_id: currentUserId, days: currentDays },
+      success: function(r) { if (r.success) { trendData = r.trend_data; buildChart(); } }
+    });
+  }
+
+  function buildChart() {
+    const el = document.getElementById('collectionChart');
+    if (!chartInst) chartInst = echarts.init(el);
+
+    const labels = trendData.map(d => d.date);
+    const isStack = currentMode === 'stack';
+    const isBar   = currentMode === 'bar' || isStack;
+
+    const seriesDef = [
+      { name: 'Properties', color: '#1d4ed8', key: 'properties' },
+      { name: 'BOPs',       color: '#059669', key: 'bops' },
+      { name: 'Passes',     color: '#0284c7', key: 'passes' }
+    ];
+
+    const series = seriesDef.map(s => {
+      const hidden = hiddenSeries.has(s.name);
+      return {
+        name: s.name,
+        type: isBar ? 'bar' : 'line',
+        stack: isStack ? 'total' : undefined,
+        areaStyle: (!isBar && !hidden) ? {
+          color: { type:'linear', x:0, y:0, x2:0, y2:1,
+            colorStops: [{offset:0, color:s.color+'30'}, {offset:1, color:s.color+'04'}] }
+        } : undefined,
+        smooth: !isBar,
+        symbol: isBar ? 'none' : 'circle',
+        symbolSize: 3,
+        lineStyle: { width: 1.5, color: s.color },
+        itemStyle: { color: s.color, borderRadius: isBar ? [3,3,0,0] : 0 },
+        barMaxWidth: 28,
+        data: hidden ? [] : trendData.map(d => d[s.key]),
+        emphasis: { focus: 'series' }
+      };
+    });
+
+    chartInst.setOption({
+      animation: true,
+      animationDuration: 500,
+      grid: { top: 16, right: 20, bottom: 36, left: 56 },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: isBar ? 'shadow' : 'cross', crossStyle: { color: '#9ca3af' } },
+        backgroundColor: '#111827',
+        borderColor: '#1f2937',
+        borderWidth: 1,
+        padding: 12,
+        textStyle: { color: '#f9fafb', fontSize: 12, fontFamily: 'DM Sans' },
+        formatter: function(params) {
+          let h = `<div style="font-weight:600;margin-bottom:6px;color:#e5e7eb;font-size:11px">${params[0].axisValue}</div>`;
+          params.forEach(p => {
+            if (!p.value && p.value !== 0) return;
+            h += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${p.color}"></span>
+              <span style="color:#9ca3af;font-size:11px">${p.seriesName}</span>
+              <span style="margin-left:auto;font-family:'DM Mono',monospace;font-weight:500;font-size:11px">${Number(p.value).toLocaleString()}</span>
+            </div>`;
+          });
+          return h;
         }
-        
-        loadRevenueTrends(days);
+      },
+      xAxis: {
+        type: 'category', data: labels,
+        axisLine: { lineStyle: { color: '#e8eaed' } },
+        axisTick: { show: false },
+        axisLabel: { color: '#9ca3af', fontSize: 11, fontFamily: 'DM Mono' },
+        splitLine: { show: false }
+      },
+      yAxis: {
+        type: 'value',
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: '#9ca3af', fontSize: 11, fontFamily: 'DM Mono' },
+        splitLine: { lineStyle: { color: '#f0f1f3', type: 'dashed' } }
+      },
+      series
+    }, true);
+
+    window.addEventListener('resize', () => chartInst.resize());
+  }
+
+  /* Legend click toggle */
+  $('#echartLegend').on('click', '.legend-item', function() {
+    const name = $(this).data('series');
+    if (hiddenSeries.has(name)) { hiddenSeries.delete(name); $(this).removeClass('dimmed'); }
+    else { hiddenSeries.add(name); $(this).addClass('dimmed'); }
+    buildChart();
+  });
+
+  /* Chart mode pills */
+  $(document).on('click', '.chart-pill', function() {
+    $('.chart-pill').removeClass('active'); $(this).addClass('active');
+    currentMode = $(this).data('mode');
+    buildChart();
+  });
+
+  /* ── Projections ── */
+  function loadProjections() {
+    $.ajax({
+      url: '/api/field-dashboard/projections/',
+      method: 'GET',
+      data: { user_id: currentUserId },
+      success: function(r) { if (r.success) populateProjections(r.projections); }
     });
-    
-    // Export report
-    $('#exportReport').click(function() {
-        window.location.href = '/api/dashboard/export/';
+  }
+
+  function populateProjections(projections) {
+    dtProjections.clear();
+    (projections||[]).forEach(item => {
+      const pct = Math.min(100, Math.round((item.properties/100000)*100));
+      dtProjections.row.add({
+        month: item.month,
+        properties_fmt: `<span class="cell-num">${item.properties.toLocaleString()}</span>`,
+        bops_fmt:       `<span class="cell-num">${item.bops.toLocaleString()}</span>`,
+        owners_fmt:     `<span class="cell-num">${item.owners.toLocaleString()}</span>`,
+        progress_html: `<div class="proj-bar-wrap"><div class="proj-bar"><div class="proj-bar-fill" style="width:${pct}%"></div></div><div class="proj-pct">${pct}%</div></div>`
+      });
     });
-    
-    // Initial load with slight delay to ensure DOM is ready
-    setTimeout(function() {
-        loadDashboardData();
-    }, 100);
-    
-    // Auto-refresh every 5 minutes
-    setInterval(function() {
-        // Don't auto-refresh if user is interacting
-        if (!document.hidden) {
-            destroyCharts();
-            loadDashboardData();
-        }
-    }, 300000);
-    
-    // Clean up on page unload
-    $(window).on('beforeunload', function() {
-        destroyCharts();
+    dtProjections.draw();
+  }
+
+  /* ── Activities ── */
+  function loadActivities() {
+    $.ajax({
+      url: '/api/field-dashboard/activities/',
+      method: 'GET',
+      data: { user_id: currentUserId },
+      success: function(r) { if (r.success) populateActivities(r.activities); }
     });
+  }
+
+  function populateActivities(activities) {
+    dtActivities.clear();
+    const typeMap   = { submit:['badge-submit','check-circle','Submit'], save:['badge-save','save','Save'], pass:['badge-pass','arrow-right','Pass'], revisit:['badge-revisit','redo','Revisit'] };
+    const statusMap = { approved:['badge-approved','check','Approved'], pending:['badge-pending','clock','Pending'], rejected:['badge-rejected','times','Rejected'] };
+
+    (activities||[]).forEach(item => {
+      const [tC,tI,tL] = typeMap[item.type?.toLowerCase()]   || ['badge-secondary','circle',item.type||'N/A'];
+      const [sC,sI,sL] = statusMap[item.status?.toLowerCase()]|| ['badge-secondary','question',item.status||'N/A'];
+      const ini = (item.collector||'NA').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const d   = item.visited_at ? new Date(item.visited_at) : null;
+      const fdt = d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'N/A';
+
+      dtActivities.row.add({
+        row_class: `row-${item.type||''}`,
+        collector_html: `<div class="user-pill"><div class="user-avatar">${ini}</div><span style="color:var(--text-primary);font-weight:500">${item.collector||'N/A'}</span></div>`,
+        property_html:  `<span class="cell-primary">${item.property_id||'N/A'}</span>`,
+        part_html:      `<span style="color:var(--text-muted)">${item.property_part||'—'}</span>`,
+        type_html:      `<span class="badge ${tC}"><i class="fas fa-${tI}"></i>${tL}</span>`,
+        status_html:    `<span class="badge ${sC}"><i class="fas fa-${sI}"></i>${sL}</span>`,
+        visited_html:   `<span style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--text-secondary)">${fdt}</span>`
+      });
+    });
+    dtActivities.draw();
+  }
+
+  /* ── Snapshots ── */
+  function loadSnapshots() {
+    if (!dtSnapshots) {
+      dtSnapshots = $('#snapshotsTable').DataTable(dtDefaults({
+        data: [],
+        columns: [
+          { data: 'month' },
+          { data: 'properties_fmt' },
+          { data: 'bops_fmt' },
+          { data: 'owners_fmt' },
+          { data: 'progress_html', orderable: false }
+        ],
+        order: [[0,'desc']],
+        language: { search: '', searchPlaceholder: 'Search…', emptyTable: 'No snapshot data' }
+      }));
+    }
+    $.ajax({
+      url: '/api/field-dashboard/snapshots/',
+      method: 'GET',
+      success: function(r) {
+        if (!r.success) return;
+        dtSnapshots.clear();
+        (r.snapshots||[]).forEach(item => {
+          const pct = item.target ? Math.round((item.properties/item.target)*100) : 0;
+          dtSnapshots.row.add({
+            month: item.month,
+            properties_fmt: `<span class="cell-num">${item.properties.toLocaleString()}</span>`,
+            bops_fmt:       `<span class="cell-num">${item.bops.toLocaleString()}</span>`,
+            owners_fmt:     `<span class="cell-num">${item.owners.toLocaleString()}</span>`,
+            progress_html: `<div class="proj-bar-wrap"><div class="proj-bar"><div class="proj-bar-fill" style="width:${pct}%"></div></div><div class="proj-pct">${pct}%</div></div>`
+          });
+        });
+        dtSnapshots.draw();
+        $('#snapshotsModal').addClass('open');
+      }
+    });
+  }
+
+  /* ── Events ── */
+  $(document).on('click', '.user-filter', function(e) {
+    e.preventDefault();
+    $('.user-filter').removeClass('active'); $(this).addClass('active');
+    currentUserId = $(this).data('user');
+    $('#selectedUser').text($(this).text());
+    toggleDropdown('userDropdown');
+    loadDashboardData();
+  });
+
+  $(document).on('click', '.period-filter', function(e) {
+    e.preventDefault();
+    $('.period-filter').removeClass('active'); $(this).addClass('active');
+    currentDays = $(this).data('days');
+    $('#selectedPeriod').text($(this).text());
+    toggleDropdown('periodDropdown');
+    loadDashboardData();
+  });
+
+  $('#snapshotsBtn').click(loadSnapshots);
+  $('#closeModal, #closeModalBtn').click(() => $('#snapshotsModal').removeClass('open'));
+  $('#snapshotsModal').click(function(e) { if (e.target === this) $(this).removeClass('open'); });
+
+  $('#refreshDashboard').click(function() {
+    const $b = $(this);
+    $b.html('<i class="fas fa-spinner fa-spin"></i> Refreshing…').prop('disabled', true);
+    loadDashboardData();
+    setTimeout(() => $b.html('<i class="fas fa-sync-alt"></i> Refresh').prop('disabled', false), 1000);
+  });
+
+  setInterval(() => { if (!document.hidden) loadDashboardData(); }, 300000);
 });
 </script>
-
-<style>
-/* Custom styles */
-.border-left-primary { border-left: 0.25rem solid #4e73df !important; }
-.border-left-success { border-left: 0.25rem solid #1cc88a !important; }
-.border-left-info { border-left: 0.25rem solid #36b9cc !important; }
-.border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
-
-.card {
-    border: none;
-    border-radius: 0.5rem;
-    transition: all 0.2s;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1) !important;
-}
-
-.text-gray-300 { color: #dddfeb !important; }
-.text-gray-800 { color: #5a5c69 !important; }
-
-.progress {
-    background-color: #eaecf4;
-    border-radius: 1rem;
-}
-
-.table td, .table th {
-    padding: 0.5rem;
-    vertical-align: middle;
-}
-
-.list-group-item {
-    padding: 0.75rem 0;
-}
-
-.font-weight-bold {
-    font-weight: 600 !important;
-}
-
-/* Chart container fixes */
-.card-body {
-    overflow: hidden;
-}
-
-canvas {
-    max-width: 100%;
-    height: auto !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .h5 { font-size: 1rem; }
-    .text-xs { font-size: 0.6rem; }
-}
-</style>
 
 {% endblock %}

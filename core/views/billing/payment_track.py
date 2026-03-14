@@ -5,7 +5,7 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 import json
 from datetime import datetime, timedelta
-from core.models import Bill, BopsBills, PaymentLinkClick
+from core.models import BopsBills, PaymentLinkClick
 
 @csrf_exempt
 def track_payment_link_click(request):
@@ -25,8 +25,7 @@ def track_payment_link_click(request):
         # Get the bill
         if bill_type == 'business':
             bill = get_object_or_404(BopsBills, id=bill_id)
-        elif bill_type == 'property':
-            bill = get_object_or_404(Bill, id=bill_id)
+      
         else:
             return JsonResponse({'error': 'Invalid bill type'}, status=400)
         
@@ -49,8 +48,7 @@ def payment_link_redirect(request, bill_type, bill_number, link_type='web'):
         # Find the bill
         if bill_type == 'business':
             bill = get_object_or_404(BopsBills, bill_number=bill_number)
-        elif bill_type == 'property':
-            bill = get_object_or_404(Bill, bill_number=bill_number)
+       
         else:
             return HttpResponseRedirect('/')
         

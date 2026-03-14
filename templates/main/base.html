@@ -57,7 +57,7 @@
         /* Override Bootstrap Primary Colors */
         .btn-primary,
         .bg-primary,
-        /* .text-primary, */
+        .text-primary,
         .border-primary {
             background-color: #0dae48 !important;
             border-color: #0dae48 !important;
@@ -511,7 +511,15 @@
 <div id="layout-wrapper">
     {% include 'partials/topbar.html' %}
 
-  
+    <!-- ========== Left Sidebar Start ========== -->
+    <div class="sidebar-left">
+        <div data-simplebar class="h-100">
+            <!--- Sidebar-menu -->
+            {% include 'partials/sidebar-left_new.html' %}
+            <!-- Sidebar -->
+        </div>
+    </div>
+    <!-- Left Sidebar End -->
 
     <!-- Start right Content here -->
     <div class="main-content">

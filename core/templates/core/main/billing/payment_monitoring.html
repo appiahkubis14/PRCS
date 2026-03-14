@@ -257,7 +257,7 @@ function updateStats(stats) {
                 <th>Amount (GHS)</th>
                 <th>Status</th>
                 <th>Due Date</th>
-                <th>Click Count</th>
+                <!-- <th>Click Count</th> -->
                 <th>Last Click</th>
                 <th>Days Since Click</th>
                 <th>Payment Status</th>
@@ -363,7 +363,7 @@ function updateStats(stats) {
 </div>
 
 <!-- Recent Activity Card -->
-<div class="row mt-4">
+<div class="row mt-4" style="display: none;">
   <div class="col-12">
     <div class="card">
       <div class="card-header">
@@ -473,15 +473,15 @@ $(document).ready(function() {
           }
         },
         { data: 'due_date' },
-        { 
-          data: 'click_count',
-          render: function(data, type, row) {
-            if (row.visited_not_paid) {
-              return `<span class="badge bg-warning">${data} 👁️</span>`;
-            }
-            return data || 0;
-          }
-        },
+        // { 
+        //   data: 'click_count',
+        //   render: function(data, type, row) {
+        //     if (row.visited_not_paid) {
+        //       return `<span class="badge bg-warning">${data} 👁️</span>`;
+        //     }
+        //     return data || 0;
+        //   }
+        // },
         { 
           data: 'last_clicked_at',
           render: function(data) {
@@ -514,11 +514,11 @@ $(document).ready(function() {
           orderable: false,
           render: function(data) {
             return `
-              <button class="btn btn-sm btn-info view-details" data-id="${data.id}">
-                <i class="fas fa-eye"></i> Details
+              <button class="btn btn-sm btn-info view-details" data-id="${data.id}" title="View Details">
+                <i class="fas fa-eye"></i>
               </button>
-              <button class="btn btn-sm btn-warning send-reminder" data-id="${data.id}" data-phone="${data.phone_number}">
-                <i class="fas fa-bell"></i> Remind
+              <button class="btn btn-sm btn-warning send-reminder" data-id="${data.id}" data-phone="${data.phone_number}" title="Send Reminder">
+                <i class="fas fa-bell"></i>
               </button>
             `;
           }

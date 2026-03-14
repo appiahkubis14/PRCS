@@ -61,9 +61,9 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="downloadBillBtn">
+        <!-- <button type="button" class="btn btn-primary" id="downloadBillBtn">
           <i class="fas fa-download"></i> Download PDF
-        </button>
+        </button> -->
       </div>
     </div>
   </div>
@@ -225,13 +225,13 @@
           return `
             <div style="display: flex; gap: 5px;">
               <button type="button" class="btn btn-sm btn-outline-primary generate-bill-btn" data-bill-id="${row.id}" data-bill-number="${row.bill_number}" title="Generate Bill">
-                <i class="fas fa-bolt"></i> Generate
+                <i class="fas fa-bolt"></i> 
               </button>
               <button type="button" class="btn btn-sm btn-outline-success send-message-btn" data-bill-id="${row.id}" data-bill-number="${row.bill_number}" title="Send Message">
-                <i class="fas fa-paper-plane"></i> Send
+                <i class="fas fa-paper-plane"></i>
               </button>
               <button type="button" class="btn btn-sm btn-outline-info view-bill-btn" data-bill-id="${row.id}" data-bill-number="${row.bill_number}" title="View Bill">
-                <i class="fas fa-eye"></i> View
+                <i class="fas fa-eye"></i>
               </button>
             </div>
           `;
@@ -525,6 +525,11 @@ $('#billViewModal').on('hidden.bs.modal', function () {
   .badge {
     font-size: 0.875rem;
     padding: 0.35em 0.65em;
+  }
+
+  .receipt {
+    width: 100%;
+   
   }
 </style>
 

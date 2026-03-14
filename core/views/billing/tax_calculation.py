@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models import Q
 import json
 from datetime import datetime, timedelta
-from core.models import Bill, Penalty, Property, BillingCycle, PropertyType, TaxRate, Zone
+from core.models import Property, PropertyType, TaxRate, Zone
 
 def tax_calculation_page(request):
     """Render the tax calculation page"""

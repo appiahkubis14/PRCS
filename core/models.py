@@ -145,16 +145,6 @@ class District(TimeStampModel):
         super().save(*args, **kwargs)
 
 
-class Department(TimeStampModel):
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    code = models.CharField(max_length=10, unique=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-    def __str__(self):
-        return self.name
 
 class Zone(TimeStampModel):
     ZONE_TYPE_CHOICES = (
@@ -221,12 +211,36 @@ class Property(TimeStampModel):
 
 
     class Meta:
+        verbose_name = 'Property'
+        verbose_name_plural = 'Properties'
         indexes = [
-            models.Index(fields=['latitude', 'longitude']),
-            models.Index(fields=['district']),
-            models.Index(fields=['zone']),
-        ]
-  
+        # Existing indexes
+        models.Index(fields=['latitude', 'longitude']),
+        models.Index(fields=['district']),
+        models.Index(fields=['zone']),
+        
+        # Add these for better search performance
+        models.Index(fields=['-id']),  # For ordering by id desc (your current default)
+        models.Index(fields=['address']),  # For address searches
+        models.Index(fields=['g_code']),  # For g_code searches
+        models.Index(fields=['gpsname']),  # For gpsname searches
+        models.Index(fields=['region']),  # For region searches
+        models.Index(fields=['street']),  # For street searches
+        models.Index(fields=['addressv1']),  # For addressv1 searches
+        models.Index(fields=['created_at']),  # For date-based filtering
+        models.Index(fields=['property_type']),  # For property type filtering
+        
+        # Composite indexes for common query patterns
+        models.Index(fields=['region', 'district']),  # Combined region/district search
+        models.Index(fields=['zone', 'property_type']),  # Zone + property type filtering
+
+        models.Index(
+                fields=['geom'],
+                name='property_geom_idx',
+                opclasses=['gist_geometry_ops']  # For PostGIS
+            ),
+    ]
+
 
     def __str__(self):
         return f"{self.address}"
@@ -270,390 +284,6 @@ class TaxRate(TimeStampModel):
 
     def __str__(self):
         return f"{self.zone.name} - {self.property_type.name}: {self.rate}%"
-
-class BillingCycle(TimeStampModel):
-    CYCLE_TYPE_CHOICES = (
-        ('annual', 'Annual'),
-        ('semi_annual', 'Semi-Annual'),
-        ('quarterly', 'Quarterly'),
-        ('monthly', 'Monthly'),
-    )
-    
-    name = models.CharField(max_length=100)
-    cycle_type = models.CharField(max_length=20, choices=CYCLE_TYPE_CHOICES)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    due_date = models.DateField()
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.name} ({self.start_date} to {self.end_date})"
-
-class Bill(TimeStampModel):
-    BILL_STATUS_CHOICES = (
-        ('draft', 'Draft'),
-        ('generated', 'Generated'),
-        ('sent', 'Sent'),
-        ('paid', 'Paid'),
-        ('overdue', 'Overdue'),
-        ('cancelled', 'Cancelled'),
-    )
-    
-    bill_number = models.CharField(max_length=100, unique=True)
-    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='bills')
-    billing_cycle = models.ForeignKey(BillingCycle, on_delete=models.PROTECT, related_name='bills', null=True, blank=True)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    penalty_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    status = models.CharField(max_length=100, choices=BILL_STATUS_CHOICES, default='draft')
-    generated_date = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateField()
-    sent_date = models.DateTimeField(null=True, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='bills_created')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-     # Add these new fields for tracking
-    last_clicked_at = models.DateTimeField(null=True, blank=True, verbose_name='Last Link Clicked')
-    click_count = models.IntegerField(default=0, verbose_name='Number of Link Clicks')
-    last_click_ip = models.GenericIPAddressField(null=True, blank=True, verbose_name='Last Click IP')
-
-    def __str__(self):
-        return f"Bill {self.bill_number} - {self.property.property_id}"
-    
-     
-    def record_click(self, link_type, request):
-        """Record a payment link click"""
-        self.last_clicked_at = timezone.now()
-        self.click_count = (self.click_count or 0) + 1
-        
-        # Create click record
-        click = PaymentLinkClick.objects.create(
-            bill_type='property',
-            property_bill=self,
-            link_type=link_type,
-            ip_address=self._get_client_ip(request),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
-            referer=request.META.get('HTTP_REFERER', '')[:500],
-            session_id=request.session.session_key or ''
-        )
-        
-        self.last_click_ip = click.ip_address
-        self.save()
-        return click
-    
-    def _get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
-
-class Payment(TimeStampModel):
-    PAYMENT_METHOD_CHOICES = (
-        ('cash', 'Cash'),
-        ('bank_transfer', 'Bank Transfer'),
-        ('mobile_money', 'Mobile Money'),
-        ('cheque', 'Cheque'),
-        ('online', 'Online Payment'),
-    )
-    
-    PAYMENT_STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed'),
-        ('refunded', 'Refunded'),
-    )
-    
-    payment_reference = models.CharField(max_length=50, unique=True)
-    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='payments')
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
-    payment_date = models.DateTimeField()
-    transaction_id = models.CharField(max_length=100, blank=True)
-    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
-    received_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='payments_received')
-    notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-    def __str__(self):
-        return f"Payment {self.payment_reference} - {self.amount}"
-
-class Penalty(TimeStampModel):
-    PENALTY_TYPE_CHOICES = (
-        ('late_payment', 'Late Payment'),
-        ('under_assessment', 'Under Assessment'),
-        ('non_compliance', 'Non-Compliance'),
-    )
-    
-    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='penalties')
-    penalty_type = models.CharField(max_length=20, choices=PENALTY_TYPE_CHOICES)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    reason = models.TextField()
-    applied_date = models.DateField()
-    due_date = models.DateField()
-    is_paid = models.BooleanField(default=False)
-    applied_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='penalties_applied')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-    def __str__(self):
-        return f"Penalty - {self.property.property_id} - {self.penalty_type}"
-
-class ServiceRequest(TimeStampModel):
-    REQUEST_TYPE_CHOICES = (
-        ('valuation_review', 'Valuation Review'),
-        ('ownership_transfer', 'Ownership Transfer'),
-        ('payment_issue', 'Payment Issue'),
-        ('information_request', 'Information Request'),
-        ('complaint', 'Complaint'),
-    )
-    
-    REQUEST_STATUS_CHOICES = (
-        ('open', 'Open'),
-        ('in_progress', 'In Progress'),
-        ('resolved', 'Resolved'),
-        ('closed', 'Closed'),
-    )
-    
-    request_number = models.CharField(max_length=20, unique=True)
-    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='service_requests')
-    request_type = models.CharField(max_length=30, choices=REQUEST_TYPE_CHOICES)
-    description = models.TextField()
-    status = models.CharField(max_length=20, choices=REQUEST_STATUS_CHOICES, default='open')
-    priority = models.CharField(max_length=10, choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], default='medium')
-    requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='requests_made')
-    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='requests_assigned')
-    created_at = models.DateTimeField(auto_now_add=True)
-    resolved_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'service_requests'
-
-    def __str__(self):
-        return f"SR-{self.request_number} - {self.request_type}"
-
-class AuditTrail(TimeStampModel):
-    ACTION_CHOICES = (
-        ('create', 'Create'),
-        ('update', 'Update'),
-        ('delete', 'Delete'),
-        ('view', 'View'),
-        ('login', 'Login'),
-        ('logout', 'Logout'),
-    )
-    
-    user = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='audit_trails')
-    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
-    model_name = models.CharField(max_length=50)
-    record_id = models.CharField(max_length=50)
-    description = models.TextField()
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'audit_trails'
-        indexes = [
-            models.Index(fields=['user', 'timestamp']),
-            models.Index(fields=['model_name', 'record_id']),
-        ]
-
-    def __str__(self):
-        return f"{self.user.username if self.user else 'System'} - {self.action} - {self.model_name}"
-
-class Notification(TimeStampModel):
-    NOTIFICATION_TYPE_CHOICES = (
-        ('bill_generated', 'Bill Generated'),
-        ('payment_received', 'Payment Received'),
-        ('payment_overdue', 'Payment Overdue'),
-        ('service_request', 'Service Request'),
-        ('system_alert', 'System Alert'),
-    )
-    
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    notification_type = models.CharField(max_length=30, choices=NOTIFICATION_TYPE_CHOICES)
-    title = models.CharField(max_length=200)
-    message = models.TextField()
-    is_read = models.BooleanField(default=False)
-    related_object_type = models.CharField(max_length=50, blank=True)
-    related_object_id = models.CharField(max_length=50, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'notifications'
-        indexes = [
-            models.Index(fields=['user', 'is_read']),
-            models.Index(fields=['created_at']),
-        ]
-
-    def __str__(self):
-        return f"{self.title} - {self.user.username}"
-
-class Report(TimeStampModel):
-    REPORT_TYPE_CHOICES = (
-        ('revenue_summary', 'Revenue Summary'),
-        ('collection_performance', 'Collection Performance'),
-        ('property_inventory', 'Property Inventory'),
-        ('delinquency_report', 'Delinquency Report'),
-        ('zone_analysis', 'Zone Analysis'),
-        ('custom', 'Custom Report'),
-    )
-    
-    name = models.CharField(max_length=200)
-    report_type = models.CharField(max_length=30, choices=REPORT_TYPE_CHOICES)
-    parameters = models.JSONField()  # Store report filters and parameters
-    generated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='reports_generated')
-    file_path = models.FileField(upload_to='reports/', null=True, blank=True)
-    is_automated = models.BooleanField(default=False)
-    schedule = models.CharField(max_length=50, blank=True)  # For automated reports
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'reports'
-
-    def __str__(self):
-        return self.name
-
-class GISData(TimeStampModel):
-    LAYER_TYPE_CHOICES = (
-        ('property_boundaries', 'Property Boundaries'),
-        ('zones', 'Zones'),
-        ('revenue_heatmap', 'Revenue Heatmap'),
-        ('collection_density', 'Collection Density'),
-        ('infrastructure', 'Infrastructure'),
-    )
-    
-    name = models.CharField(max_length=200)
-    layer_type = models.CharField(max_length=30, choices=LAYER_TYPE_CHOICES)
-    geo_data = models.JSONField()  # GeoJSON data
-    style_config = models.JSONField()  # Styling configuration for the layer
-    is_active = models.BooleanField(default=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='gis_data_created')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'gis_data'
-
-    def __str__(self):
-        return f"{self.name} ({self.layer_type})"
-
-class SystemConfiguration(TimeStampModel):
-    key = models.CharField(max_length=100, unique=True)
-    value = models.TextField()
-    data_type = models.CharField(max_length=20, choices=[
-        ('string', 'String'),
-        ('integer', 'Integer'),
-        ('decimal', 'Decimal'),
-        ('boolean', 'Boolean'),
-        ('json', 'JSON'),
-    ])
-    description = models.TextField(blank=True)
-    is_public = models.BooleanField(default=False)
-    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='system_configurations_updated')
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'system_configurations'
-
-    def __str__(self):
-        return self.key
-
-
-
-# Missing: Revenue tracking, expenses, budget
-class Revenue(TimeStampModel):
-    payment = models.ForeignKey(Payment, on_delete=models.PROTECT)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    revenue_type = models.CharField(max_length=50)  # tax, penalty, etc.
-    period = models.DateField()  # Monthly revenue period
-
-class Expense(TimeStampModel):
-    expense_type = models.CharField(max_length=100)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    description = models.TextField()
-    expense_date = models.DateField()
-    approved_by = models.ForeignKey(User, on_delete=models.PROTECT)
-
-class Budget(TimeStampModel):
-    fiscal_year = models.CharField(max_length=10)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    allocated_amount = models.DecimalField(max_digits=15, decimal_places=2)
-    utilized_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-
-
-
-
-# Missing: Customer accounts, communications
-class CustomerAccount(TimeStampModel):
-    property_owner = models.ForeignKey(PropertyOwner, on_delete=models.CASCADE)
-    account_number = models.CharField(max_length=20, unique=True)
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    status = models.CharField(max_length=20, choices=[('active', 'Active'), ('inactive', 'Inactive')])
-
-class Communication(TimeStampModel):
-    MESSAGE_TYPE_CHOICES = (
-        ('email', 'Email'),
-        ('sms', 'SMS'),
-        ('notification', 'Notification'),
-        ('letter', 'Letter'),
-    )
-    customer = models.ForeignKey(PropertyOwner, on_delete=models.CASCADE)
-    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPE_CHOICES)
-    subject = models.CharField(max_length=200)
-    content = models.TextField()
-    sent_date = models.DateTimeField(auto_now_add=True)
-    sent_by = models.ForeignKey(User, on_delete=models.PROTECT)
-
-
-
-# Missing: Legal case management
-class LegalCase(TimeStampModel):
-    CASE_STATUS_CHOICES = (
-        ('open', 'Open'),
-        ('in_court', 'In Court'),
-        ('resolved', 'Resolved'),
-        ('closed', 'Closed'),
-    )
-    case_number = models.CharField(max_length=20, unique=True)
-    property = models.ForeignKey(Property, on_delete=models.CASCADE)
-    case_type = models.CharField(max_length=100)
-    description = models.TextField()
-    status = models.CharField(max_length=20, choices=CASE_STATUS_CHOICES)
-    filed_date = models.DateField()
-    resolved_date = models.DateField(null=True, blank=True)
-    legal_team = models.ForeignKey(User, on_delete=models.PROTECT, related_name='legal_cases')
-
-
-# Missing: Delinquency tracking
-class Delinquency(TimeStampModel):
-    property = models.ForeignKey(Property, on_delete=models.CASCADE)
-    overdue_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    overdue_days = models.IntegerField()
-    status = models.CharField(max_length=20, choices=[('active', 'Active'), ('resolved', 'Resolved')])
-    escalation_level = models.IntegerField(default=1)  # 1, 2, 3 for different actions
-    last_action_date = models.DateField()
-    next_action_date = models.DateField()
-
-
-# Missing: Mobile payment providers
-class MobilePaymentProvider(TimeStampModel):
-    name = models.CharField(max_length=100)  # MTN, Vodafone, AirtelTigo, etc.
-    code = models.CharField(max_length=10, unique=True)
-    is_active = models.BooleanField(default=True)
-    config = models.JSONField()  # API keys, endpoints, etc.
-
-class MobilePayment(TimeStampModel):
-    payment = models.ForeignKey(Payment, on_delete=models.CASCADE)
-    provider = models.ForeignKey(MobilePaymentProvider, on_delete=models.PROTECT)
-    mobile_number = models.CharField(max_length=15)
-    transaction_reference = models.CharField(max_length=100)
-    provider_reference = models.CharField(max_length=100, blank=True)
-
 
 class Bops(TimeStampModel):
     # Primary/Identification Fields
@@ -699,17 +329,81 @@ class Bops(TimeStampModel):
             models.Index(fields=['division']),
         ]
     
+    # def save(self, *args, **kwargs):
+    #     # Only calculate geom if centroid is available and geom is not set
+    #     if not self.geom :
+    #         try:
+    #             # Parse centroid if it's in format "lat,lon" or similar
+    #             if  self.lng:
+    #                 lon = self.lng
+    #                 lat = self.lat
+    #                 self.geom = Point(lon, lat, srid=4326)
+    #         except (ValueError, AttributeError):
+    #             pass
+    #     super().save(*args, **kwargs)
+
     def save(self, *args, **kwargs):
-        # Only calculate geom if centroid is available and geom is not set
-        if not self.geom :
+        # Only calculate geom if geom is not set AND we have valid coordinates
+        if not self.geom:
             try:
-                # Parse centroid if it's in format "lat,lon" or similar
-                if  self.lng:
-                    lon = self.lng
-                    lat = self.lat
-                    self.geom = Point(lon, lat, srid=4326)
-            except (ValueError, AttributeError):
-                pass
+                # Check if both lng and lat have valid values
+                if self.lng is not None and self.lat is not None:
+                    # Convert to float to ensure they're numeric
+                    lon = float(self.lng)
+                    lat = float(self.lat)
+                    
+                    # Validate that coordinates are within reasonable ranges
+                    # Latitude: -90 to 90, Longitude: -180 to 180
+                    if -90 <= lat <= 90 and -180 <= lon <= 180:
+                        self.geom = Point(lon, lat, srid=4326)
+                    else:
+                        # Log invalid coordinates but don't crash
+                        print(f"Invalid coordinates for {self.business_name}: lat={lat}, lon={lon}")
+                else:
+                    # Try to parse from centroid if available and coordinates are missing
+                    if self.centroid:
+                        try:
+                            # Handle different centroid formats
+                            # Common formats: "lat,lon", "lat lon", "POINT(lon lat)", etc.
+                            centroid_str = str(self.centroid).strip()
+                            
+                            # Check if it's in POINT format
+                            if centroid_str.upper().startswith('POINT'):
+                                # Extract coordinates from POINT(lon lat)
+                                coords = centroid_str.replace('POINT', '').replace('(', '').replace(')', '').strip().split()
+                                if len(coords) == 2:
+                                    lon = float(coords[0])
+                                    lat = float(coords[1])
+                                    if -90 <= lat <= 90 and -180 <= lon <= 180:
+                                        self.geom = Point(lon, lat, srid=4326)
+                            
+                            # Check if it's in "lat,lon" format
+                            elif ',' in centroid_str:
+                                parts = centroid_str.split(',')
+                                if len(parts) == 2:
+                                    lat = float(parts[0].strip())
+                                    lon = float(parts[1].strip())
+                                    if -90 <= lat <= 90 and -180 <= lon <= 180:
+                                        self.geom = Point(lon, lat, srid=4326)
+                            
+                            # Check if it's in "lat lon" format
+                            elif ' ' in centroid_str:
+                                parts = centroid_str.split()
+                                if len(parts) == 2:
+                                    lat = float(parts[0].strip())
+                                    lon = float(parts[1].strip())
+                                    if -90 <= lat <= 90 and -180 <= lon <= 180:
+                                        self.geom = Point(lon, lat, srid=4326)
+                        except (ValueError, AttributeError) as e:
+                            # Log parsing error but don't crash
+                            print(f"Error parsing centroid for {self.business_name}: {e}")
+                            
+            except (ValueError, TypeError) as e:
+                # Log the error but don't prevent saving
+                print(f"Error creating Point for {self.business_name}: {e}")
+                # You might want to use Django's logger instead
+                # logger.warning(f"Error creating Point for {self.business_name}: {e}")
+        
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1050,7 +744,7 @@ class PaymentTransaction(models.Model):
     bill_type = models.CharField(max_length=20, choices=BILL_TYPES)
     
     # Polymorphic bill reference
-    property_bill = models.ForeignKey('Bill', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_property')
+    # property_bill = models.ForeignKey('Bill', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_property')
     business_bill = models.ForeignKey('BopsBills', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
     
     amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -1080,13 +774,13 @@ class PaymentTransaction(models.Model):
         indexes = [
             models.Index(fields=['transaction_id']),
             models.Index(fields=['provider_transaction_id']),
-            models.Index(fields=['bill_type', 'property_bill']),
+            # models.Index(fields=['bill_type', 'property_bill']),
             models.Index(fields=['bill_type', 'business_bill']),
             models.Index(fields=['status']),
         ]
     
     def __str__(self):
-        bill_ref = self.property_bill or self.business_bill
+        bill_ref = self.business_bill
         return f"{self.transaction_id} - {bill_ref} - {self.amount}"
 
 class PaymentNotification(models.Model):
@@ -1115,7 +809,7 @@ class PaymentLinkClick(models.Model):
     
     # Bill reference (polymorphic)
     bill_type = models.CharField(max_length=20, choices=PaymentTransaction.BILL_TYPES)
-    property_bill = models.ForeignKey('Bill', on_delete=models.CASCADE, null=True, blank=True, related_name='link_clicks')
+    # property_bill = models.ForeignKey('Bill', on_delete=models.CASCADE, null=True, blank=True, related_name='link_clicks')
     business_bill = models.ForeignKey('BopsBills', on_delete=models.CASCADE, null=True, blank=True, related_name='link_clicks')
     
     # Click details
@@ -1136,14 +830,14 @@ class PaymentLinkClick(models.Model):
     class Meta:
         ordering = ['-clicked_at']
         indexes = [
-            models.Index(fields=['bill_type', 'property_bill']),
+            # models.Index(fields=['bill_type', 'property_bill']),
             models.Index(fields=['bill_type', 'business_bill']),
             models.Index(fields=['clicked_at']),
             models.Index(fields=['session_id']),
         ]
     
     def __str__(self):
-        bill = self.property_bill or self.business_bill
+        bill =self.business_bill
         return f"Click on {self.link_type} for {bill} at {self.clicked_at}"
 
 

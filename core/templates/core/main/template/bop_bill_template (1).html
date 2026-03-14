@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LA Nkwantanang-Madina – Property Rate Bill</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #d0d0d0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 40px 20px;
+  }
+
+  .page {
+    background: #fff;
+    width: 990px;
+    padding: 20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.28);
+  }
+
+  /* ── Ticket wrapper ──────────────────────────────── */
+  .ticket {
+    display: flex;
+    width: 100%;
+    border: 2px dashed #777;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  /* ══ WATERMARK (main bill area) ════════════════════ */
+  .watermark {
+    position: absolute;
+    top: 50%;
+    left: 36%;
+    transform: translate(-50%, -50%) rotate(-28deg);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.055;
+  }
+  .watermark svg { width: 340px; height: 340px; }
+
+  /* ── Vertical side strips ───────────────────────── */
+  .side-strip {
+    width: 22px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1.5px solid #b0b0b0;
+    position: relative; z-index: 1;
+  }
+  .side-strip.right { border-right: none; border-left: 1.5px solid #b0b0b0; }
+  .side-strip span {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #111;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .side-strip.right span { transform: rotate(0deg); }
+
+  /* ── Main Bill ───────────────────────────────────── */
+  .bill-main {
+    flex: 1;
+    padding: 10px 14px 10px 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Dashed separator ───────────────────────────── */
+  .sep {
+    width: 3px;
+    flex-shrink: 0;
+    border-left: 2.5px dashed #777;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Stub ───────────────────────────────────────── */
+  .bill-stub {
+    width: 194px;
+    flex-shrink: 0;
+    padding: 10px 8px 8px 10px;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .stub-watermark {
+    position: absolute;
+    top: 50%;
+    left: 46%;
+    transform: translate(-50%, -50%) rotate(-28deg);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.055;
+  }
+  .stub-watermark svg { width: 160px; height: 160px; }
+
+  /* ══════════════════════════════════════════════════
+     MAIN BILL LAYOUT
+  ══════════════════════════════════════════════════ */
+
+  /* Header: [LEFT: logo+serial] [CENTER: name+badge+namefield] [RIGHT: acct+date] */
+  .main-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  /* LEFT BLOCK */
+  .left-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-shrink: 0;
+    width: 80px;
+    gap: 5px;
+  }
+  .logo-circle {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    border: 2px solid #999;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #fff;
+  }
+  .logo-circle svg { width: 74px; height: 74px; display: block; }
+
+  .serial-no-lbl {
+    padding-top: 16px;
+    font-size: 9.5px;
+    font-weight: bolder;
+    color: #000;
+    white-space: nowrap;
+    letter-spacing: 0;
+  }
+
+  /* CENTER BLOCK */
+  .center-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .assembly-name {
+    font-size: 15.5px;
+    font-weight: 1000;
+    color: #000;
+    text-align: center;
+    line-height: 1.15;
+    letter-spacing: 0.2px;
+    margin-bottom: 5px;
+  }
+  .bill-badge {
+    background: #4cae4c;
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 900;
+    padding: 4px 20px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .name-field {
+    width: 99%;
+    height: 58px;
+    border: 1.5px solid #46a12a;
+    border-width: 2px;
+    
+  }
+
+  /* RIGHT BLOCK */
+  .right-block {
+    flex-shrink: 0;
+    width: 165px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-top: 28px;
+  }
+  .info-lbl {
+    background: #4cae4c;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 900;
+    padding: 3px 8px;
+    text-align: center;
+    letter-spacing: 0.3px;
+
+  }
+  .info-val {
+    border: 1.5px solid #aaa;
+    border-top: none;
+    height: 22px;
+    border: 1.5px solid #46a12a;
+    border-width: 2px;
+  }
+
+  /* Second address row */
+  .addr-row2 {
+    height: 24px;
+    /* border: 1.5px solid #aaa; */
+    margin-bottom: 6px;
+    width: 74%;
+    border: 1.5px solid #46a12a;
+    border-width: 2px;
+    padding-top: -20px;
+  }
+
+  /* Suburb / Prop No */
+  .row-suburb {
+    display: flex;
+    border: 1.5px solid #aaa;
+    height: 26px;
+  }
+  .s-lbl {
+    background: #4cae4c;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 900;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .s-val { flex: 1; border-left: 1.5px solid #aaa; }
+  .p-lbl {
+    background: #4cae4c;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 900;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-left: 1.5px solid #aaa;
+  }
+  .p-val { width: 112px; border-left: 1.5px solid #aaa; }
+
+  /* Data rows */
+  .data-row {
+    display: flex;
+    border: 1.5px solid #aaa;
+    border-top: none;
+  }
+  .dc {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .dc + .dc { border-left: 1.5px solid #aaa; }
+  .dc-h {
+    background: #4cae4c;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 900;
+    padding: 3px 5px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .dc-v { height: 28px; }
+
+  /* Arrow/note cell */
+  .note-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-left: 1.5px solid #aaa;
+    padding: 3px 10px;
+    min-width: 98px;
+    flex-shrink: 0;
+    gap: 1px;
+  }
+  .note-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arr {
+  font-size: 60px;        /* Much bigger */
+  color: #cc0000;
+  font-weight: 900;
+  line-height: 0.6;        /* Reduced line height to make arrow shorter */
+  transform: scale(1, 0.6); /* Squeezes it vertically to make it shorter but thicker */
+  display: inline-block;
+  margin-top: -5px;        /* Fine-tune alignment */
+  margin-bottom: -5px;
+}
+
+
+  .note-txt {
+    font-size: 9px;
+    font-weight: 900;
+    color: #000;
+    text-align: center;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  /* Footer */
+  .bill-footer {
+    font-size: 11.5px;
+    font-weight: 900;
+    text-align: center;
+    color: #000;
+    margin-top: 9px;
+    letter-spacing: 0.2px;
+  }
+
+  /* ══════════════════════════════════════════════════
+     STUB LAYOUT
+  ══════════════════════════════════════════════════ */
+  .stub-inner {
+    display: flex;
+    height: 100%;
+    position: relative;
+    z-index: 1;
+  }
+  .stub-content { flex: 1; }
+  .stub-rstrip {
+    width: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stub-rstrip span {
+    writing-mode: vertical-rl;
+    font-size: 7.5px;
+    font-weight: 900;
+    letter-spacing: 3.5px;
+    color: #111;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .stub-title {
+    font-size: 10.5px;
+    font-weight: 900;
+    text-align: center;
+    color: #000;
+    line-height: 1.35;
+    margin-bottom: 7px;
+  }
+  .st-lbl {
+    background: #4cae4c;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 3px 6px;
+    text-align: center;
+  }
+  .st-val {
+    border: 1.5px solid #aaa;
+    border-top: none;
+    height: 22px;
+    margin-bottom: 5px;
+    border: 1.5px solid #46a12a;
+    border-width: 2px;
+  }
+  .st-val-tall {
+    border: 1.5px solid #aaa;
+    height: 54px;
+    margin-bottom: 5px;
+  }
+  .st-total-lbl {
+    background: #4cae4c;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 3px 6px;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .st-total-val {
+    border: 1.5px solid #aaa;
+    border-top: none;
+    height: 28px;
+  }
+  .st-footer {
+    font-size: 7px;
+    font-weight: 700;
+    text-align: center;
+    color: #000;
+    margin-top: 8px;
+    line-height: 1.45;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="ticket">
+
+  <!-- ══ WATERMARK (behind main bill) ══ -->
+  <div class="watermark">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="97" fill="none" stroke="#000" stroke-width="5"/>
+      <circle cx="100" cy="100" r="90" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <circle cx="100" cy="100" r="84" fill="#1b5e20"/>
+      <!-- Eagle wings -->
+      <path d="M78,92 Q52,68 36,78 Q58,102 80,100Z" fill="#4cae4c"/>
+      <path d="M122,92 Q148,68 164,78 Q142,102 120,100Z" fill="#4cae4c"/>
+      <!-- Eagle body -->
+      <ellipse cx="100" cy="97" rx="21" ry="15" fill="#4cae4c"/>
+      <!-- Eagle head -->
+      <circle cx="100" cy="74" r="11" fill="#4cae4c"/>
+      <!-- Beak -->
+      <polygon points="100,80 108,84 100,88" fill="#388e3c"/>
+      <!-- Tail feathers -->
+      <path d="M88,112 Q100,132 112,112 Q100,122 88,112Z" fill="#4cae4c"/>
+      <!-- Shield on chest -->
+      <path d="M93,91 L93,109 Q100,115 107,109 L107,91 Q100,86 93,91Z" fill="#1b5e20"/>
+      <path d="M96,93 L96,107 Q100,111 104,107 L104,93 Q100,89 96,93Z" fill="#4cae4c"/>
+      <!-- Dots decorative -->
+      <circle cx="58" cy="102" r="2.5" fill="#4cae4c"/>
+      <circle cx="142" cy="102" r="2.5" fill="#4cae4c"/>
+      <!-- Text top arc -->
+      <path id="wt" d="M20,100 A80,80 0 0,1 180,100" fill="none"/>
+      <text font-size="10.5" font-weight="900" fill="#4cae4c" font-family="Arial">
+        <textPath href="#wt" startOffset="4%">LA NKWANTANANG-MADINA</textPath>
+      </text>
+      <!-- Text bottom arc -->
+      <path id="wb" d="M20,100 A80,80 0 0,0 180,100" fill="none"/>
+      <text font-size="10" font-weight="900" fill="#4cae4c" font-family="Arial">
+        <textPath href="#wb" startOffset="12%">MUNICIPAL ASSEMBLY</textPath>
+      </text>
+    </svg>
+  </div>
+
+  <!-- LEFT SIDE STRIP -->
+  <div class="side-strip">
+    <span>Property&nbsp;Rate</span>
+  </div>
+
+  <!-- ══ MAIN BILL ══ -->
+  <div class="bill-main">
+
+    <div class="main-header">
+
+      <!-- Logo + Serial No -->
+      <div class="left-block">
+        <div class="serial-no-lbl">SERIAL NO:</div>
+        <div class="logo-circle">
+          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background green fill -->
+            <circle cx="100" cy="100" r="100" fill="#2e7d32"/>
+            <!-- Outer gold ring -->
+            <circle cx="100" cy="100" r="95" fill="none" stroke="#f9a825" stroke-width="5"/>
+            <!-- Inner gold ring -->
+            <circle cx="100" cy="100" r="86" fill="none" stroke="#f9a825" stroke-width="2"/>
+            <!-- Dark inner fill -->
+            <circle cx="100" cy="100" r="84" fill="#1b5e20"/>
+
+            <!-- Eagle left wing -->
+            <path d="M78,93 Q52,68 34,78 Q56,104 80,100Z" fill="#f9a825"/>
+            <!-- Eagle right wing -->
+            <path d="M122,93 Q148,68 166,78 Q144,104 120,100Z" fill="#f9a825"/>
+            <!-- Eagle body -->
+            <ellipse cx="100" cy="97" rx="21" ry="16" fill="#f9a825"/>
+            <!-- Eagle head -->
+            <circle cx="100" cy="73" r="11" fill="#f9a825"/>
+            <!-- Beak -->
+            <polygon points="100,80 109,85 100,89" fill="#e65100"/>
+            <!-- Eye -->
+            <circle cx="104" cy="70" r="2.5" fill="#1b5e20"/>
+            <!-- Tail -->
+            <path d="M88,113 Q100,134 112,113 Q100,124 88,113Z" fill="#f9a825"/>
+            <!-- Shield on chest (dark) -->
+            <path d="M93,91 L93,110 Q100,116 107,110 L107,91 Q100,86 93,91Z" fill="#1b5e20"/>
+            <!-- Shield inner (gold) -->
+            <path d="M96,93 L96,108 Q100,112 104,108 L104,93 Q100,89 96,93Z" fill="#f9a825"/>
+
+            <!-- Decorative stars -->
+            <polygon points="56,95 57.5,100 62,100 58.5,103 59.5,108 56,105 52.5,108 53.5,103 50,100 54.5,100" fill="#f9a825" transform="scale(0.7) translate(25,35)"/>
+            <polygon points="144,95 145.5,100 150,100 146.5,103 147.5,108 144,105 140.5,108 141.5,103 138,100 142.5,100" fill="#f9a825" transform="scale(0.7) translate(-26,35)"/>
+
+            <!-- Top text arc -->
+            <path id="logo-top" d="M16,100 A84,84 0 0,1 184,100" fill="none"/>
+            <text font-size="11" font-weight="900" fill="#f9a825" font-family="Arial">
+              <textPath href="#logo-top" startOffset="3%">LA NKWANTANANG-MADINA</textPath>
+            </text>
+            <!-- Bottom text arc -->
+            <path id="logo-bot" d="M16,100 A84,84 0 0,0 184,100" fill="none"/>
+            <text font-size="10.5" font-weight="900" fill="#f9a825" font-family="Arial">
+              <textPath href="#logo-bot" startOffset="12%">MUNICIPAL ASSEMBLY</textPath>
+            </text>
+          </svg>
+        </div>
+        
+      </div>
+
+      <!-- Assembly name + PROPERTY RATE BILL badge + name field -->
+      <div class="center-block">
+        <div class="assembly-name">LA NKWANTANANG-MADINA MUNICIPAL ASSEMBLY</div>
+        <div class="bill-badge">PROPERTY RATE BILL</div>
+        <div class="name-field"></div>
+      </div>
+
+      <!-- Account Number + Bill Date -->
+      <div class="right-block">
+        <div>
+          <div class="info-lbl">ACCOUNT NUMBER</div>
+          <div class="info-val"></div>
+        </div>
+        <div>
+          <div class="info-lbl">BILL DATE</div>
+          <div class="info-val"></div>
+        </div>
+      </div>
+
+    </div><!-- /.main-header -->
+
+    <!-- Second owner/address row -->
+    <div class="addr-row2"></div>
+
+    <!-- Suburb / Prop No row -->
+    <div class="row-suburb">
+      <div class="s-lbl">SUBURB</div>
+      <div class="s-val"></div>
+      <div class="p-lbl">PROP. NO</div>
+      <div class="p-val"></div>
+    </div>
+
+    <!-- Row 1 -->
+    <div class="data-row">
+      <div class="dc">
+        <div class="dc-h">RATEABLE VALUE</div>
+        <div class="dc-v"></div>
+      </div>
+      <div class="dc">
+        <div class="dc-h">RATE IMPOST</div>
+        <div class="dc-v"></div>
+      </div>
+      <div class="dc">
+        <div class="dc-h">RATE/AMOUNT CHARGED</div>
+        <div class="dc-v"></div>
+      </div>
+      <div class="dc">
+        <div class="dc-h">ARREARS</div>
+        <div class="dc-v"></div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="data-row">
+      <div class="dc">
+        <div class="dc-h">PAYMENT</div>
+        <div class="dc-v"></div>
+      </div>
+      <div class="dc">
+        <div class="dc-h">ADJUSTMENT</div>
+        <div class="dc-v"></div>
+      </div>
+      <div class="dc">
+        <div class="dc-h">TOTAL AMOUNT</div>
+        <div class="dc-v"></div>
+      </div>
+      <div class="note-cell" style="display: flex;">
+        <div class="arr">&#8594;</div>
+        <div class="note-txt">PLEASE NOTE<br>REVERSE SIDE</div>
+      </div>
+    </div>
+
+    <div class="bill-footer">PLEASE PRESENT THIS BILL WHEN MAKING PAYMENT</div>
+
+  </div><!-- /.bill-main -->
+
+  <!-- RIGHT SIDE STRIP -->
+  <div class="side-strip right">
+    <span>Property&nbsp;Rate</span>
+  </div>
+
+  <!-- PERFORATED SEPARATOR -->
+  <div class="sep"></div>
+
+  <!-- ══ STUB ══ -->
+  <div class="bill-stub">
+
+    <!-- Stub watermark -->
+    <div class="stub-watermark">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="97" fill="none" stroke="#000" stroke-width="5"/>
+        <circle cx="100" cy="100" r="84" fill="#1b5e20"/>
+        <path d="M78,92 Q52,68 36,78 Q58,102 80,100Z" fill="#4cae4c"/>
+        <path d="M122,92 Q148,68 164,78 Q142,102 120,100Z" fill="#4cae4c"/>
+        <ellipse cx="100" cy="97" rx="21" ry="15" fill="#4cae4c"/>
+        <circle cx="100" cy="74" r="11" fill="#4cae4c"/>
+        <path id="sw-t" d="M20,100 A80,80 0 0,1 180,100" fill="none"/>
+        <text font-size="10.5" font-weight="900" fill="#4cae4c" font-family="Arial">
+          <textPath href="#sw-t" startOffset="4%">LA NKWANTANANG-MADINA</textPath>
+        </text>
+        <path id="sw-b" d="M20,100 A80,80 0 0,0 180,100" fill="none"/>
+        <text font-size="10" font-weight="900" fill="#4cae4c" font-family="Arial">
+          <textPath href="#sw-b" startOffset="12%">MUNICIPAL ASSEMBLY</textPath>
+        </text>
+      </svg>
+    </div>
+
+    <div class="stub-inner">
+      <div class="stub-content">
+        <div class="stub-title">LA NKWANTANANG-MADINA<br>MUNICIPAL ASSEMBLY</div>
+
+        <div class="st-lbl">ACCOUNT NUMBER</div>
+        <div class="st-val"></div>
+
+        <div class="st-lbl">BILL DATE</div>
+        <div class="st-val"></div>
+
+        <!-- Tall property/name blank area -->
+        <div class="st-val-tall"></div>
+
+        <div class="st-total-lbl">TOTAL AMOUNT DUE</div>
+        <div class="st-total-val"></div>
+
+        <div class="st-footer">PLEASE PRESENT THIS BILL WHEN MAKING PAYMENT</div>
+      </div>
+
+      <div class="stub-rstrip">
+        <span>Property&nbsp;Rate</span>
+      </div>
+    </div>
+  </div><!-- /.bill-stub -->
+
+</div><!-- /.ticket -->
+</div><!-- /.page -->
+</body>
+</html>

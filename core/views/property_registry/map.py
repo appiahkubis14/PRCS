@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Sum, Count, Avg, Q, F
-from core.models import Property, Zone, District, Region, PropertyType, Bill, Payment, Bops
+from core.models import Property, Zone, District, Region, PropertyType, Bops
 import json
 from django.utils import timezone
 from django.core.serializers import serialize

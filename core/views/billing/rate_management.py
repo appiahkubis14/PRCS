@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models import Q
 import json
 from datetime import datetime
-from core.models import Bill, Property, BillingCycle, PropertyType, TaxRate, Zone
+from core.models import Property, PropertyType, TaxRate, Zone
 def rate_management_page(request):
     """Render the rate management page"""
     context = {

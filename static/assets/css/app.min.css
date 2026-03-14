@@ -329,7 +329,7 @@ body[data-layout=horizontal] .footer {
 }
 
 .sidebar-left {
-    width: 265px;
+    width: 185px;
     z-index: 1001;
     background: var(--bs-white);
     bottom: 0;
@@ -339,7 +339,7 @@ body[data-layout=horizontal] .footer {
 }
 
 .main-content {
-    /* margin-left: 265px; */
+    margin-left: 165px;
     overflow: hidden
 }
 

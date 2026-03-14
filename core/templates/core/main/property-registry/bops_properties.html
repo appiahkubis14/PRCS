@@ -1,0 +1,991 @@
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title">BOP Properties Management</h3>
+          <p class="card-subtitle">View and manage Business Operating Permit properties</p>
+        </div>
+        <div>
+          <button type="button" class="btn btn-success" id="addPropertyBtn">
+            <i class="fas fa-plus"></i> Add New Property
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="bopsPropertiesTable" class="table table-striped table-bordered table-hover" style="width:100%">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Account Number</th>
+                <th>Business Name</th>
+                <th>Owner Name</th>
+                <th>Business Category</th>
+                <th>Business Class</th>
+                <th>Location</th>
+                <th>Street Name</th>
+                <th>Phone Number</th>
+                <th>Division</th>
+                <th>Block</th>
+                <th>Flat Rate (GHS)</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- DataTables will populate this -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Property Modal -->
+<div class="modal fade" id="propertyModal" tabindex="-1" aria-labelledby="propertyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-l modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="propertyModalLabel">Add New Property</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="propertyForm">
+          <input type="hidden" id="propertyId" name="propertyId">
+          
+          <!-- Business Information -->
+          <div class="card mb-3">
+            <div class="card-header  text-white">
+              <h6 class="mb-0">Business Information</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="account_number" class="form-label">Account Number <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="account_number" name="account_number" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="business_name" class="form-label">Business Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="business_name" name="business_name" required>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="business_category" class="form-label">Business Category</label>
+                  <input type="text" class="form-control" id="business_category" name="business_category">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="business_class" class="form-label">Business Class</label>
+                  <input type="text" class="form-control" id="business_class" name="business_class">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Location Details -->
+          <div class="card mb-3">
+            <div class="card-header text-white">
+              <h6 class="mb-0">Location Details</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="location" class="form-label">Location</label>
+                  <input type="text" class="form-control" id="location" name="location">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="street_name" class="form-label">Street Name</label>
+                  <input type="text" class="form-control" id="street_name" name="street_name">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label for="house_number" class="form-label">House Number</label>
+                  <input type="text" class="form-control" id="house_number" name="house_number">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="digital_address" class="form-label">Digital Address</label>
+                  <input type="text" class="form-control" id="digital_address" name="digital_address">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="address" class="form-label">Full Address</label>
+                  <input type="text" class="form-control" id="address" name="address">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label for="division" class="form-label">Division</label>
+                  <input type="text" class="form-control" id="division" name="division">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="block" class="form-label">Block</label>
+                  <input type="text" class="form-control" id="block" name="block">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="structure_id" class="form-label">Structure ID</label>
+                  <input type="text" class="form-control" id="structure_id" name="structure_id">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Contact Information -->
+          <div class="card mb-3">
+            <div class="card-header  text-white">
+              <h6 class="mb-0">Contact Information</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="owner_name" class="form-label">Owner Name</label>
+                  <input type="text" class="form-control" id="owner_name" name="owner_name">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="phone_number" class="form-label">Phone Number</label>
+                  <input type="text" class="form-control" id="phone_number" name="phone_number">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="phone_number_primary" class="form-label">Primary Phone</label>
+                  <input type="text" class="form-control" id="phone_number_primary" name="phone_number_primary">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="business_email" class="form-label">Business Email</label>
+                  <input type="email" class="form-control" id="business_email" name="business_email">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="email" class="form-label">Personal Email</label>
+                  <input type="email" class="form-control" id="email" name="email">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Geographic Data -->
+          <div class="card mb-3">
+            <div class="card-header  text-dark">
+              <h6 class="mb-0">Geographic Data</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label for="centroid" class="form-label">Centroid</label>
+                  <input type="text" class="form-control" id="centroid" name="centroid" placeholder="lat,lon">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="lat" class="form-label">Latitude</label>
+                  <input type="number" step="any" class="form-control" id="lat" name="lat">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="lng" class="form-label">Longitude</label>
+                  <input type="number" step="any" class="form-control" id="lng" name="lng">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Additional Information -->
+          <div class="card mb-3">
+            <div class="card-header  text-white">
+              <h6 class="mb-0">Additional Information</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="flat_rate" class="form-label">Flat Rate (GHS)</label>
+                  <input type="number" step="0.01" class="form-control" id="flat_rate" name="flat_rate">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="source_sheet" class="form-label">Source Sheet</label>
+                  <input type="text" class="form-control" id="source_sheet" name="source_sheet">
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="savePropertyBtn">Save Property</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Property Modal -->
+<div class="modal fade" id="viewPropertyModal" tabindex="-1" aria-labelledby="viewPropertyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-l modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewPropertyModalLabel">Property Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="viewPropertyBody">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading property details...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="editFromViewBtn">Edit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="mt-3"></div>
+
+<script>
+// Wait for jQuery to be available
+(function() {
+  function initBopsPropertiesTable() {
+    if (typeof jQuery === 'undefined' || typeof window.$ === 'undefined') {
+      console.log('Waiting for jQuery...');
+      setTimeout(initBopsPropertiesTable, 100);
+      return;
+    }
+    
+    var $ = window.jQuery || window.$;
+    
+    $(document).ready(function () {
+      // Function to show messages
+      function showMessage(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-warning';
+        const messageHtml = `<div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`;
+        $('#messageContainer').html(messageHtml);
+        setTimeout(() => {
+          $('.alert').fadeOut();
+        }, 5000);
+      }
+
+      // Initialize DataTable
+      var table = $("#bopsPropertiesTable").DataTable({
+        paging: true,
+        searching: true,
+        ordering: true,
+        info: true,
+        responsive: true,
+        autoWidth: false,
+        processing: true,
+        serverSide: false,
+        lengthMenu: [10, 25, 50, 100],
+        pageLength: 25,
+        ajax: {
+          url: "/api/bops/properties/list/",
+          type: "GET",
+          dataType: "json",
+          dataSrc: function (json) {
+            console.log('API Response:', json);
+            if (json.error) {
+              showMessage('error', `Error: ${json.error}`);
+              return [];
+            }
+            if (!json.data || !Array.isArray(json.data)) {
+              console.error('Invalid data format:', json);
+              showMessage('error', 'Invalid data format received from server');
+              return [];
+            }
+            return json.data;
+          },
+          error: function (xhr, error, thrown) {
+            console.error('DataTables error:', error, thrown);
+            console.error('Response:', xhr.responseText);
+            let errorMsg = 'Unknown error';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            } else if (xhr.responseText) {
+              try {
+                const errorData = JSON.parse(xhr.responseText);
+                errorMsg = errorData.error || errorMsg;
+              } catch (e) {
+                errorMsg = xhr.responseText.substring(0, 200);
+              }
+            }
+            showMessage("error", `Error fetching properties: ${errorMsg}`);
+          }
+        },
+        dom: "Bfrtip",
+        buttons: [
+          {
+            extend: "copy",
+            text: '<i class="fas fa-copy"></i> Copy',
+            className: "btn btn-sm btn-outline-secondary",
+          },
+          {
+            extend: "csv",
+            text: '<i class="fas fa-file-csv"></i> CSV',
+            className: "btn btn-sm btn-outline-success",
+          },
+          {
+            extend: "excel",
+            text: '<i class="fas fa-file-excel"></i> Excel',
+            className: "btn btn-sm btn-outline-primary",
+          },
+          {
+            extend: "pdf",
+            text: '<i class="fas fa-file-pdf"></i> PDF',
+            className: "btn btn-sm btn-outline-danger",
+          },
+          {
+            text: '<i class="fas fa-trash"></i> Delete Selected',
+            className: "btn btn-sm btn-outline-danger",
+            action: function(e, dt, node, config) {
+              deleteSelectedProperties(dt);
+            }
+          }
+        ],
+        order: [[0, "desc"]],
+        columns: [
+          { 
+            data: 'id',
+            visible: false 
+          },
+          { 
+            data: 'account_number',
+            render: function(data, type, row) {
+              return `<strong>${data}</strong>`;
+            }
+          },
+          { data: 'business_name' },
+          { data: 'owner_name' },
+          { data: 'business_category' },
+          { data: 'business_class' },
+          { data: 'location' },
+          { data: 'street_name' },
+          { data: 'phone_number' },
+          { data: 'division' },
+            { data: 'block' },
+          { 
+            data: 'flat_rate',
+            render: function(data, type, row) {
+              if (data === null || data === undefined) return '-';
+              return parseFloat(data).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+          },
+          { 
+            data: 'created_at',
+            render: function(data, type, row) {
+              if (!data) return '-';
+              return data.split(' ')[0]; // Just show date
+            }
+          },
+          {
+            data: null,
+            orderable: false,
+            searchable: false,
+            render: function(data, type, row) {
+              return `
+                <div style="display: flex; gap: 5px; justify-content: center;">
+                  <button type="button" class="btn btn-sm btn-outline-primary view-property-btn" data-property-id="${row.id}" title="View Property">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-success edit-property-btn" data-property-id="${row.id}" title="Edit Property">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-property-btn" data-property-id="${row.id}" data-property-name="${row.business_name}" title="Delete Property">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              `;
+            }
+          }
+        ],
+        columnDefs: [
+          { targets: [0], visible: false }, // Hide ID column
+          { targets: [10], className: 'text-end' } // Right-align flat rate
+        ]
+      });
+
+      // Add Property button click
+      $('#addPropertyBtn').click(function() {
+        resetForm();
+        $('#propertyModalLabel').text('Add New Property');
+        $('#propertyModal').modal('show');
+      });
+
+      // Save Property button click
+      $('#savePropertyBtn').click(function() {
+        saveProperty();
+      });
+
+      // View Property button click
+      $(document).on('click', '.view-property-btn', function() {
+        const propertyId = $(this).data('property-id');
+        viewProperty(propertyId);
+      });
+
+      // Edit Property button click
+      $(document).on('click', '.edit-property-btn', function() {
+        const propertyId = $(this).data('property-id');
+        editProperty(propertyId);
+      });
+
+      // Edit from view modal button click
+      $('#editFromViewBtn').click(function() {
+        const propertyId = $(this).data('property-id');
+        $('#viewPropertyModal').modal('hide');
+        setTimeout(() => {
+          editProperty(propertyId);
+        }, 300);
+      });
+
+      // Delete Property button click
+      $(document).on('click', '.delete-property-btn', function() {
+        const propertyId = $(this).data('property-id');
+        const propertyName = $(this).data('property-name');
+        deleteProperty(propertyId, propertyName);
+      });
+
+      // Reset form when modal is hidden
+      $('#propertyModal').on('hidden.bs.modal', function() {
+        resetForm();
+      });
+
+      // Helper function to get CSRF token
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      // Reset form
+      function resetForm() {
+        $('#propertyForm')[0].reset();
+        $('#propertyId').val('');
+        $('#propertyModalLabel').text('Add New Property');
+      }
+
+      // Save property (create or update)
+      function saveProperty() {
+        // Validate required fields
+        const accountNumber = $('#account_number').val().trim();
+        const businessName = $('#business_name').val().trim();
+
+        if (!accountNumber) {
+          showMessage('error', 'Account number is required');
+          return;
+        }
+        if (!businessName) {
+          showMessage('error', 'Business name is required');
+          return;
+        }
+
+        // Collect form data
+        const formData = {
+          account_number: accountNumber,
+          business_name: businessName,
+          owner_name: $('#owner_name').val(),
+          business_category: $('#business_category').val(),
+          business_class: $('#business_class').val(),
+          location: $('#location').val(),
+          street_name: $('#street_name').val(),
+          house_number: $('#house_number').val(),
+          digital_address: $('#digital_address').val(),
+          address: $('#address').val(),
+          phone_number: $('#phone_number').val(),
+          phone_number_primary: $('#phone_number_primary').val(),
+          business_email: $('#business_email').val(),
+          email: $('#email').val(),
+          division: $('#division').val(),
+          block: $('#block').val(),
+          structure_id: $('#structure_id').val(),
+          centroid: $('#centroid').val(),
+          lat: $('#lat').val(),
+          lng: $('#lng').val(),
+          flat_rate: $('#flat_rate').val(),
+          source_sheet: $('#source_sheet').val(),
+        };
+
+        // Clean empty values
+        Object.keys(formData).forEach(key => {
+          if (formData[key] === '') {
+            delete formData[key];
+          }
+        });
+
+        const propertyId = $('#propertyId').val();
+        const isEdit = !!propertyId;
+
+        // Show loading
+        Swal.fire({
+          title: isEdit ? 'Updating...' : 'Creating...',
+          text: isEdit ? 'Please wait while the property is being updated.' : 'Please wait while the property is being created.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // Determine URL and method
+        const url = isEdit ? `/api/bops/properties/${propertyId}/update/` : '/api/bops/properties/create/';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        // Send request
+        $.ajax({
+          url: url,
+          type: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          data: JSON.stringify(formData),
+          success: function(response) {
+            Swal.close();
+            $('#propertyModal').modal('hide');
+            showMessage('success', isEdit ? 'Property updated successfully' : 'Property created successfully');
+            table.ajax.reload();
+          },
+          error: function(xhr) {
+            Swal.close();
+            let errorMsg = isEdit ? 'Error updating property' : 'Error creating property';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            } else if (xhr.responseText) {
+              try {
+                const errorData = JSON.parse(xhr.responseText);
+                errorMsg = errorData.error || errorMsg;
+              } catch (e) {
+                errorMsg = xhr.responseText.substring(0, 200);
+              }
+            }
+            showMessage('error', errorMsg);
+          }
+        });
+      }
+
+      // View property
+      function viewProperty(propertyId) {
+        $('#viewPropertyModal').modal('show');
+        $('#viewPropertyBody').html(`
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading property details...</p>
+          </div>
+        `);
+        
+        // Store property ID for edit button
+        $('#editFromViewBtn').data('property-id', propertyId);
+
+        $.ajax({
+          url: `/api/bops/properties/${propertyId}/`,
+          type: 'GET',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          success: function(property) {
+            let html = `
+              <div class="container-fluid">
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="card mb-3">
+                      <div class="card-header  text-white">
+                        <h6 class="mb-0">Business Information</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-4"><strong>Account Number:</strong></div>
+                          <div class="col-md-8">${property.account_number || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Business Name:</strong></div>
+                          <div class="col-md-8">${property.business_name || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Business Category:</strong></div>
+                          <div class="col-md-8">${property.business_category || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Business Class:</strong></div>
+                          <div class="col-md-8">${property.business_class || '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                      <div class="card-header  text-white">
+                        <h6 class="mb-0">Location Details</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-4"><strong>Location:</strong></div>
+                          <div class="col-md-8">${property.location || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Street Name:</strong></div>
+                          <div class="col-md-8">${property.street_name || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>House Number:</strong></div>
+                          <div class="col-md-8">${property.house_number || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Digital Address:</strong></div>
+                          <div class="col-md-8">${property.digital_address || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Full Address:</strong></div>
+                          <div class="col-md-8">${property.address || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Division:</strong></div>
+                          <div class="col-md-8">${property.division || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Block:</strong></div>
+                          <div class="col-md-8">${property.block || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Structure ID:</strong></div>
+                          <div class="col-md-8">${property.structure_id || '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                      <div class="card-header  text-white">
+                        <h6 class="mb-0">Contact Information</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-4"><strong>Owner Name:</strong></div>
+                          <div class="col-md-8">${property.owner_name || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Phone Number:</strong></div>
+                          <div class="col-md-8">${property.phone_number || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Primary Phone:</strong></div>
+                          <div class="col-md-8">${property.phone_number_primary || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Business Email:</strong></div>
+                          <div class="col-md-8">${property.business_email || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Personal Email:</strong></div>
+                          <div class="col-md-8">${property.email || '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                      <div class="card-header  text-dark">
+                        <h6 class="mb-0">Geographic Data</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-4"><strong>Centroid:</strong></div>
+                          <div class="col-md-8">${property.centroid || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Latitude:</strong></div>
+                          <div class="col-md-8">${property.lat || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Longitude:</strong></div>
+                          <div class="col-md-8">${property.lng || '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                      <div class="card-header  text-white">
+                        <h6 class="mb-0">Additional Information</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-4"><strong>Flat Rate (GHS):</strong></div>
+                          <div class="col-md-8">${property.flat_rate ? property.flat_rate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Source Sheet:</strong></div>
+                          <div class="col-md-8">${property.source_sheet || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Created At:</strong></div>
+                          <div class="col-md-8">${property.created_at || '-'}</div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4"><strong>Last Updated:</strong></div>
+                          <div class="col-md-8">${property.updated_at || '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+            
+            $('#viewPropertyBody').html(html);
+          },
+          error: function(xhr) {
+            let errorMsg = 'Error loading property details';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            }
+            $('#viewPropertyBody').html(`
+              <div class="alert alert-danger m-3">
+                <i class="fas fa-exclamation-triangle"></i>
+                ${errorMsg}
+              </div>
+            `);
+          }
+        });
+      }
+
+      // Edit property
+      function editProperty(propertyId) {
+        // Show loading in modal
+        $('#propertyModal').modal('show');
+        $('#propertyModalLabel').text('Edit Property');
+        $('#propertyForm').hide();
+        $('#propertyModal .modal-body').prepend(`
+          <div class="text-center py-5" id="edit-loading">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading property data...</p>
+          </div>
+        `);
+
+        $.ajax({
+          url: `/api/bops/properties/${propertyId}/`,
+          type: 'GET',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          success: function(property) {
+            // Remove loading
+            $('#edit-loading').remove();
+            $('#propertyForm').show();
+            
+            // Populate form
+            $('#propertyId').val(property.id);
+            $('#account_number').val(property.account_number || '');
+            $('#business_name').val(property.business_name || '');
+            $('#owner_name').val(property.owner_name || '');
+            $('#business_category').val(property.business_category || '');
+            $('#business_class').val(property.business_class || '');
+            $('#location').val(property.location || '');
+            $('#street_name').val(property.street_name || '');
+            $('#house_number').val(property.house_number || '');
+            $('#digital_address').val(property.digital_address || '');
+            $('#address').val(property.address || '');
+            $('#phone_number').val(property.phone_number || '');
+            $('#phone_number_primary').val(property.phone_number_primary || '');
+            $('#business_email').val(property.business_email || '');
+            $('#email').val(property.email || '');
+            $('#division').val(property.division || '');
+            $('#block').val(property.block || '');
+            $('#flat_rate').val(property.flat_rate || '');
+            $('#structure_id').val(property.structure_id || '');
+            $('#centroid').val(property.centroid || '');
+            $('#lat').val(property.lat || '');
+            $('#lng').val(property.lng || '');
+            $('#source_sheet').val(property.source_sheet || '');
+          },
+          error: function(xhr) {
+            $('#edit-loading').remove();
+            let errorMsg = 'Error loading property data';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMsg = xhr.responseJSON.error;
+            }
+            showMessage('error', errorMsg);
+            $('#propertyModal').modal('hide');
+          }
+        });
+      }
+
+      // Delete property
+      function deleteProperty(propertyId, propertyName) {
+        Swal.fire({
+          title: 'Delete Property?',
+          html: `Are you sure you want to delete property <strong>${propertyName || propertyId}</strong>?`,
+          text: "This action cannot be undone.",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, delete it!',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+              title: 'Deleting...',
+              text: 'Please wait while the property is being deleted.',
+              allowOutsideClick: false,
+              didOpen: () => {
+                Swal.showLoading();
+              }
+            });
+
+            $.ajax({
+              url: `/api/bops/properties/${propertyId}/delete/`,
+              type: 'DELETE',
+              headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+              },
+              success: function(response) {
+                Swal.close();
+                showMessage('success', 'Property deleted successfully');
+                table.ajax.reload();
+              },
+              error: function(xhr) {
+                Swal.close();
+                let errorMsg = 'Error deleting property';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                  errorMsg = xhr.responseJSON.error;
+                }
+                showMessage('error', errorMsg);
+              }
+            });
+          }
+        });
+      }
+
+      // Delete selected properties
+      function deleteSelectedProperties(dt) {
+        const selectedRows = dt.rows({ selected: true }).data();
+        
+        if (selectedRows.length === 0) {
+          showMessage('warning', 'Please select properties to delete');
+          return;
+        }
+
+        const propertyIds = selectedRows.map(row => row.id).toArray();
+        const propertyNames = selectedRows.map(row => row.business_name).toArray();
+
+        Swal.fire({
+          title: 'Delete Selected Properties?',
+          html: `Are you sure you want to delete <strong>${propertyIds.length}</strong> selected propert${propertyIds.length > 1 ? 'ies' : 'y'}?`,
+          text: "This action cannot be undone.",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, delete them!',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+              title: 'Deleting...',
+              text: 'Please wait while the properties are being deleted.',
+              allowOutsideClick: false,
+              didOpen: () => {
+                Swal.showLoading();
+              }
+            });
+
+            $.ajax({
+              url: '/api/bops/properties/bulk-delete/',
+              type: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+              },
+              data: JSON.stringify({ property_ids: propertyIds }),
+              success: function(response) {
+                Swal.close();
+                showMessage('success', response.message || `${propertyIds.length} properties deleted successfully`);
+                table.ajax.reload();
+              },
+              error: function(xhr) {
+                Swal.close();
+                let errorMsg = 'Error deleting properties';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                  errorMsg = xhr.responseJSON.error;
+                }
+                showMessage('error', errorMsg);
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+  
+  // Start initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initBopsPropertiesTable, 500);
+    });
+  } else {
+    setTimeout(initBopsPropertiesTable, 500);
+  }
+})();
+</script>
+
+<style>
+  #bopsPropertiesTable tbody tr td {
+    vertical-align: middle;
+  }
+  
+  .btn-group .btn {
+    margin: 0 1px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .btn-group {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  
+  .badge {
+    font-size: 0.875rem;
+    padding: 0.35em 0.65em;
+  }
+  
+  .dataTables_wrapper .dt-buttons {
+    margin-bottom: 15px;
+  }
+  
+  .card-header.bg-primary, .card-header.bg-success, 
+  .card-header.bg-info, .card-header.bg-warning, 
+  .card-header.bg-secondary {
+    padding: 0.75rem 1.25rem;
+  }
+  
+  .modal-xl {
+    max-width: 90%;
+  }
+  
+  @media (min-width: 1200px) {
+    .modal-xl {
+      max-width: 1140px;
+    }
+  }
+</style>
+
+{% endblock %}

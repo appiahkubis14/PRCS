@@ -10,7 +10,7 @@ import json
 from django.http import HttpRequest
 from django.utils import timezone
 from datetime import datetime
-from core.models import Bill, Property, BillingCycle, TaxRate, Bops, BopsBills
+from core.models import Property, TaxRate, Bops, BopsBills
 
 
 def bill_generation_page(request):
@@ -21,94 +21,94 @@ def bill_generation_page(request):
     }
     return render(request, 'core/main/billing/bill-generation.html', context)
 
-def get_bills(request):
-    """Get all bills for DataTable"""
-    try:
-        # Get pagination parameters from DataTables
-        draw = int(request.GET.get('draw', 1))
-        start = int(request.GET.get('start', 0))
-        length = int(request.GET.get('length', 10))
-        search_value = request.GET.get('search[value]', '')
+# def get_bills(request):
+#     """Get all bills for DataTable"""
+#     try:
+#         # Get pagination parameters from DataTables
+#         draw = int(request.GET.get('draw', 1))
+#         start = int(request.GET.get('start', 0))
+#         length = int(request.GET.get('length', 10))
+#         search_value = request.GET.get('search[value]', '')
         
-        # Base queryset
-        bills = Bill.objects.select_related(
-            'property', 
-            'billing_cycle', 
-            'created_by'
-        ).all()
+#         # Base queryset
+#         bills = Bill.objects.select_related(
+#             'property', 
+#             'billing_cycle', 
+#             'created_by'
+#         ).all()
         
-        # Apply search filter
-        if search_value:
-            bills = bills.filter(
-                Q(bill_number__icontains=search_value) |
-                Q(property__property_id__icontains=search_value) |
-                Q(property__address__icontains=search_value) |
-                Q(status__icontains=search_value)
-            )
+#         # Apply search filter
+#         if search_value:
+#             bills = bills.filter(
+#                 Q(bill_number__icontains=search_value) |
+#                 Q(property__property_id__icontains=search_value) |
+#                 Q(property__address__icontains=search_value) |
+#                 Q(status__icontains=search_value)
+#             )
         
-        # Get total count
-        total_records = bills.count()
+#         # Get total count
+#         total_records = bills.count()
         
-        # Apply ordering and pagination
-        order_column = int(request.GET.get('order[0][column]', 0))
-        order_dir = request.GET.get('order[0][dir]', 'asc')
+#         # Apply ordering and pagination
+#         order_column = int(request.GET.get('order[0][column]', 0))
+#         order_dir = request.GET.get('order[0][dir]', 'asc')
         
-        # Map column index to field name
-        column_mapping = {
-            0: 'id',
-            1: 'bill_number',
-            2: 'property__property_id',
-            3: 'property__address',
-            4: 'billing_cycle__name',
-            5: 'total_amount',
-            6: 'status',
-            7: 'generated_date',
-            8: 'due_date'
-        }
+#         # Map column index to field name
+#         column_mapping = {
+#             0: 'id',
+#             1: 'bill_number',
+#             2: 'property__property_id',
+#             3: 'property__address',
+#             4: 'billing_cycle__name',
+#             5: 'total_amount',
+#             6: 'status',
+#             7: 'generated_date',
+#             8: 'due_date'
+#         }
         
-        order_field = column_mapping.get(order_column, 'id')
-        if order_dir == 'desc':
-            order_field = f'-{order_field}'
+#         order_field = column_mapping.get(order_column, 'id')
+#         if order_dir == 'desc':
+#             order_field = f'-{order_field}'
         
-        bills = bills.order_by(order_field)[start:start + length]
+#         bills = bills.order_by(order_field)[start:start + length]
         
-        # Prepare data for DataTables
-        data = []
-        for bill in bills:
-            # Get primary owner
-            primary_owner = bill.property.owners.filter(is_primary_owner=True).first()
-            owner_name = primary_owner.owner_name if primary_owner else 'N/A'
+#         # Prepare data for DataTables
+#         data = []
+#         for bill in bills:
+#             # Get primary owner
+#             primary_owner = bill.property.owners.filter(is_primary_owner=True).first()
+#             owner_name = primary_owner.owner_name if primary_owner else 'N/A'
             
-            data.append({
-                'id': bill.id,
-                'bill_number': bill.bill_number,
-                'property_id': bill.property.property_id,
-                'address': bill.property.address,
-                'owner_name': owner_name,
-                'billing_cycle': bill.billing_cycle.name if bill.billing_cycle else 'N/A',
-                'tax_amount': str(bill.tax_amount),
-                'penalty_amount': str(bill.penalty_amount),
-                'discount_amount': str(bill.discount_amount),
-                'total_amount': str(bill.total_amount),
-                'status': bill.status,
-                'generated_date': bill.generated_date.strftime('%Y-%m-%d %H:%M:%S'),
-                'due_date': bill.due_date.strftime('%Y-%m-%d'),
-                'created_by': bill.created_by.get_full_name() or bill.created_by.username,
-            })
+#             data.append({
+#                 'id': bill.id,
+#                 'bill_number': bill.bill_number,
+#                 'property_id': bill.property.property_id,
+#                 'address': bill.property.address,
+#                 'owner_name': owner_name,
+#                 'billing_cycle': bill.billing_cycle.name if bill.billing_cycle else 'N/A',
+#                 'tax_amount': str(bill.tax_amount),
+#                 'penalty_amount': str(bill.penalty_amount),
+#                 'discount_amount': str(bill.discount_amount),
+#                 'total_amount': str(bill.total_amount),
+#                 'status': bill.status,
+#                 'generated_date': bill.generated_date.strftime('%Y-%m-%d %H:%M:%S'),
+#                 'due_date': bill.due_date.strftime('%Y-%m-%d'),
+#                 'created_by': bill.created_by.get_full_name() or bill.created_by.username,
+#             })
         
-        response = {
-            'draw': draw,
-            'recordsTotal': total_records,
-            'recordsFiltered': total_records,
-            'data': data
-        }
+#         response = {
+#             'draw': draw,
+#             'recordsTotal': total_records,
+#             'recordsFiltered': total_records,
+#             'data': data
+#         }
         
-        return JsonResponse(response)
+#         return JsonResponse(response)
         
-    except Exception as e:
-        return JsonResponse({
-            'error': f'Error fetching bills: {str(e)}'
-        }, status=500)
+#     except Exception as e:
+#         return JsonResponse({
+#             'error': f'Error fetching bills: {str(e)}'
+#         }, status=500)
 
 def get_properties_for_billing(request):
     """Get properties that can be billed"""
@@ -1485,126 +1485,126 @@ COCOAREHAB Revenue Collection"""
 #             'error': f'Error sending message: {str(e)}'
 #         }, status=500)
 
-@csrf_exempt
-@require_http_methods(["POST"])
-def generate_bill(request):
-    """Generate a new bill with payment integration and SMS notification"""
-    try:
-        with transaction.atomic():
-            data = json.loads(request.body)
+# @csrf_exempt
+# @require_http_methods(["POST"])
+# def generate_bill(request):
+#     """Generate a new bill with payment integration and SMS notification"""
+#     try:
+#         with transaction.atomic():
+#             data = json.loads(request.body)
             
-            property_id = data.get('property_id')
-            billing_cycle_id = data.get('billing_cycle_id')
-            tax_amount = data.get('tax_amount')
-            penalty_amount = data.get('penalty_amount', 0)
-            discount_amount = data.get('discount_amount', 0)
-            notes = data.get('notes', '')
-            send_sms_notification = data.get('send_sms', True)  # Option to send SMS
+#             property_id = data.get('property_id')
+#             billing_cycle_id = data.get('billing_cycle_id')
+#             tax_amount = data.get('tax_amount')
+#             penalty_amount = data.get('penalty_amount', 0)
+#             discount_amount = data.get('discount_amount', 0)
+#             notes = data.get('notes', '')
+#             send_sms_notification = data.get('send_sms', True)  # Option to send SMS
             
-            # Validate required fields
-            if not all([property_id, billing_cycle_id, tax_amount]):
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Property, billing cycle, and tax amount are required'
-                }, status=400)
+#             # Validate required fields
+#             if not all([property_id, billing_cycle_id, tax_amount]):
+#                 return JsonResponse({
+#                     'success': False,
+#                     'error': 'Property, billing cycle, and tax amount are required'
+#                 }, status=400)
             
-            property_obj = Property.objects.get(id=property_id)
-            billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
+#             property_obj = Property.objects.get(id=property_id)
+#             billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
             
-            # Generate unique bill number
-            bill_number = f"BILL-{datetime.now().strftime('%Y%m%d')}-{Bill.objects.count() + 1:06d}"
+#             # Generate unique bill number
+#             bill_number = f"BILL-{datetime.now().strftime('%Y%m%d')}-{Bill.objects.count() + 1:06d}"
             
-            # Calculate total amount
-            total_amount = float(tax_amount) + float(penalty_amount) - float(discount_amount)
+#             # Calculate total amount
+#             total_amount = float(tax_amount) + float(penalty_amount) - float(discount_amount)
             
-            # Create bill
-            bill = Bill.objects.create(
-                bill_number=bill_number,
-                property=property_obj,
-                billing_cycle=billing_cycle,
-                tax_amount=tax_amount,
-                penalty_amount=penalty_amount,
-                discount_amount=discount_amount,
-                total_amount=total_amount,
-                status='generated',
-                due_date=billing_cycle.due_date,
-                created_by=request.user,
-                notes=notes
-            )
+#             # Create bill
+#             bill = Bill.objects.create(
+#                 bill_number=bill_number,
+#                 property=property_obj,
+#                 billing_cycle=billing_cycle,
+#                 tax_amount=tax_amount,
+#                 penalty_amount=penalty_amount,
+#                 discount_amount=discount_amount,
+#                 total_amount=total_amount,
+#                 status='generated',
+#                 due_date=billing_cycle.due_date,
+#                 created_by=request.user,
+#                 notes=notes
+#             )
             
-            # Generate payment links for different channels
-            host = request.get_host()
-            scheme = request.scheme
+#             # Generate payment links for different channels
+#             host = request.get_host()
+#             scheme = request.scheme
             
-            payment_links = {
-                'web': f"https://collections.kowri.app/130/{bill_number}",
-                'ussd': f"*227*130*{bill_number}#",
-                'qr_code': f"{scheme}://{host}/api/payments/qr/{bill_number}",
-                'direct_link': f"{scheme}://{host}/pay/bill/{bill_number}"
-            }
+#             payment_links = {
+#                 'web': f"https://collections.kowri.app/130/{bill_number}",
+#                 'ussd': f"*227*130*{bill_number}#",
+#                 'qr_code': f"{scheme}://{host}/api/payments/qr/{bill_number}",
+#                 'direct_link': f"{scheme}://{host}/pay/bill/{bill_number}"
+#             }
             
-            # Prepare response
-            response_data = {
-                'success': True,
-                'message': f'Bill {bill_number} generated successfully',
-                'bill_id': bill.id,
-                'bill_number': bill_number,
-                'total_amount': total_amount,
-                'payment_links': payment_links
-            }
+#             # Prepare response
+#             response_data = {
+#                 'success': True,
+#                 'message': f'Bill {bill_number} generated successfully',
+#                 'bill_id': bill.id,
+#                 'bill_number': bill_number,
+#                 'total_amount': total_amount,
+#                 'payment_links': payment_links
+#             }
             
-            # Send SMS notification if requested and property has contact info
-            if send_sms_notification and property_obj.contact_number:
-                # Get property owner name if available
-                owner_name = ""
-                if hasattr(property_obj, 'owner') and property_obj.owner:
-                    owner_name = property_obj.owner.get_full_name() if hasattr(property_obj.owner, 'get_full_name') else str(property_obj.owner)
+#             # Send SMS notification if requested and property has contact info
+#             if send_sms_notification and property_obj.contact_number:
+#                 # Get property owner name if available
+#                 owner_name = ""
+#                 if hasattr(property_obj, 'owner') and property_obj.owner:
+#                     owner_name = property_obj.owner.get_full_name() if hasattr(property_obj.owner, 'get_full_name') else str(property_obj.owner)
                 
-                # Generate nice message
-                sms_message = get_payment_message_template(bill, payment_links, owner_name)
+#                 # Generate nice message
+#                 sms_message = get_payment_message_template(bill, payment_links, owner_name)
                 
-                # Send SMS
-                sms_success, sms_response = send_sms(property_obj.contact_number, sms_message)
+#                 # Send SMS
+#                 sms_success, sms_response = send_sms(property_obj.contact_number, sms_message)
                 
-                # Add SMS status to response
-                response_data['sms_notification'] = {
-                    'sent': sms_success,
-                    'to': property_obj.contact_number,
-                    'response': sms_response if sms_success else str(sms_response)
-                }
+#                 # Add SMS status to response
+#                 response_data['sms_notification'] = {
+#                     'sent': sms_success,
+#                     'to': property_obj.contact_number,
+#                     'response': sms_response if sms_success else str(sms_response)
+#                 }
                 
-                # If SMS was sent successfully, update bill status
-                if sms_success:
-                    bill.status = 'notification_sent'
-                    bill.sent_date = timezone.now()
-                    bill.save()
-                    response_data['message'] = f'Bill {bill_number} generated and SMS notification sent'
+#                 # If SMS was sent successfully, update bill status
+#                 if sms_success:
+#                     bill.status = 'notification_sent'
+#                     bill.sent_date = timezone.now()
+#                     bill.save()
+#                     response_data['message'] = f'Bill {bill_number} generated and SMS notification sent'
             
-            return JsonResponse(response_data)
+#             return JsonResponse(response_data)
             
-    except Property.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Property not found'
-        }, status=404)
-    except BillingCycle.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Billing cycle not found'
-        }, status=404)
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'success': False,
-            'error': 'Invalid JSON data'
-        }, status=400)
-    except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        print(f"Error generating bill: {error_trace}")
-        return JsonResponse({
-            'success': False,
-            'error': f'Error generating bill: {str(e)}'
-        }, status=500)
+#     except Property.DoesNotExist:
+#         return JsonResponse({
+#             'success': False,
+#             'error': 'Property not found'
+#         }, status=404)
+#     except BillingCycle.DoesNotExist:
+#         return JsonResponse({
+#             'success': False,
+#             'error': 'Billing cycle not found'
+#         }, status=404)
+#     except json.JSONDecodeError:
+#         return JsonResponse({
+#             'success': False,
+#             'error': 'Invalid JSON data'
+#         }, status=400)
+#     except Exception as e:
+#         import traceback
+#         error_trace = traceback.format_exc()
+#         print(f"Error generating bill: {error_trace}")
+#         return JsonResponse({
+#             'success': False,
+#             'error': f'Error generating bill: {str(e)}'
+#         }, status=500)
 
 # Optional: Add a separate endpoint to resend SMS for existing bills
 @csrf_exempt
@@ -1668,3 +1668,268 @@ def resend_bill_sms(request, bill_id):
             'success': False,
             'error': f'Error: {str(e)}'
         }, status=500)
+    
+
+
+
+
+
+
+
+
+############################################################################################################################################################
+
+
+# views.py
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from datetime import datetime
+import json
+import traceback
+from weasyprint import HTML
+import tempfile
+import os
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def generate_bill(request):
+    print("Received request to generate bill")
+    """Generate a new bill with payment integration and SMS notification"""
+    try:
+        with transaction.atomic():
+            data = json.loads(request.body)
+            
+            property_id = data.get('property_id')
+            billing_cycle_id = data.get('billing_cycle_id')
+            tax_amount = data.get('tax_amount')
+            penalty_amount = data.get('penalty_amount', 0)
+            discount_amount = data.get('discount_amount', 0)
+            notes = data.get('notes', '')
+            send_sms_notification = data.get('send_sms', True)
+            
+            # Validate required fields
+            if not all([property_id, billing_cycle_id, tax_amount]):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Property, billing cycle, and tax amount are required'
+                }, status=400)
+            
+            property_obj = Property.objects.select_related('owner').get(id=property_id)
+            billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
+            
+            # Generate unique bill number
+            bill_number = f"BILL-{datetime.now().strftime('%Y%m%d')}-{Bill.objects.count() + 1:06d}"
+            
+            # Calculate total amount
+            total_amount = float(tax_amount) + float(penalty_amount) - float(discount_amount)
+            
+            # Create bill
+            bill = Bill.objects.create(
+                bill_number=bill_number,
+                property=property_obj,
+                billing_cycle=billing_cycle,
+                tax_amount=tax_amount,
+                penalty_amount=penalty_amount,
+                discount_amount=discount_amount,
+                total_amount=total_amount,
+                status='generated',
+                due_date=billing_cycle.due_date,
+                created_by=request.user,
+                notes=notes
+            )
+            
+            # Generate payment links
+            host = request.get_host()
+            scheme = request.scheme
+            
+            payment_links = {
+                'web': f"https://collections.kowri.app/130/{bill_number}",
+                'ussd': f"*227*130*{bill_number}#",
+                'qr_code': f"{scheme}://{host}/api/payments/qr/{bill_number}",
+                'direct_link': f"{scheme}://{host}/pay/bill/{bill_number}"
+            }
+            
+            response_data = {
+                'success': True,
+                'message': f'Bill {bill_number} generated successfully',
+                'bill_id': bill.id,
+                'bill_number': bill_number,
+                'total_amount': total_amount,
+                'payment_links': payment_links
+            }
+            
+            # Send SMS notification if requested
+            if send_sms_notification and property_obj.contact_number:
+                owner_name = property_obj.owner.get_full_name() if property_obj.owner else ""
+                sms_message = get_payment_message_template(bill, payment_links, owner_name)
+                sms_success, sms_response = send_sms(property_obj.contact_number, sms_message)
+                
+                response_data['sms_notification'] = {
+                    'sent': sms_success,
+                    'to': property_obj.contact_number,
+                    'response': sms_response if sms_success else str(sms_response)
+                }
+                
+                if sms_success:
+                    bill.status = 'notification_sent'
+                    bill.sent_date = timezone.now()
+                    bill.save()
+                    response_data['message'] = f'Bill {bill_number} generated and SMS notification sent'
+            
+            return JsonResponse(response_data)
+            
+    except Property.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Property not found'}, status=404)
+    except BillingCycle.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Billing cycle not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        print(f"Error generating bill: {error_trace}")
+        return JsonResponse({'success': False, 'error': f'Error generating bill: {str(e)}'}, status=500)
+
+
+@require_http_methods(["GET"])
+def view_bill(request, bill_number):
+    """View a bill in HTML format"""
+    try:
+        bill = Bill.objects.select_related('property', 'property__owner', 'billing_cycle').get(bill_number=bill_number)
+        
+        # Prepare bill data for template
+        bill_data = prepare_bill_data(bill)
+        
+        return render(request, 'billing/bill_template.html', bill_data)
+        
+    except Bill.DoesNotExist:
+        return HttpResponse("Bill not found", status=404)
+
+
+@require_http_methods(["GET"])
+def download_bill_pdf(request, bill_number):
+    """Download bill as PDF"""
+    try:
+        bill = Bill.objects.select_related('property', 'property__owner', 'billing_cycle').get(bill_number=bill_number)
+        
+        # Prepare bill data
+        bill_data = prepare_bill_data(bill)
+        
+        # Render HTML template
+        html_string = render_to_string('billing/bill_template.html', bill_data)
+        
+        # Generate PDF
+        pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+        
+        # Create response
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="bill_{bill_number}.pdf"'
+        
+        return response
+        
+    except Bill.DoesNotExist:
+        return HttpResponse("Bill not found", status=404)
+
+
+def prepare_bill_data(bill):
+    """Prepare bill data for template population"""
+    property_obj = bill.property
+    
+    # Get owner information
+    owner_name = ""
+    owner_contact = ""
+    if property_obj.owner:
+        owner_name = property_obj.owner.get_full_name() if hasattr(property_obj.owner, 'get_full_name') else str(property_obj.owner)
+        owner_contact = getattr(property_obj.owner, 'phone_number', '')
+    
+    # Format dates
+    bill_date = bill.created_at.strftime('%d/%m/%Y') if bill.created_at else datetime.now().strftime('%d/%m/%Y')
+    due_date = bill.due_date.strftime('%d/%m/%Y') if bill.due_date else ''
+    
+    # Format currency amounts
+    def format_currency(amount):
+        return f"GH₵ {float(amount):,.2f}"
+    
+    # Prepare data structure matching template fields
+    return {
+        'bill': bill,
+        'property': property_obj,
+        'bill_number': bill.bill_number,
+        'bill_date': bill_date,
+        'due_date': due_date,
+        'owner_name': owner_name,
+        'owner_contact': owner_contact,
+        
+        # Property details for template fields
+        'serial_no': bill.bill_number.split('-')[-1] if '-' in bill.bill_number else bill.bill_number,
+        'account_number': property_obj.property_id or property_obj.id,
+        'suburb': property_obj.suburb or property_obj.location or '',
+        'property_number': property_obj.property_number or property_obj.id,
+        'property_address': property_obj.address or property_obj.location or '',
+        'property_description': property_obj.description or '',
+        
+        # Amounts formatted
+        'rateable_value': format_currency(property_obj.rateable_value or bill.tax_amount * 10),  # Example calculation
+        'rate_impost': format_currency(bill.tax_amount),
+        'rate_amount_charged': format_currency(bill.tax_amount),
+        'arrears': format_currency(0),  # You can implement arrears calculation
+        'payment': format_currency(0),  # No payment yet
+        'adjustment': format_currency(bill.discount_amount),
+        'total_amount': format_currency(bill.total_amount),
+        'penalty_amount': format_currency(bill.penalty_amount),
+        
+        # Additional data
+        'notes': bill.notes,
+        'status': bill.get_status_display() if hasattr(bill, 'get_status_display') else bill.status,
+        'billing_cycle': bill.billing_cycle.name if bill.billing_cycle else '',
+    }
+
+
+# Alternative: API endpoint that returns HTML for frontend to display
+@csrf_exempt
+@require_http_methods(["POST"])
+def generate_and_render_bill(request):
+    """Generate bill and return rendered HTML"""
+    try:
+        # First generate the bill using the existing logic
+        data = json.loads(request.body)
+        
+        # Similar to generate_bill but instead of returning JSON, return HTML
+        with transaction.atomic():
+            property_id = data.get('property_id')
+            billing_cycle_id = data.get('billing_cycle_id')
+            tax_amount = data.get('tax_amount')
+            penalty_amount = data.get('penalty_amount', 0)
+            discount_amount = data.get('discount_amount', 0)
+            notes = data.get('notes', '')
+            
+            property_obj = Property.objects.get(id=property_id)
+            billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
+            
+            bill_number = f"BILL-{datetime.now().strftime('%Y%m%d')}-{Bill.objects.count() + 1:06d}"
+            total_amount = float(tax_amount) + float(penalty_amount) - float(discount_amount)
+            
+            bill = Bill.objects.create(
+                bill_number=bill_number,
+                property=property_obj,
+                billing_cycle=billing_cycle,
+                tax_amount=tax_amount,
+                penalty_amount=penalty_amount,
+                discount_amount=discount_amount,
+                total_amount=total_amount,
+                status='generated',
+                due_date=billing_cycle.due_date,
+                created_by=request.user,
+                notes=notes
+            )
+            
+            # Prepare data for template
+            bill_data = prepare_bill_data(bill)
+            
+            # Render the template
+            return render(request, 'billing/bill_template.html', bill_data)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

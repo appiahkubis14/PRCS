@@ -2,10 +2,10 @@ from enum import Enum
 
 class Sidebar:
     sidebar_items = {
-        "Dashboard Overview": {
+        "Dashboard": {
             "icon": "fas fa-chart-pie",
             "sub_items": {
-                "Revenue Dashboard": {
+                "Collection": {
                     "icon": "fas fa-tachometer-alt", 
                     "url": "/revenue-dashboard/", 
                     "groups": ["Admin", "CEO", "Director", "Management", "Finance Team"]
@@ -28,62 +28,79 @@ class Sidebar:
             },
         },
         
-        # "Property Management": {
-        #     "icon": "fas fa-home",
-        #     "sub_items": {
-        #         "Property Registry": {
-        #             "icon": "fas fa-building", 
-        #             "url": "/property-registry/", 
-        #             "groups": ["Admin", "Assessment Team", "Planning Team", "GIS Team"]
-        #         },
-        #         "Property Valuation": {
-        #             "icon": "fas fa-calculator", 
-        #             "url": "/property-valuation/",
-        #             "groups": ["Admin", "Assessment Team", "Finance Team", "Management"]
-        #         },
-        #         "Property Classification": {
-        #             "icon": "fas fa-tags", 
-        #             "url": "/property-classification/",
-        #             "groups": ["Admin", "Assessment Team", "Planning Team", "Finance Team"]
-        #         },
-        #         "Owner Management": {
-        #             "icon": "fas fa-users", 
-        #             "url": "/property-owners/",
-        #             "groups": ["Admin", "Assessment Team", "Customer Service", "Finance Team"]
-        #         },
-        #         "GIS Property Mapping": {
-        #             "icon": "fas fa-map-marked-alt", 
-        #             "url": "/properties/mapping/",
-        #             "groups": ["Admin", "GIS Team", "Planning Team", "Assessment Team"]
-        #         },
-        #         # "Property Reports": {
-        #         #     "icon": "fas fa-file-alt", 
-        #         #     "groups": ["Admin", "CEO", "Director", "Management", "Finance Team"],
-        #         #     "sub_items": {
-        #         #         "Valuation Reports": {
-        #         #             "icon": "fas fa-chart-pie", 
-        #         #             "url": "/properties/reports/valuation/",
-        #         #             "groups": ["Admin", "CEO", "Director", "Finance Team"]
-        #         #         },
-        #         #         "Property Inventory": {
-        #         #             "icon": "fas fa-clipboard-list", 
-        #         #             "url": "/properties/reports/inventory/",
-        #         #             "groups": ["Admin", "Assessment Team", "Planning Team"]
-        #         #         },
-        #         #         "Ownership Trends": {
-        #         #             "icon": "fas fa-chart-line", 
-        #         #             "url": "/properties/reports/trends/",
-        #         #             "groups": ["Admin", "CEO", "Director", "Planning Team"]
-        #         #         },
-        #         #     }
-        #         # },
-        #     }
-        # },
+        "Users": {
+            "icon": "fas fa-home",
+            "sub_items": {
+                "Users": {
+                    "icon": "fas fa-building",
+                    "url": "/users/",
+                    "groups": ["Admin", "Assessment Team", "Planning Team"]
+                },
+                "App": {
+                    "icon": "fas fa-clipboard-list",
+                    "url": "/app/",
+                    "groups": ["Admin", "Finance Team", "Assessment Team"]
+                },
+                
+                # "Property Reports": {
+                #     "icon": "fas fa-file-alt", 
+                #     "groups": ["Admin", "CEO", "Director", "Management", "Finance Team"],
+                #     "sub_items": {
+                #         "Valuation Reports": {
+                #             "icon": "fas fa-chart-pie", 
+                #             "url": "/properties/reports/valuation/",
+                #             "groups": ["Admin", "CEO", "Director", "Finance Team"]
+                #         },
+                #         "Property Inventory": {
+                #             "icon": "fas fa-clipboard-list", 
+                #             "url": "/properties/reports/inventory/",
+                #             "groups": ["Admin", "Assessment Team", "Planning Team"]
+                #         },
+                #         "Ownership Trends": {
+                #             "icon": "fas fa-chart-line", 
+                #             "url": "/properties/reports/trends/",
+                #             "groups": ["Admin", "CEO", "Director", "Planning Team"]
+                #         },
+                #     }
+                # },
+            }
+        },
 
-        "Billing & Invoicing": {
+        "Master Data": {
+            "icon": "fas fa-database", 
+            "sub_items": {
+                "Bops": {
+                    "icon": "fas fa-file-invoice", 
+                    "url": "/bops/properties/",
+                    "groups": ["Admin", "CEO", "Director", "Planning Team", "Finance Team"]
+                },
+                "Properties": {
+                    "icon": "fas fa-building", 
+                    "url": "/properties/",
+                    "groups": ["Admin", "Assessment Team", "Planning Team"]
+                },
+                "Permits": {
+                    "icon": "fas fa-clipboard-list", 
+                    "url": "/bops/properties/permits/",
+                    "groups": ["Admin", "Finance Team", "Assessment Team"]
+                },
+                # "BOP Overview": {
+                #     "icon": "fas fa-file-invoice", 
+                #     "url": "/properties/master-data/bops/",
+                #     "groups": ["Admin", "Finance Team", "Billing Team"]
+                # },
+                "Owners": {
+                    "icon": "fas fa-users", 
+                    "url": "/properties/master-data/property-owners/",
+                    "groups": ["Admin", "CEO", "Director", "Planning Team", "Finance Team"]
+                },
+            }
+        },
+
+        "Billing": {
             "icon": "fas fa-file-invoice-dollar",
             "sub_items": {
-                "Bill Generation": {
+                "Bills": {
                     "icon": "fas fa-receipt", 
                     "url": "/bill-generation/",
                     "groups": ["Admin", "Finance Team", "Billing Team"]
@@ -93,7 +110,7 @@ class Sidebar:
                 #     "url": "/billing/rates-management/",
                 #     "groups": ["Admin", "Finance Team", "Management"]
                 # },
-                "Payment Monitoring": {
+                "Payments": {
                     "icon": "fas fa-hand-holding-usd", 
                     "url": "/payments/monitoring/",
                     "groups": ["Admin", "Finance Team", "Assessment Team"]
@@ -268,10 +285,10 @@ class Sidebar:
         #     }
         # },
         
-        "GIS & Spatial Analysis": {
+        "GIS": {
             "icon": "fas fa-map",
             "sub_items": {
-                "Property Mapping": {
+                "Map Window": {
                     "icon": "fas fa-map-marked-alt", 
                     "url": "/properties/mapping/",
                     "groups": ["Admin", "GIS Team", "Planning Team", "Assessment Team"]
@@ -299,36 +316,16 @@ class Sidebar:
             }
         },
         
-        # "Reports & Analytics": {
-        #     "icon": "fas fa-chart-bar",
-        #     "sub_items": {
-        #         "Revenue Analytics": {
-        #             "icon": "fas fa-chart-line", 
-        #             "url": "/analytics/revenue/",
-        #             "groups": ["Admin", "CEO", "Director", "Finance Team", "Management"]
-        #         },
-        #         "Collection Analytics": {
-        #             "icon": "fas fa-money-bill", 
-        #             "url": "/analytics/collection/",
-        #             "groups": ["Admin", "CEO", "Director", "Finance Team"]
-        #         },
-        #         "Compliance Analytics": {
-        #             "icon": "fas fa-shield-alt", 
-        #             "url": "/analytics/compliance/",
-        #             "groups": ["Admin", "CEO", "Director", "Legal Team"]
-        #         },
-        #         "Performance Metrics": {
-        #             "icon": "fas fa-tachometer-alt", 
-        #             "url": "/analytics/performance/",
-        #             "groups": ["Admin", "CEO", "Director", "Management"]
-        #         },
-        #         "Automated Reports": {
-        #             "icon": "fas fa-file-export", 
-        #             "url": "/analytics/automated-reports/",
-        #             "groups": ["Admin", "CEO", "Director", "Management"]
-        #         },
-        #     }
-        # },
+        "Exports": {
+            "icon": "fas fa-chart-bar",
+            "sub_items": {
+                    "Report Builder": {
+                        "icon": "fas fa-chart-bar", 
+                        "url": "/reports/builder/",
+                        "groups": ["Admin", "Finance Team", "Management"]
+                    },
+            }
+        },
         
         # "User Management": {
         #     "icon": "fas fa-users-cog",
