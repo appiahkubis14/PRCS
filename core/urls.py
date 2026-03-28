@@ -16,6 +16,8 @@ from core.views.payment_views import *
 from core.views.billing.payment_monitoring import *
 from core.views.billing.payment_track import *
 from core.views.dashboard.dashboard_new import *
+from core.views.users import *
+from core.views.permit import *
 from core.views.views_tiles import get_properties_points, pmtiles_options, properties_simple_geojson, property_geojson_for_highlight, serve_pmtiles
 
 
@@ -40,7 +42,7 @@ urlpatterns = [
     # path('api/valuations/<int:bill_id>/', get_valuation_detail, name='get-valuation-detail'),
     # path('api/valuations/<int:bill_id>/update/', update_valuation, name='update-valuation'),
     # path('api/valuations/<int:bill_id>/delete/', delete_valuation, name='delete-valuation'),
-    path('api/properties/<int:property_id>/details/', get_property_details, name='get-property-details'),
+#     path('api/properties/<int:property_id>/details/', get_property_details, name='get-property-details'),
 
     # path('property-classification/', property_classification, name='property-classification'),
     # path('api/classifications/', get_classifications, name='get-classifications'),
@@ -48,26 +50,28 @@ urlpatterns = [
     # path('api/classifications/<int:property_id>/analysis/', get_classification_analysis, name='get-classification-analysis'),
     # path('api/classifications/stats/', get_classification_stats, name='get-classification-stats'),
 
-    path('property-owners/', owner_management, name='owner-management'),
-    path('api/owners/', get_owners, name='get-owners'),
-    path('api/owners/add/', add_owner, name='add-owner'),
-    path('api/owners/<int:owner_id>/', get_owner_detail, name='get-owner-detail'),
-    path('api/owners/<int:owner_id>/update/', update_owner, name='update-owner'),
-    path('api/owners/<int:owner_id>/delete/', delete_owner, name='delete-owner'),
-    path('api/owners/stats/', get_owner_stats, name='get-owner-stats'),
-    path('api/owners/search/', search_owners, name='search-owners'),
-    path('api/properties/<int:property_id>/owners/', get_property_owners, name='get-property-owners'),
+    # Owner Management URLs
+    path('owners/', owner_management, name='owner_management'),
+    path('api/owners/', get_owners, name='get_owners'),
+    path('api/owners/<int:owner_id>/', get_owner_detail, name='get_owner_detail'),
+    path('api/owners/<int:owner_id>/update/', update_owner, name='update_owner'),
+    path('api/owners/stats/', get_owner_stats, name='get_owner_stats'),
+    path('api/owners/search/', search_owners, name='search_owners'),
+    path('api/owners/export/', export_owners, name='export_owners'),
+    path('api/properties/<int:property_id>/owners/', get_property_owners, name='get_property_owners'),
+
+
 
     path('bill-generation/', bill_generation_page, name='bill_generation'),
-    # path('api/bills/', get_bills, name='get_bills'),
-    # path('api/bills/generate/', generate_bill, name='generate_bill'),
-    # path('api/bills/bulk-generate/', bulk_generate_bills, name='bulk_generate_bills'),
-    # path('api/bills/<int:bill_id>/', get_bill_details, name='get_bill_details'),
-    # path('api/bills/<int:bill_id>/update/', update_bill, name='update_bill'),
-    # path('api/bills/<int:bill_id>/delete/', delete_bill, name='delete_bill'),
-    # path('api/properties/billing/', get_properties_for_billing, name='get_properties_for_billing'),
-    # path('api/billing-cycles/', get_billing_cycles, name='get_billing_cycles'),
-    # path('api/calculate-tax/', calculate_tax_amount, name='calculate_tax'),
+    path('api/bills/', view_bill, name='get_bills'),
+    path('api/bills/generate/', generate_bill, name='generate_bill'),
+    path('api/bills/bulk-generate/', bulk_generate_bills, name='bulk_generate_bills'),
+    path('api/bills/<int:bill_id>/', get_bill_details, name='get_bill_details'),
+    path('api/bills/<int:bill_id>/update/', update_bill, name='update_bill'),
+    path('api/bills/<int:bill_id>/delete/', delete_bill, name='delete_bill'),
+    path('api/properties/billing/', get_properties_for_billing, name='get_properties_for_billing'),
+    path('api/billing-cycles/', get_billing_cycles, name='get_billing_cycles'),
+    path('api/calculate-tax/', calculate_tax_amount, name='calculate_tax'),
 
     path('api/bops/list/', get_bops_list, name='get_bops_list'),
     path('api/bops-bills/years/', get_billing_years, name='get_billing_years'),
@@ -150,12 +154,12 @@ urlpatterns = [
     path('api/payments/dashboard/stats/', get_dashboard_stats, name='dashboard_stats'),
 
     # ── Revenue dashboard ──────────────────────────────────────────────────
-    path('revenue-dashboard/', revenue_dashboard, name='revenue_dashboard'),
+    # path('revenue-dashboard/', revenue_dashboard, name='revenue_dashboard'),
     # path('api/dashboard/stats/', get_dashboard_stats, name='dashboard_stats'),
     # path('api/dashboard/revenue-trends/', get_revenue_trends, name='revenue_trends'),
     # path('api/dashboard/top-performers/', get_top_performers, name='top_performers'),
 
-    # ── Map tiles ──────────────────────────────────────────────────────────
+#     # ── Map tiles ──────────────────────────────────────────────────────────
     path('tiles/<str:filename>', serve_pmtiles, name='serve_pmtiles'),
     path('tiles/<str:filename>', pmtiles_options, name='pmtiles-options'),
     path('api/properties/points/', get_properties_points, name='properties-points'),
@@ -187,65 +191,102 @@ urlpatterns = [
     path('api/properties/bulk-delete/', bulk_delete_properties, name='bulk_delete_properties'),
     path('api/properties/export/', export_properties, name='export_properties'),
     
-    # Options endpoints
-    path('api/zones/options/', get_zone_options, name='get_zone_options'),
-    path('api/property-types/options/', get_property_type_options, name='get_property_type_options'),
+#     # Options endpoints
+#     path('api/zones/options/', get_zone_options, name='get_zone_options'),
+#     path('api/property-types/options/', get_property_type_options, name='get_property_type_options'),
 
 
-    # API endpoints for dashboard data
-    path('api/dashboard/performance-stats/', 
-         dashboard_performance_stats, 
-         name='dashboard_performance_stats'),
+#     # API endpoints for dashboard data
+#     path('api/dashboard/performance-stats/', 
+#          dashboard_performance_stats, 
+#          name='dashboard_performance_stats'),
     
-    path('api/dashboard/growth-trend/', 
-         dashboard_growth_trend, 
-         name='dashboard_growth_trend'),
+#     path('api/dashboard/growth-trend/', 
+#          dashboard_growth_trend, 
+#          name='dashboard_growth_trend'),
     
-    path('api/dashboard/category-distribution/', 
-         dashboard_category_distribution, 
-         name='dashboard_category_distribution'),
+#     path('api/dashboard/category-distribution/', 
+#          dashboard_category_distribution, 
+#          name='dashboard_category_distribution'),
     
-    path('api/dashboard/district-performance/', 
-         dashboard_district_performance, 
-         name='dashboard_district_performance'),
+#     path('api/dashboard/district-performance/', 
+#          dashboard_district_performance, 
+#          name='dashboard_district_performance'),
     
-    path('api/dashboard/recent-activity/', 
-         dashboard_recent_activity, 
-         name='dashboard_recent_activity'),
+#     path('api/dashboard/recent-activity/', 
+#          dashboard_recent_activity, 
+#          name='dashboard_recent_activity'),
     
-    path('api/dashboard/payment-patterns/', 
-         dashboard_payment_patterns, 
-         name='dashboard_payment_patterns'),
+#     path('api/dashboard/payment-patterns/', 
+#          dashboard_payment_patterns, 
+#          name='dashboard_payment_patterns'),
     
-    path('api/dashboard/quick-stats/', 
-         dashboard_quick_stats, 
-         name='dashboard_quick_stats'),
+#     path('api/dashboard/quick-stats/', 
+#          dashboard_quick_stats, 
+#          name='dashboard_quick_stats'),
     
-    path('api/dashboard/export/', 
-         dashboard_export_data, 
-         name='dashboard_export'),
+#     path('api/dashboard/export/', 
+#          dashboard_export_data, 
+#          name='dashboard_export'),
 
-    path('field-dashboard/', 
-         field_collection_dashboard, 
-         name='field_collection_dashboard'),
+#     path('field-dashboard/', 
+#          field_collection_dashboard, 
+#          name='field_collection_dashboard'),
     
-    path('api/field-dashboard/stats/', 
-         field_dashboard_stats, 
-         name='field_dashboard_stats'),
+#     path('api/field-dashboard/stats/', 
+#          field_dashboard_stats, 
+#          name='field_dashboard_stats'),
     
-    path('api/field-dashboard/collection-trend/', 
-         field_dashboard_collection_trend, 
-         name='field_dashboard_collection_trend'),
+#     path('api/field-dashboard/collection-trend/', 
+#          field_dashboard_collection_trend, 
+#          name='field_dashboard_collection_trend'),
     
-    path('api/field-dashboard/activities/', 
-         field_dashboard_activities, 
-         name='field_dashboard_activities'),
+#     path('api/field-dashboard/activities/', 
+#          field_dashboard_activities, 
+#          name='field_dashboard_activities'),
     
-    path('api/field-dashboard/projections/', 
-         field_dashboard_projections, 
-         name='field_dashboard_projections'),
+#     path('api/field-dashboard/projections/', 
+#          field_dashboard_projections, 
+#          name='field_dashboard_projections'),
     
-    path('api/field-dashboard/snapshots/', 
-         field_dashboard_snapshots, 
-         name='field_dashboard_snapshots'),
+#     path('api/field-dashboard/snapshots/', 
+#          field_dashboard_snapshots, 
+#          name='field_dashboard_snapshots'),
+
+
+
+    # User Management URLs
+    path('users/', user_management, name='user_management'),
+    path('api/users/', get_users, name='get_users'),
+    path('api/users/create/', create_user, name='create_user'),
+    path('api/users/<int:user_id>/', get_user_detail, name='get_user_detail'),
+    path('api/users/<int:user_id>/update/', update_user, name='update_user'),
+    path('api/users/<int:user_id>/delete/', delete_user, name='delete_user'),
+    path('api/users/<int:user_id>/reset-password/', reset_user_password, name='reset_user_password'),
+    path('api/users/bulk-delete/', bulk_delete_users, name='bulk_delete_users'),
+    path('api/users/stats/', get_user_stats, name='get_user_stats'),
+    path('api/users/supervisors/', get_supervisors, name='get_supervisors'),
+
+
+
+
+# Field Collection Dashboard
+    path('revenue-dashboard/', field_collection_dashboard, name='field_collection_dashboard'),
+    
+    # API Endpoints
+    path('api/field-stats/', field_dashboard_stats, name='field_stats'),
+    path('api/field-trend/', field_dashboard_collection_trend, name='field_trend'),
+    path('api/field-activities/', field_dashboard_activities, name='field_activities'),
+    path('api/field-snapshots/', field_dashboard_snapshots, name='field_snapshots'),
+    # Permit Management URLs
+    path('permits/', permit_management, name='permit_management'),
+    path('api/permits/', get_permits, name='get_permits'),
+    path('api/permits/<int:permit_id>/', get_permit_detail, name='get_permit_detail'),
+    path('api/permits/<int:permit_id>/approve/', approve_permit, name='approve_permit'),
+    path('api/permits/<int:permit_id>/reject/', reject_permit, name='reject_permit'),
+    path('api/permits/<int:permit_id>/delete/', delete_permit, name='delete_permit'),
+    path('api/permits/bulk-approve/', bulk_approve_permits, name='bulk_approve_permits'),
+    path('api/permits/stats/', get_permit_stats, name='get_permit_stats'),
+    path('api/permits/export/', export_permits, name='export_permits'),
+
 ]

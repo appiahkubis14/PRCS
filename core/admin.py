@@ -1,639 +1,671 @@
+# core/admin.py
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
+from django.contrib.gis.admin import GISModelAdmin
+from django.contrib.gis import forms
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.fields import Field
-from import_export.widgets import ForeignKeyWidget, DateWidget, DecimalWidget
+from import_export.widgets import ForeignKeyWidget, DateWidget, DecimalWidget, JSONWidget
 from .models import *
+from django.contrib.auth.models import User
+from django.utils.html import format_html
 
-# Import-Export Resources
-class UserRoleResource(resources.ModelResource):
-    class Meta:
-        model = UserRole
-        import_id_fields = ['name']
-        fields = ('id', 'name', 'permissions', 'description', 'created_at', 'updated_at', 
-                 'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
-        export_order = ('id', 'name', 'permissions', 'description', 'created_at', 'updated_at', 
-                       'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
 
-class UserProfileResource(resources.ModelResource):
-    user = Field(attribute='user', column_name='user', widget=ForeignKeyWidget(User, 'username'))
-    role = Field(attribute='role', column_name='role', widget=ForeignKeyWidget(UserRole, 'name'))
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
+# ============================================================
+# Custom Widgets
+# ============================================================
+
+class GeometryWidget(JSONWidget):
+    """Widget for geometry fields in export"""
+    def render(self, value, obj=None):
+        if value:
+            return value.wkt if hasattr(value, 'wkt') else str(value)
+        return ''
+
+
+# ============================================================
+# User Resource
+# ============================================================
+
+class UserResource(resources.ModelResource):
+    supervisor = Field(attribute='supervisor', column_name='supervisor', 
+                      widget=ForeignKeyWidget(UserModel, 'email'))
     
     class Meta:
-        model = UserProfile
-        fields = ('id', 'user', 'role', 'phone', 'is_active', 'created_at', 'updated_at',
-                 'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
-        export_order = ('id', 'user', 'role', 'phone', 'is_active', 'created_at', 'updated_at',
-                       'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
+        model = UserModel
+        import_id_fields = ['email']
+        fields = ('id', 'employee_id', 'name', 'email', 'phone', 'role', 
+                 'supervisor', 'is_active', 'created_at', 'updated_at', 'expo_push_token')
+        export_order = ('employee_id', 'name', 'email', 'phone', 'role', 
+                       'supervisor', 'is_active', 'created_at', 'updated_at')
+        skip_unchanged = True
+        report_skipped = True
 
-class RegionResource(resources.ModelResource):
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
+
+# ============================================================
+# UserModel Admin
+# ============================================================
+
+@admin.register(UserModel)
+class UserModelAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    resource_class = UserResource
+    
+    list_display = ('id','employee_id', 'name', 'email', 'phone', 'role', 'get_supervisor_email','password_new', 'is_active', 'created_at')
+    list_filter = ('role', 'is_active', 'created_at')
+    search_fields = ('employee_id', 'name', 'email', 'phone')
+    readonly_fields = ('created_at', 'updated_at')
+    autocomplete_fields = ['supervisor']
+    
+    def get_supervisor_email(self, obj):
+        return obj.supervisor.email if obj.supervisor else '-'
+    get_supervisor_email.short_description = 'Supervisor'
+    get_supervisor_email.admin_order_field = 'supervisor__email'
+    
+    fieldsets = (
+        ('Personal Information', {
+            'fields': ('employee_id', 'name', 'email', 'phone')
+        }),
+        ('Authentication', {
+            'fields': ('password_hash','password_new')
+        }),
+        ('Role & Permissions', {
+            'fields': ('role', 'supervisor', 'is_active')
+        }),
+        ('Mobile App', {
+            'fields': ('expo_push_token',),
+            'classes': ('collapse',)
+        }),
+        ('Audit Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+# ============================================================
+# Polygon Resource
+# ============================================================
+
+class PolygonResource(resources.ModelResource):
+    assigned_to_user = Field(attribute='assigned_to_user', column_name='assigned_to_user', 
+                            widget=ForeignKeyWidget(UserModel, 'email'))
+    geom = Field(attribute='geom', column_name='geom', widget=GeometryWidget())
     
     class Meta:
-        model = Region
-        import_id_fields = ['reg_code']
-        fields = ('id', 'region', 'reg_code', 'pilot', 'geom', 'created_at', 'updated_at',
-                 'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
-        export_order = ('id', 'region', 'reg_code', 'pilot', 'geom', 'created_at', 'updated_at',
-                       'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
+        model = Polygon
+        import_id_fields = ['property']
+        fields = ('property', 'division', 'block', 'g_code', 'area_in_me', 'district', 'postcode',
+                 'nlat', 'slat', 'wlong', 'elong', 'gpsname', 'region', 'area', 'addressv1',
+                 'street', 'latitude', 'longitude', 'address', 'coordinates', 'location',
+                 'status', 'accessed', 'assigned_to_user', 'geom', 'created_at', 'updated_at')
+        export_order = ('property', 'division', 'block', 'g_code', 'location', 'latitude', 
+                       'longitude', 'status', 'accessed', 'geom', 'created_at', 'updated_at')
 
-class DistrictResource(resources.ModelResource):
-    region_foreignkey = Field(attribute='region_foreignkey', column_name='region', widget=ForeignKeyWidget(Region, 'reg_code'))
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
+
+# ============================================================
+# Polygon Admin
+# ============================================================
+
+@admin.register(Polygon)
+class PolygonAdmin(GISModelAdmin, ImportExportModelAdmin):
+    resource_class = PolygonResource
+    
+    list_display = ('property', 'division', 'block', 'g_code', 'location', 'display_geom_preview', 'status', 'accessed', 'created_at')
+    list_filter = ('division', 'status', 'accessed', 'created_at')
+    search_fields = ('property', 'g_code', 'location', 'address')
+    readonly_fields = ('created_at', 'updated_at')
+    autocomplete_fields = ['assigned_to_user']
+    
+    def display_geom_preview(self, obj):
+        if obj.geom:
+            return format_html('<span style="color: green;">✓ Has Geometry</span>')
+        return format_html('<span style="color: red;">✗ No Geometry</span>')
+    display_geom_preview.short_description = 'Geometry'
+    
+    fieldsets = (
+        ('Property Information', {
+            'fields': ('property', 'division', 'block', 'g_code', 'location')
+        }),
+        ('Address Information', {
+            'fields': ('district', 'region', 'area', 'addressv1', 'street', 'address', 'postcode')
+        }),
+        ('GPS Coordinates', {
+            'fields': ('gpsname', 'nlat', 'slat', 'wlong', 'elong')
+        }),
+        ('Centroid Coordinates', {
+            'fields': ('latitude', 'longitude')
+        }),
+        ('Geometry', {
+            'fields': ('geom', 'coordinates'),
+            'classes': ('map',)
+        }),
+        ('Status', {
+            'fields': ('status', 'accessed', 'assigned_to_user')
+        }),
+        ('Audit Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+# ============================================================
+# Business Resource
+# ============================================================
+
+class BusinessResource(resources.ModelResource):
+    business_type = Field(attribute='business_type', column_name='business_type', 
+                         widget=ForeignKeyWidget(BusinessType, 'slug'))
+    business_sub_type = Field(attribute='business_sub_type', column_name='business_sub_type', 
+                             widget=ForeignKeyWidget(BusinessSubType, 'slug'))
+    business_category_value = Field(attribute='business_category_value', column_name='business_category', 
+                                   widget=ForeignKeyWidget(BusinessCategory, 'slug'))
+    geometry = Field(attribute='geometry', column_name='geometry', widget=GeometryWidget())
     
     class Meta:
-        model = District
-        import_id_fields = ['district_code']
-        fields = ('id', 'district', 'district_code', 'region', 'reg_code', 'region_foreignkey', 
-                 'geom', 'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                 'deleted_at', 'deleted_by')
-        export_order = ('id', 'district', 'district_code', 'region', 'reg_code', 'region_foreignkey', 
-                       'geom', 'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                       'deleted_at', 'deleted_by')
-
-class ZoneResource(resources.ModelResource):
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
-    
-    class Meta:
-        model = Zone
-        import_id_fields = ['code']
-        fields = ('id', 'name', 'code', 'zone_type', 'boundary', 'description', 'is_active', 
-                 'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                 'deleted_at', 'deleted_by')
-        export_order = ('id', 'name', 'code', 'zone_type', 'boundary', 'description', 'is_active', 
-                       'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                       'deleted_at', 'deleted_by')
-
-class PropertyTypeResource(resources.ModelResource):
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
-    
-    class Meta:
-        model = PropertyType
-        import_id_fields = ['code']
-        fields = ('id', 'name', 'code', 'description', 'base_rate', 'is_active', 'created_at', 
-                 'updated_at', 'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
-        export_order = ('id', 'name', 'code', 'description', 'base_rate', 'is_active', 'created_at', 
-                       'updated_at', 'is_deleted', 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
-
-class PropertyResource(resources.ModelResource):
-    zone = Field(attribute='zone', column_name='zone', widget=ForeignKeyWidget(Zone, 'code'))
-    property_type = Field(attribute='property_type', column_name='property_type', widget=ForeignKeyWidget(PropertyType, 'code'))
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
-    
-    class Meta:
-        model = Property
-        fields = ('id', 'address', 'coordinates', 'zone', 'property_type', 'geom', 'g_code', 
-                 'area_in_me', 'gpsname', 'region', 'district', 'postcode', 'nlat', 'slat', 
-                 'wlong', 'elong', 'area', 'addressv1', 'street', 'latitude', 'longitude',
-                 'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                 'deleted_at', 'deleted_by')
-        export_order = ('id', 'address', 'coordinates', 'zone', 'property_type', 'geom', 'g_code', 
-                       'area_in_me', 'gpsname', 'region', 'district', 'postcode', 'nlat', 'slat', 
-                       'wlong', 'elong', 'area', 'addressv1', 'street', 'latitude', 'longitude',
-                       'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                       'deleted_at', 'deleted_by')
-
-class PropertyOwnerResource(resources.ModelResource):
-    property = Field(attribute='property', column_name='property', widget=ForeignKeyWidget(Property, 'id'))
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
-    
-    class Meta:
-        model = PropertyOwner
-        fields = ('id', 'property', 'owner_name', 'owner_type', 'id_number', 'phone_number', 
-                 'email', 'address', 'ownership_percentage', 'is_primary_owner', 'start_date', 
-                 'end_date', 'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                 'deleted_at', 'deleted_by')
-        export_order = ('id', 'property', 'owner_name', 'owner_type', 'id_number', 'phone_number', 
-                       'email', 'address', 'ownership_percentage', 'is_primary_owner', 'start_date', 
-                       'end_date', 'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-                       'deleted_at', 'deleted_by')
-
-class TaxRateResource(resources.ModelResource):
-    zone = Field(attribute='zone', column_name='zone', widget=ForeignKeyWidget(Zone, 'code'))
-    property_type = Field(attribute='property_type', column_name='property_type', widget=ForeignKeyWidget(PropertyType, 'code'))
-    created_by = Field(attribute='created_by', column_name='created_by', widget=ForeignKeyWidget(User, 'username'))
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
-    
-    class Meta:
-        model = TaxRate
-        fields = ('id', 'zone', 'property_type', 'rate', 'effective_from', 'effective_to', 
-                 'description', 'created_by', 'created_at', 'updated_at', 'is_deleted', 
-                 'added_by', 'modified_by', 'deleted_at', 'deleted_by')
-        export_order = ('id', 'zone', 'property_type', 'rate', 'effective_from', 'effective_to', 
-                       'description', 'created_by', 'created_at', 'updated_at', 'is_deleted', 
-                       'added_by', 'modified_by', 'deleted_at', 'deleted_by')
-
-class BopsResource(resources.ModelResource):
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
-    
-    class Meta:
-        model = Bops
+        model = Business
         import_id_fields = ['account_number']
-        fields = (
-            'id', 'account_number', 'business_name', 'house_number', 'digital_address', 
-            'location', 'street_name', 'phone_number', 'business_email', 'address',
-            'structure_id', 'centroid', 'lng', 'lat', 'block', 'division',
-            'business_category', 'business_class', 'flat_rate',
-            'owner_name', 'email', 'phone_number_primary', 'source_sheet', 'geom',
-            'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-            'deleted_at', 'deleted_by'
-        )
-        skip_unchanged = True
-        report_skipped = True
-        use_bulk = True
-        batch_size = 100
-        export_order = (
-            'id', 'account_number', 'business_name', 'house_number', 'digital_address', 
-            'location', 'street_name', 'phone_number', 'business_email', 'address',
-            'structure_id', 'centroid', 'lng', 'lat', 'block', 'division',
-            'business_category', 'business_class', 'flat_rate',
-            'owner_name', 'email', 'phone_number_primary', 'source_sheet', 'geom',
-            'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-            'deleted_at', 'deleted_by'
-        )
+        fields = ('id', 'account_number', 'business_name', 'business_category', 'business_class',
+                 'owner_name', 'email', 'business_email', 'phone_number', 'phone_number_primary',
+                 'house_number', 'digital_address', 'location', 'street_name', 'address',
+                 'structure_id', 'centroid', 'block', 'division', 'lng', 'lat', 'geometry',
+                 'flat_rate', 'business_type', 'business_sub_type', 'business_category_value',
+                 'source_sheet', 'imported_from_bops', 'bops_import_date', 'is_deleted',
+                 'deleted_at', 'created_at', 'updated_at')
+        
+        export_order = ('account_number', 'business_name', 'owner_name', 'email', 'phone_number',
+                       'location', 'division', 'block', 'business_category', 'business_class',
+                       'flat_rate', 'geometry', 'is_deleted', 'created_at')
 
-class BopsBillsResource(resources.ModelResource):
-    business = Field(attribute='business', column_name='business', widget=ForeignKeyWidget(Bops, 'account_number'))
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
+
+# ============================================================
+# Business Admin
+# ============================================================
+from django.contrib.gis import admin
+from django.utils.safestring import mark_safe
+from import_export.admin import ImportExportModelAdmin
+from .models import Business
+# from .resources import BusinessResource
+
+@admin.register(Business)
+class BusinessAdmin(admin.GISModelAdmin, ImportExportModelAdmin):
+    resource_class = BusinessResource
+    list_display = ('account_number', 'business_name', 'owner_name', 'division', 'block', 
+                   'display_geometry_preview', 'flat_rate', 'is_deleted', 'created_at')
+    list_filter = ('division', 'is_deleted', 'imported_from_bops', 'created_at')
+    search_fields = ('account_number', 'business_name', 'owner_name', 'email', 'phone_number')
+    readonly_fields = ('created_at', 'updated_at')
+    autocomplete_fields = ['business_type', 'business_sub_type', 'business_category_value']
     
-    class Meta:
-        model = BopsBills
-        import_id_fields = ['bill_number']
-        fields = (
-            'id', 'business', 'bill_number', 'billing_year', 'tax_amount',
-            'penalty_amount', 'discount_amount', 'total_amount', 'status',
-            'generated_date', 'due_date', 'sent_date', 'paid_date',
-            'notes', 'last_clicked_at', 'click_count', 'last_click_ip',
-            'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-            'deleted_at', 'deleted_by'
-        )
-        skip_unchanged = True
-        report_skipped = True
-        use_bulk = True
-        batch_size = 100
-        export_order = (
-            'id', 'business', 'bill_number', 'billing_year', 'tax_amount',
-            'penalty_amount', 'discount_amount', 'total_amount', 'status',
-            'generated_date', 'due_date', 'sent_date', 'paid_date',
-            'notes', 'last_clicked_at', 'click_count', 'last_click_ip',
-            'created_at', 'updated_at', 'is_deleted', 'added_by', 'modified_by', 
-            'deleted_at', 'deleted_by'
-        )
-
-class PaymentProviderResource(resources.ModelResource):
-    class Meta:
-        model = PaymentProvider
-        import_id_fields = ['name']
-        fields = ('id', 'name', 'provider_type', 'api_base_url', 'api_key', 'api_secret',
-                 'webhook_secret', 'is_active', 'config', 'created_at', 'updated_at')
-        export_order = ('id', 'name', 'provider_type', 'api_base_url', 'api_key', 'api_secret',
-                       'webhook_secret', 'is_active', 'config', 'created_at', 'updated_at')
-
-class PaymentTransactionResource(resources.ModelResource):
-    provider = Field(attribute='provider', column_name='provider', widget=ForeignKeyWidget(PaymentProvider, 'name'))
-    business_bill = Field(attribute='business_bill', column_name='business_bill', widget=ForeignKeyWidget(BopsBills, 'bill_number'))
-    
-    class Meta:
-        model = PaymentTransaction
-        import_id_fields = ['transaction_id']
-        fields = ('id', 'transaction_id', 'bill_type', 'business_bill', 'amount', 'provider', 
-                 'provider_transaction_id', 'status', 'payer_name', 'payer_phone', 'payer_email', 
-                 'payment_method', 'payment_channel', 'metadata', 'error_message', 
-                 'initiated_at', 'completed_at')
-        export_order = ('id', 'transaction_id', 'bill_type', 'business_bill', 'amount', 'provider', 
-                       'provider_transaction_id', 'status', 'payer_name', 'payer_phone', 'payer_email', 
-                       'payment_method', 'payment_channel', 'metadata', 'error_message', 
-                       'initiated_at', 'completed_at')
-
-class PaymentNotificationResource(resources.ModelResource):
-    transaction = Field(attribute='transaction', column_name='transaction', widget=ForeignKeyWidget(PaymentTransaction, 'transaction_id'))
-    provider = Field(attribute='provider', column_name='provider', widget=ForeignKeyWidget(PaymentProvider, 'name'))
-    
-    class Meta:
-        model = PaymentNotification
-        fields = ('id', 'transaction', 'provider', 'raw_data', 'processed', 'processed_at', 
-                 'error', 'created_at')
-        export_order = ('id', 'transaction', 'provider', 'raw_data', 'processed', 'processed_at', 
-                       'error', 'created_at')
-
-class PaymentLinkClickResource(resources.ModelResource):
-    business_bill = Field(attribute='business_bill', column_name='business_bill', widget=ForeignKeyWidget(BopsBills, 'bill_number'))
-    payment = Field(attribute='payment', column_name='payment', widget=ForeignKeyWidget(PaymentTransaction, 'transaction_id'))
-    
-    class Meta:
-        model = PaymentLinkClick
-        fields = ('id', 'bill_type', 'business_bill', 'link_type', 'ip_address', 'user_agent', 
-                 'referer', 'session_id', 'clicked_at', 'payment')
-        export_order = ('id', 'bill_type', 'business_bill', 'link_type', 'ip_address', 'user_agent', 
-                       'referer', 'session_id', 'clicked_at', 'payment')
-
-class VersionTblResource(resources.ModelResource):
-    added_by = Field(attribute='added_by', column_name='added_by', widget=ForeignKeyWidget(User, 'username'))
-    modified_by = Field(attribute='modified_by', column_name='modified_by', widget=ForeignKeyWidget(User, 'username'))
-    deleted_by = Field(attribute='deleted_by', column_name='deleted_by', widget=ForeignKeyWidget(User, 'username'))
-    
-    class Meta:
-        model = versionTbl
-        fields = ('id', 'version', 'created_at', 'updated_at', 'is_deleted', 'added_by', 
-                 'modified_by', 'deleted_at', 'deleted_by')
-        export_order = ('id', 'version', 'created_at', 'updated_at', 'is_deleted', 'added_by', 
-                       'modified_by', 'deleted_at', 'deleted_by')
-
-# Admin Classes
-@admin.register(UserRole)
-class UserRoleAdmin(ImportExportModelAdmin):
-    resource_class = UserRoleResource
-    list_display = ('name', 'description', 'created_at', 'updated_at', 'is_deleted')
-    list_filter = ('name', 'is_deleted', 'created_at')
-    search_fields = ('name', 'description')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    fieldsets = (
-        ('Role Information', {
-            'fields': ('name', 'description', 'permissions')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(UserProfile)
-class UserProfileAdmin(ImportExportModelAdmin):
-    resource_class = UserProfileResource
-    list_display = ('user', 'role', 'phone', 'is_active', 'created_at', 'is_deleted')
-    list_filter = ('role', 'is_active', 'is_deleted', 'created_at')
-    search_fields = ('user__username', 'user__email', 'phone')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    autocomplete_fields = ['user', 'role']
-    fieldsets = (
-        ('User Information', {
-            'fields': ('user', 'role', 'phone', 'is_active')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(Region)
-class RegionAdmin(ImportExportModelAdmin):
-    resource_class = RegionResource
-    list_display = ('region', 'reg_code', 'pilot', 'created_at', 'is_deleted')
-    list_filter = ('pilot', 'is_deleted', 'created_at')
-    search_fields = ('region', 'reg_code')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    fieldsets = (
-        ('Region Information', {
-            'fields': ('region', 'reg_code', 'pilot', 'geom')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(District)
-class DistrictAdmin(ImportExportModelAdmin):
-    resource_class = DistrictResource
-    list_display = ('district', 'district_code', 'region', 'reg_code', 'created_at', 'is_deleted')
-    list_filter = ('region', 'is_deleted', 'created_at')
-    search_fields = ('district', 'district_code', 'region', 'reg_code')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    autocomplete_fields = ['region_foreignkey']
-    fieldsets = (
-        ('District Information', {
-            'fields': ('district', 'district_code', 'region', 'reg_code', 'region_foreignkey', 'geom')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(Zone)
-class ZoneAdmin(ImportExportModelAdmin):
-    resource_class = ZoneResource
-    list_display = ('name', 'code', 'zone_type', 'is_active', 'created_at', 'is_deleted')
-    list_filter = ('zone_type', 'is_active', 'is_deleted', 'created_at')
-    search_fields = ('name', 'code', 'description')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    fieldsets = (
-        ('Zone Information', {
-            'fields': ('name', 'code', 'zone_type', 'boundary', 'description', 'is_active')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(PropertyType)
-class PropertyTypeAdmin(ImportExportModelAdmin):
-    resource_class = PropertyTypeResource
-    list_display = ('name', 'code', 'base_rate', 'is_active', 'created_at', 'is_deleted')
-    list_filter = ('is_active', 'is_deleted', 'created_at')
-    search_fields = ('name', 'code', 'description')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    fieldsets = (
-        ('Property Type Information', {
-            'fields': ('name', 'code', 'description', 'base_rate', 'is_active')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(Property)
-class PropertyAdmin(ImportExportModelAdmin):
-    resource_class = PropertyResource
-    list_display = ('id', 'address', 'g_code', 'area_in_me', 'region', 'district', 
-                   'zone', 'property_type', 'created_at', 'is_deleted')
-    list_filter = ('zone', 'property_type', 'region', 'district', 'is_deleted', 'created_at')
-    search_fields = ('address', 'g_code', 'gpsname', 'region', 'district', 'street')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at', 'geom')
-    autocomplete_fields = ['zone', 'property_type']
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('address', 'g_code', 'gpsname', 'coordinates')
-        }),
-        ('Location', {
-            'fields': ('region', 'district', 'postcode', 'street', 'addressv1')
-        }),
-        ('Zone & Type', {
-            'fields': ('zone', 'property_type')
-        }),
-        ('Area Measurements', {
-            'fields': ('area_in_me', 'area')
-        }),
-        ('Geographic Coordinates', {
-            'fields': ('latitude', 'longitude', 'nlat', 'slat', 'wlong', 'elong', 'geom')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(PropertyOwner)
-class PropertyOwnerAdmin(ImportExportModelAdmin):
-    resource_class = PropertyOwnerResource
-    list_display = ('owner_name', 'property', 'owner_type', 'is_primary_owner', 
-                   'ownership_percentage', 'start_date', 'created_at', 'is_deleted')
-    list_filter = ('owner_type', 'is_primary_owner', 'is_deleted', 'start_date', 'created_at')
-    search_fields = ('owner_name', 'property__address', 'id_number', 'email')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    autocomplete_fields = ['property']
-    fieldsets = (
-        ('Owner Information', {
-            'fields': ('owner_name', 'owner_type', 'id_number', 'phone_number', 'email', 'address')
-        }),
-        ('Property Reference', {
-            'fields': ('property',)
-        }),
-        ('Ownership Details', {
-            'fields': ('ownership_percentage', 'is_primary_owner', 'start_date', 'end_date')
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(TaxRate)
-class TaxRateAdmin(ImportExportModelAdmin):
-    resource_class = TaxRateResource
-    list_display = ('zone', 'property_type', 'rate', 'effective_from', 'effective_to', 
-                   'created_by', 'created_at', 'is_deleted')
-    list_filter = ('zone', 'property_type', 'effective_from', 'is_deleted', 'created_at')
-    search_fields = ('zone__name', 'property_type__name', 'description')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    autocomplete_fields = ['zone', 'property_type', 'created_by']
-    fieldsets = (
-        ('Tax Rate Information', {
-            'fields': ('zone', 'property_type', 'rate', 'description')
-        }),
-        ('Effective Period', {
-            'fields': ('effective_from', 'effective_to')
-        }),
-        ('Created By', {
-            'fields': ('created_by',)
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(Bops)
-class BopsAdmin(ImportExportModelAdmin):
-    resource_class = BopsResource
-    
-    list_display = (
-        'account_number', 'business_name', 'owner_name', 'business_category', 
-        'business_class', 'location', 'division', 'flat_rate', 'created_at', 'is_deleted'
-    )
-    
-    list_filter = (
-        'business_category', 'business_class', 'division', 'is_deleted', 'created_at'
-    )
-    
-    search_fields = (
-        'account_number', 'business_name', 'owner_name', 'location', 
-        'street_name', 'phone_number', 'business_email'
-    )
-    
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at', 'geom')
-    
-    list_per_page = 50
-    list_max_show_all = 200
+    def display_geometry_preview(self, obj):
+        if obj.geometry:
+            return mark_safe('<span style="color: green;">✓ Has Geometry</span>')
+        return mark_safe('<span style="color: red;">✗ No Geometry</span>')
+    display_geometry_preview.short_description = 'Geometry'
     
     fieldsets = (
         ('Business Information', {
             'fields': ('account_number', 'business_name', 'business_category', 'business_class', 'flat_rate')
         }),
-        ('Location Details', {
+        ('Owner Information', {
+            'fields': ('owner_name', 'email', 'business_email', 'phone_number', 'phone_number_primary')
+        }),
+        ('Location', {
             'fields': ('location', 'street_name', 'house_number', 'digital_address', 'address', 'block', 'division')
         }),
-        ('Contact Information', {
-            'fields': ('owner_name', 'phone_number', 'phone_number_primary', 'business_email', 'email')
-        }),
         ('Geographic Data', {
-            'fields': ('structure_id', 'centroid', 'lat', 'lng', 'geom')
+            'fields': ('structure_id', 'centroid', 'lat', 'lng', 'geometry'),
+            'classes': ('map',)
         }),
-        ('Source Information', {
-            'fields': ('source_sheet',)
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
+        ('Classification', {
+            'fields': ('business_type', 'business_sub_type', 'business_category_value')
         }),
         ('Metadata', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
+            'fields': ('source_sheet', 'imported_from_bops', 'bops_import_date', 'is_deleted', 'deleted_at', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
-    
-    date_hierarchy = 'created_at'
-    
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('added_by', 'modified_by', 'deleted_by')
-    
-    def get_export_formats(self):
-        from import_export.formats import base_formats
-        return [
-            base_formats.CSV,
-            base_formats.XLSX,
-            base_formats.XLS,
-            base_formats.JSON,
-            base_formats.TSV,
-        ]
-    
-    def get_import_formats(self):
-        from import_export.formats import base_formats
-        return [
-            base_formats.CSV,
-            base_formats.XLSX,
-            base_formats.XLS,
-            base_formats.JSON,
-            base_formats.TSV,
-        ]
+# ============================================================
+# Assignment Admin
+# ============================================================
 
-@admin.register(BopsBills)
-class BopsBillsAdmin(ImportExportModelAdmin):
-    resource_class = BopsBillsResource
+class AssignmentResource(resources.ModelResource):
+    collector = Field(attribute='collector', column_name='collector', 
+                     widget=ForeignKeyWidget(UserModel, 'email'))
+    polygon = Field(attribute='polygon', column_name='polygon', 
+                   widget=ForeignKeyWidget(Polygon, 'property'))
+    assigned_by = Field(attribute='assigned_by', column_name='assigned_by', 
+                       widget=ForeignKeyWidget(UserModel, 'email'))
     
-    list_display = (
-        'bill_number', 'business', 'billing_year', 'total_amount', 
-        'status', 'due_date', 'generated_date','is_deleted'
+    class Meta:
+        model = Assignment
+        fields = ('id', 'collector', 'polygon', 'assigned_by', 'assigned_at', 'status')
+        export_order = ('collector', 'polygon', 'assigned_by', 'assigned_at', 'status')
+
+
+@admin.register(Assignment)
+class AssignmentAdmin(ImportExportModelAdmin):
+    resource_class = AssignmentResource
+    list_display = ('id', 'collector', 'polygon', 'assigned_by', 'assigned_at', 'status')
+    list_filter = ('status', 'assigned_at')
+    search_fields = ('collector__name', 'collector__email', 'polygon__property', 'polygon__g_code')
+    readonly_fields = ('assigned_at',)
+    autocomplete_fields = ['collector', 'polygon', 'assigned_by']
+
+
+# ============================================================
+# Session Admin
+# ============================================================
+
+class PREntryInline(admin.TabularInline):
+    model = PREntry
+    extra = 0
+    fields = ('entry_index', 'mode', 'data_preview', 'status', 'review_notes', 'created_at')
+    readonly_fields = ('created_at', 'data_preview')
+    can_delete = False
+    show_change_link = True
+    
+    def data_preview(self, obj):
+        if obj.data:
+            return format_html('<pre>{}</pre>', str(obj.data)[:100])
+        return '-'
+    data_preview.short_description = 'Data Preview'
+
+
+class BOPEntryInline(admin.TabularInline):
+    model = BOPEntry
+    extra = 0
+    fields = ('entry_index', 'mode', 'data_preview', 'status', 'review_notes', 'created_at')
+    readonly_fields = ('created_at', 'data_preview')
+    can_delete = False
+    show_change_link = True
+    
+    def data_preview(self, obj):
+        if obj.data:
+            return format_html('<pre>{}</pre>', str(obj.data)[:100])
+        return '-'
+    data_preview.short_description = 'Data Preview'
+
+
+class SessionResource(resources.ModelResource):
+    polygon = Field(attribute='polygon', column_name='polygon', 
+                   widget=ForeignKeyWidget(Polygon, 'property'))
+    collector = Field(attribute='collector', column_name='collector', 
+                     widget=ForeignKeyWidget(UserModel, 'email'))
+    reviewed_by = Field(attribute='reviewed_by', column_name='reviewed_by', 
+                       widget=ForeignKeyWidget(UserModel, 'email'))
+    
+    class Meta:
+        model = Session
+        fields = ('id', 'polygon', 'collector', 'status', 'reviewed_by', 'reviewed_at', 
+                 'review_notes', 'submitted_at', 'location_status', 'location_lat', 
+                 'location_lng', 'location_accuracy', 'location_mocked', 'location_distance',
+                 'location_timestamp', 'created_at', 'updated_at')
+        export_order = ('polygon', 'collector', 'status', 'submitted_at', 'reviewed_by', 
+                       'reviewed_at', 'review_notes')
+
+
+@admin.register(Session)
+class SessionAdmin(ImportExportModelAdmin):
+    resource_class = SessionResource
+    list_display = ('id', 'polygon', 'collector', 'status', 'submitted_at', 'reviewed_by', 'created_at')
+    list_filter = ('status', 'submitted_at', 'created_at')
+    search_fields = ('polygon__property', 'polygon__g_code', 'collector__name', 'collector__email')
+    readonly_fields = ('submitted_at', 'created_at', 'updated_at')
+    autocomplete_fields = ['polygon', 'collector', 'reviewed_by']
+    inlines = [PREntryInline, BOPEntryInline]
+    
+    fieldsets = (
+        ('Session Information', {
+            'fields': ('polygon', 'collector', 'status')
+        }),
+        ('Review Information', {
+            'fields': ('reviewed_by', 'reviewed_at', 'review_notes')
+        }),
+        ('Location Data', {
+            'fields': ('location_status', 'location_lat', 'location_lng', 
+                      'location_accuracy', 'location_mocked', 'location_distance', 
+                      'location_timestamp'),
+            'classes': ('collapse',)
+        }),
+        ('Data', {
+            'fields': ('pr_data', 'businesses'),
+            'classes': ('collapse',)
+        }),
+        ('Audit Information', {
+            'fields': ('submitted_at', 'created_at', 'updated_at', 'deleted_at'),
+            'classes': ('collapse',)
+        }),
     )
+
+
+# ============================================================
+# PREntry Admin
+# ============================================================
+
+class PREntryResource(resources.ModelResource):
+    session = Field(attribute='session', column_name='session', 
+                   widget=ForeignKeyWidget(Session, 'id'))
+    reviewed_by = Field(attribute='reviewed_by', column_name='reviewed_by', 
+                       widget=ForeignKeyWidget(UserModel, 'email'))
     
-    list_filter = (
-        'status', 'billing_year', 'is_deleted', 'generated_date', 'due_date'
-    )
+    class Meta:
+        model = PREntry
+        fields = ('id', 'session', 'entry_index', 'mode', 'data', 'status', 'reviewed_by', 
+                 'reviewed_at', 'review_notes', 'revision_of', 'created_at', 'updated_at')
+        export_order = ('session', 'entry_index', 'mode', 'status', 'reviewed_by', 
+                       'reviewed_at', 'review_notes')
+
+
+@admin.register(PREntry)
+class PREntryAdmin(ImportExportModelAdmin):
+    resource_class = PREntryResource
+    list_display = ('id', 'session', 'entry_index', 'mode', 'status', 'created_at')
+    list_filter = ('mode', 'status', 'created_at')
+    search_fields = ('session__polygon__property', 'session__collector__name')
+    readonly_fields = ('created_at', 'updated_at')
+    autocomplete_fields = ['session', 'reviewed_by']
+
+
+# ============================================================
+# BOPEntry Admin
+# ============================================================
+
+class BOPEntryResource(resources.ModelResource):
+    session = Field(attribute='session', column_name='session', 
+                   widget=ForeignKeyWidget(Session, 'id'))
+    reviewed_by = Field(attribute='reviewed_by', column_name='reviewed_by', 
+                       widget=ForeignKeyWidget(UserModel, 'email'))
     
-    search_fields = (
-        'bill_number', 'business__business_name', 'business__account_number',
-        'business__owner_name', 'notes'
-    )
+    class Meta:
+        model = BOPEntry
+        fields = ('id', 'session', 'entry_index', 'mode', 'data', 'status', 'reviewed_by', 
+                 'reviewed_at', 'review_notes', 'revision_of', 'created_at', 'updated_at')
+        export_order = ('session', 'entry_index', 'mode', 'status', 'reviewed_by', 
+                       'reviewed_at', 'review_notes')
+
+
+@admin.register(BOPEntry)
+class BOPEntryAdmin(ImportExportModelAdmin):
+    resource_class = BOPEntryResource
+    list_display = ('id', 'session', 'entry_index', 'mode', 'status', 'created_at')
+    list_filter = ('mode', 'status', 'created_at')
+    search_fields = ('session__polygon__property', 'session__collector__name')
+    readonly_fields = ('created_at', 'updated_at')
+    autocomplete_fields = ['session', 'reviewed_by']
+
+
+# ============================================================
+# Bill Admin
+# ============================================================
+
+class PaymentInline(admin.TabularInline):
+    model = Payment
+    extra = 0
+    fields = ('amount', 'method', 'reference', 'status', 'paid_at')
+    readonly_fields = ('paid_at',)
+    can_delete = False
+    show_change_link = True
+
+
+class BillResource(resources.ModelResource):
+    session = Field(attribute='session', column_name='session', 
+                   widget=ForeignKeyWidget(Session, 'id'))
+    polygon = Field(attribute='polygon', column_name='polygon', 
+                   widget=ForeignKeyWidget(Polygon, 'property'))
+    business = Field(attribute='business', column_name='business', 
+                    widget=ForeignKeyWidget(Business, 'account_number'))
+    issued_by = Field(attribute='issued_by', column_name='issued_by', 
+                     widget=ForeignKeyWidget(UserModel, 'email'))
     
-    readonly_fields = ('bill_number', 'created_at', 'updated_at', 'deleted_at', 
-                      'generated_date', 'last_clicked_at', 'click_count', 'last_click_ip')
-    
-    list_per_page = 50
-    list_max_show_all = 200
-    
-    date_hierarchy = 'generated_date'
+    class Meta:
+        model = Bill
+        import_id_fields = ['bill_number']
+        fields = ('id', 'bill_number', 'session', 'polygon', 'business', 'bill_type', 'owner_name', 
+                 'owner_contact', 'owner_email', 'amount', 'arrears', 'total_due', 'amount_paid',
+                 'due_date', 'status', 'tax_amount', 'penalty_amount', 'discount_amount', 'total_amount',
+                 'billing_year', 'issued_by', 'issued_at', 'click_count', 'last_clicked_at', 
+                 'last_click_ip', 'notes', 'deleted_at')
+        export_order = ('bill_number', 'session', 'polygon', 'business', 'bill_type', 'owner_name', 
+                       'owner_contact', 'owner_email', 'amount', 'arrears', 'total_due', 'amount_paid',
+                       'due_date', 'status', 'issued_at')
+
+
+@admin.register(Bill)
+class BillAdmin(ImportExportModelAdmin):
+    resource_class = BillResource
+    list_display = ('bill_number', 'bill_type', 'owner_name', 'total_due', 'status', 'due_date', 'issued_at')
+    list_filter = ('bill_type', 'status', 'due_date', 'issued_at', 'billing_year')
+    search_fields = ('bill_number', 'owner_name', 'owner_email', 'owner_contact')
+    readonly_fields = ('issued_at',)
+    autocomplete_fields = ['session', 'polygon', 'business', 'issued_by']
+    inlines = [PaymentInline]
     
     fieldsets = (
         ('Bill Information', {
-            'fields': ('business', 'bill_number', 'billing_year', 'status')
+            'fields': ('bill_number', 'bill_type', 'status', 'billing_year')
+        }),
+        ('Property/Business Information', {
+            'fields': ('session', 'polygon', 'business')
+        }),
+        ('Owner Information', {
+            'fields': ('owner_name', 'owner_contact', 'owner_email')
         }),
         ('Amounts', {
-            'fields': ('tax_amount', 'penalty_amount', 'discount_amount', 'total_amount')
+            'fields': ('amount', 'arrears', 'total_due', 'amount_paid', 'tax_amount', 
+                      'penalty_amount', 'discount_amount', 'total_amount')
         }),
         ('Dates', {
-            'fields': ('due_date', 'sent_date', 'paid_date', 'generated_date')
+            'fields': ('due_date', 'issued_at')
         }),
-        ('Additional Information', {
-            'fields': ('notes',)
-        }),
-        ('Click Tracking', {
-            'fields': ('last_clicked_at', 'click_count', 'last_click_ip'),
+        ('Tracking', {
+            'fields': ('click_count', 'last_clicked_at', 'last_click_ip', 'notes'),
             'classes': ('collapse',)
         }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
         ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
+            'fields': ('deleted_at',),
             'classes': ('collapse',)
         }),
     )
+
+
+# ============================================================
+# Payment Admin
+# ============================================================
+
+class PaymentResource(resources.ModelResource):
+    bill = Field(attribute='bill', column_name='bill', 
+                widget=ForeignKeyWidget(Bill, 'bill_number'))
+    reconciled_by = Field(attribute='reconciled_by', column_name='reconciled_by', 
+                         widget=ForeignKeyWidget(UserModel, 'email'))
+    recorded_by = Field(attribute='recorded_by', column_name='recorded_by', 
+                       widget=ForeignKeyWidget(UserModel, 'email'))
     
-    autocomplete_fields = ['business']
+    class Meta:
+        model = Payment
+        fields = ('id', 'bill', 'amount', 'method', 'reference', 'hubtel_data', 'receipt_number', 
+                 'status', 'reconciled', 'reconciled_at', 'paid_at', 'created_at')
+        export_order = ('bill', 'amount', 'method', 'reference', 'receipt_number', 
+                       'status', 'paid_at')
+
+
+@admin.register(Payment)
+class PaymentAdmin(ImportExportModelAdmin):
+    resource_class = PaymentResource
+    list_display = ('id', 'bill', 'amount', 'method', 'status', 'reconciled', 'paid_at')
+    list_filter = ('method', 'status', 'reconciled', 'paid_at')
+    search_fields = ('bill__bill_number', 'reference', 'receipt_number')
+    readonly_fields = ('paid_at', 'created_at')
+    autocomplete_fields = ['bill', 'reconciled_by', 'recorded_by']
+
+
+# ============================================================
+# Business Classification Admin
+# ============================================================
+
+class BusinessSubTypeInline(admin.TabularInline):
+    model = BusinessSubType
+    extra = 1
+    fields = ('slug', 'name', 'sort_order', 'is_active')
+    ordering = ['sort_order']
+
+
+class BusinessCategoryInline(admin.TabularInline):
+    model = BusinessCategory
+    extra = 1
+    fields = ('slug', 'label', 'amount', 'sort_order', 'is_active', 'effective_from', 'effective_to')
+    ordering = ['sort_order']
+
+
+@admin.register(BusinessType)
+class BusinessTypeAdmin(ImportExportModelAdmin):
+    list_display = ('slug', 'name', 'coa_code', 'duration', 'is_active', 'sort_order', 'updated_at')
+    list_filter = ('is_active',)
+    search_fields = ('slug', 'name', 'coa_code')
+    inlines = [BusinessSubTypeInline, BusinessCategoryInline]
+    readonly_fields = ('updated_at',)
+
+
+@admin.register(BusinessSubType)
+class BusinessSubTypeAdmin(ImportExportModelAdmin):
+    list_display = ('business_type', 'slug', 'name', 'sort_order', 'is_active', 'updated_at')
+    list_filter = ('business_type', 'is_active')
+    search_fields = ('slug', 'name')
+    autocomplete_fields = ['business_type']
+    readonly_fields = ('updated_at',)
+
+
+@admin.register(BusinessCategory)
+class BusinessCategoryAdmin(ImportExportModelAdmin):
+    list_display = ('business_type', 'sub_type', 'slug', 'label', 'amount', 'is_active', 'effective_from', 'updated_at')
+    list_filter = ('business_type', 'is_active')
+    search_fields = ('slug', 'label')
+    autocomplete_fields = ['business_type', 'sub_type']
+    readonly_fields = ('updated_at',)
+
+
+# ============================================================
+# Proxy Model Admin (Backward Compatibility)
+# ============================================================
+
+@admin.register(Staff)
+class StaffAdmin(ImportExportModelAdmin):
+    """Alias for UserModel for backward compatibility"""
+    resource_class = UserResource
+    list_display = ('id','employee_id', 'name', 'email', 'phone', 'role', 'is_active')
+    list_filter = ('role', 'is_active')
+    search_fields = ('employee_id', 'name', 'email')
+    readonly_fields = ('created_at', 'updated_at')
     
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('business', 'added_by', 'modified_by', 'deleted_by')
+        return UserModel.objects.all()
+
+
+@admin.register(Bops)
+class BopsAdmin(BusinessAdmin):
+    """Alias for Business model for backward compatibility"""
+    pass
+
+
+@admin.register(BopsBills)
+class BopsBillsAdmin(BillAdmin):
+    """Alias for Bill with BOP type for backward compatibility"""
     
-    def get_export_formats(self):
-        from import_export.formats import base_formats
-        return [
-            base_formats.CSV,
-            base_formats.XLSX,
-            base_formats.XLS,
-            base_formats.JSON,
-            base_formats.TSV,
-        ]
+    def get_queryset(self, request):
+        return Bill.objects.filter(bill_type='bop')
+
+
+@admin.register(PropertyBill)
+class PropertyBillAdmin(BillAdmin):
+    """Alias for Bill with PR type"""
     
-    def get_import_formats(self):
-        from import_export.formats import base_formats
-        return [
-            base_formats.CSV,
-            base_formats.XLSX,
-            base_formats.XLS,
-            base_formats.JSON,
-            base_formats.TSV,
-        ]
+    def get_queryset(self, request):
+        return Bill.objects.filter(bill_type='pr')
+
+
+@admin.register(BusinessBill)
+class BusinessBillAdmin(BillAdmin):
+    """Alias for Bill with BOP type"""
+    
+    def get_queryset(self, request):
+        return Bill.objects.filter(bill_type='bop')
+
+
+# ============================================================
+# Other Model Admin Registrations
+# ============================================================
+
+@admin.register(PropertyRate)
+class PropertyRateAdmin(ImportExportModelAdmin):
+    list_display = ('valuation_no', 'surname', 'first_name', 'prop_type', 'division', 'block', 'imported_at')
+    list_filter = ('prop_type', 'division', 'block')
+    search_fields = ('valuation_no', 'surname', 'first_name', 'mobile_number', 'email', 'tin_number')
+    readonly_fields = ('imported_at',)
+    autocomplete_fields = ['polygon']
+    
+    fieldsets = (
+        ('Property Information', {
+            'fields': ('valuation_no', 'polygon', 'title', 'surname', 'first_name', 'prop_type', 'prop_name')
+        }),
+        ('Owner Information', {
+            'fields': ('prop_owner', 'mobile_number', 'email', 'tin_number')
+        }),
+        ('Location', {
+            'fields': ('house_no', 'suburb', 'division', 'block', 'street_name', 'area_zone', 'prop_address', 'landmark')
+        }),
+        ('Rate Information', {
+            'fields': ('rate_code', 'rate_input', 'rateable_value', 'total_amount', 'current_amount')
+        }),
+        ('Audit Information', {
+            'fields': ('imported_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(BlockBoundary)
+class BlockBoundaryAdmin(GISModelAdmin):
+    list_display = ('id', 'division', 'block', 'property_count', 'complete_count', 'assessed_count', 'display_geom_preview')
+    list_filter = ('division',)
+    search_fields = ('id',)
+    
+    def display_geom_preview(self, obj):
+        if obj.geom:
+            return format_html('<span style="color: green;">✓ Has Geometry</span>')
+        return format_html('<span style="color: red;">✗ No Geometry</span>')
+    display_geom_preview.short_description = 'Geometry'
+
+
+@admin.register(SystemSetting)
+class SystemSettingAdmin(ImportExportModelAdmin):
+    list_display = ('key', 'value_truncated', 'updated_at', 'updated_by')
+    search_fields = ('key',)
+    readonly_fields = ('updated_at',)
+    autocomplete_fields = ['updated_by']
+    
+    def value_truncated(self, obj):
+        return obj.value[:100] if obj.value else '-'
+    value_truncated.short_description = 'Value'
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'action', 'entity_type', 'entity_id', 'actor', 'ip_address', 'created_at')
+    list_filter = ('action', 'entity_type', 'created_at')
+    search_fields = ('actor__name', 'actor__email', 'entity_id', 'ip_address')
+    readonly_fields = ('created_at',)
+    autocomplete_fields = ['actor']
+
 
 @admin.register(PaymentProvider)
 class PaymentProviderAdmin(ImportExportModelAdmin):
-    resource_class = PaymentProviderResource
-    list_display = ['name', 'provider_type', 'is_active', 'created_at']
-    list_filter = ['provider_type', 'is_active']
-    search_fields = ['name']
-    readonly_fields = ['created_at', 'updated_at']
+    list_display = ('name', 'provider_type', 'is_active', 'created_at')
+    list_filter = ('provider_type', 'is_active')
+    search_fields = ('name',)
+    readonly_fields = ('created_at', 'updated_at')
+    
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'provider_type', 'is_active')
@@ -651,91 +683,124 @@ class PaymentProviderAdmin(ImportExportModelAdmin):
         }),
     )
 
+
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(ImportExportModelAdmin):
-    resource_class = PaymentTransactionResource
-    list_display = ['transaction_id', 'bill_type', 'business_bill', 'amount', 'status', 
-                   'initiated_at', 'completed_at']
-    list_filter = ['bill_type', 'status', 'payment_method']
-    search_fields = ['transaction_id', 'provider_transaction_id', 'payer_name', 'payer_phone']
-    readonly_fields = ['initiated_at', 'completed_at']
-    autocomplete_fields = ['business_bill', 'provider']
-    fieldsets = (
-        ('Transaction Information', {
-            'fields': ('transaction_id', 'provider_transaction_id', 'status', 'amount')
-        }),
-        ('Bill Information', {
-            'fields': ('bill_type', 'business_bill')
-        }),
-        ('Payer Information', {
-            'fields': ('payer_name', 'payer_phone', 'payer_email')
-        }),
-        ('Payment Details', {
-            'fields': ('payment_method', 'payment_channel', 'provider')
-        }),
-        ('Metadata', {
-            'fields': ('metadata', 'error_message'),
-            'classes': ('collapse',)
-        }),
-        ('Timestamps', {
-            'fields': ('initiated_at', 'completed_at')
-        }),
-    )
+    list_display = ('transaction_id', 'bill', 'amount', 'status', 'payment_method', 'initiated_at')
+    list_filter = ('status', 'payment_method', 'initiated_at')
+    search_fields = ('transaction_id', 'provider_transaction_id', 'payer_name', 'payer_phone')
+    readonly_fields = ('initiated_at',)
+    autocomplete_fields = ['bill', 'provider']
+
 
 @admin.register(PaymentNotification)
 class PaymentNotificationAdmin(ImportExportModelAdmin):
-    resource_class = PaymentNotificationResource
-    list_display = ['id', 'transaction', 'provider', 'processed', 'created_at']
-    list_filter = ['processed', 'provider']
-    readonly_fields = ['created_at', 'processed_at']
+    list_display = ('id', 'transaction', 'provider', 'processed', 'created_at')
+    list_filter = ('processed', 'provider')
+    readonly_fields = ('created_at', 'processed_at')
     autocomplete_fields = ['transaction', 'provider']
-    fieldsets = (
-        ('Notification Information', {
-            'fields': ('transaction', 'provider', 'raw_data')
-        }),
-        ('Processing', {
-            'fields': ('processed', 'processed_at', 'error')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at',)
-        }),
-    )
+
 
 @admin.register(PaymentLinkClick)
 class PaymentLinkClickAdmin(ImportExportModelAdmin):
-    resource_class = PaymentLinkClickResource
-    list_display = ['id', 'bill_type', 'business_bill', 'link_type', 'ip_address', 'clicked_at']
-    list_filter = ['bill_type', 'link_type', 'clicked_at']
-    search_fields = ['business_bill__bill_number', 'session_id', 'ip_address']
-    readonly_fields = ['clicked_at']
-    autocomplete_fields = ['business_bill', 'payment']
-    fieldsets = (
-        ('Click Information', {
-            'fields': ('bill_type', 'business_bill', 'link_type')
-        }),
-        ('Technical Details', {
-            'fields': ('ip_address', 'user_agent', 'referer', 'session_id')
-        }),
-        ('Tracking', {
-            'fields': ('clicked_at', 'payment')
-        }),
-    )
+    list_display = ('id', 'bill', 'bill_type', 'link_type', 'ip_address', 'clicked_at')
+    list_filter = ('bill_type', 'link_type', 'clicked_at')
+    search_fields = ('bill__bill_number', 'session_id', 'ip_address')
+    readonly_fields = ('clicked_at',)
+    autocomplete_fields = ['bill', 'payment']
 
-@admin.register(versionTbl)
+
+@admin.register(Notification)
+class NotificationAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'bill', 'type', 'channel', 'recipient', 'status', 'sent_at')
+    list_filter = ('type', 'channel', 'status', 'sent_at')
+    search_fields = ('recipient',)
+    readonly_fields = ('created_at',)
+    autocomplete_fields = ['bill']
+
+
+@admin.register(CollectorNotification)
+class CollectorNotificationAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'type', 'title', 'read', 'created_at')
+    list_filter = ('type', 'read', 'created_at')
+    search_fields = ('recipient__name', 'recipient__email', 'title')
+    readonly_fields = ('created_at',)
+    autocomplete_fields = ['recipient']
+
+
+@admin.register(OTPCode)
+class OTPCodeAdmin(ImportExportModelAdmin):
+    list_display = ('email', 'attempts', 'expires_at', 'used', 'created_at')
+    list_filter = ('used', 'expires_at', 'created_at')
+    search_fields = ('email',)
+    readonly_fields = ('code_hash', 'created_at')
+
+
+@admin.register(LookupGroup)
+class LookupGroupAdmin(ImportExportModelAdmin):
+    list_display = ('slug', 'label', 'allows_custom', 'sort_order', 'updated_at')
+    search_fields = ('slug', 'label')
+    inlines = []  # LookupValue inline will be added separately
+
+
+class LookupValueInline(admin.TabularInline):
+    model = LookupValue
+    extra = 1
+    fields = ('slug', 'label', 'sort_order', 'is_active')
+    ordering = ['sort_order']
+
+
+# Add inline to LookupGroup after definition
+LookupGroupAdmin.inlines = [LookupValueInline]
+
+
+@admin.register(LookupValue)
+class LookupValueAdmin(ImportExportModelAdmin):
+    list_display = ('group', 'slug', 'label', 'sort_order', 'is_active', 'updated_at')
+    list_filter = ('group', 'is_active')
+    search_fields = ('slug', 'label')
+    autocomplete_fields = ['group']
+
+
+@admin.register(VersionTbl)
 class VersionTblAdmin(ImportExportModelAdmin):
-    resource_class = VersionTblResource
     list_display = ('version', 'created_at', 'updated_at', 'is_deleted')
     list_filter = ('is_deleted', 'created_at')
-    readonly_fields = ('created_at', 'updated_at', 'deleted_at')
-    fieldsets = (
-        ('Version Information', {
-            'fields': ('version',)
-        }),
-        ('Status', {
-            'fields': ('is_deleted',)
-        }),
-        ('Audit Information', {
-            'fields': ('created_at', 'updated_at', 'deleted_at', 'added_by', 'modified_by', 'deleted_by'),
-            'classes': ('collapse',)
-        }),
-    )
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(RefreshToken)
+class RefreshTokenAdmin(ImportExportModelAdmin):
+    list_display = ('user', 'expires_at', 'created_at')
+    list_filter = ('expires_at', 'created_at')
+    search_fields = ('user__name', 'user__email')
+    autocomplete_fields = ['user']
+
+
+@admin.register(BankStatement)
+class BankStatementAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'bank_name', 'statement_date', 'reference', 'amount', 'status', 'uploaded_at')
+    list_filter = ('bank_name', 'status', 'statement_date')
+    search_fields = ('reference', 'description')
+    readonly_fields = ('uploaded_at',)
+    autocomplete_fields = ['matched_payment', 'uploaded_by']
+
+
+@admin.register(FeeSchedule)
+class FeeScheduleAdmin(ImportExportModelAdmin):
+    list_display = ('bill_type', 'category', 'sub_category', 'amount', 'effective_from', 'effective_to')
+    list_filter = ('bill_type', 'effective_from')
+    search_fields = ('category', 'sub_category')
+    autocomplete_fields = ['created_by']
+
+
+# ============================================================
+# Register all models that might have been missed
+# ============================================================
+
+# Ensure all models are registered
+try:
+    from core.models import Business, BusinessCategory, BusinessSubType, BusinessType
+    # Already registered above
+except ImportError:
+    pass

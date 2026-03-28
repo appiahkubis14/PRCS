@@ -1,144 +1,237 @@
 # views.py
 from django.http import JsonResponse
 from django.db.models import Count, Sum, Avg, Q
+from django.contrib.gis.geos import GEOSGeometry
 from rest_framework.decorators import api_view
-from core.models import Property, Zone, District, PropertyType, Region
+from core.models import Polygon, BlockBoundary, Session, Bill, Business, PropertyRate
 import json
+from decimal import Decimal
+
+# Helper function to convert Decimal to float for JSON serialization
+def decimal_to_float(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 @api_view(['GET'])
 def properties_list(request):
-    """Get filtered properties list"""
+    """Get filtered properties/polygons list"""
     # Get filters from query parameters
     filters = {}
     
     if district := request.GET.get('district'):
-        filters['district__icontains'] = district
+        # Since district isn't directly in Polygon, filter by location or other fields
+        filters['location__icontains'] = district
     
     if zone := request.GET.get('zone'):
-        filters['zone__code'] = zone
+        # Filter by area_zone if available, otherwise ignore
+        filters['area_zone__icontains'] = zone
     
     if property_type := request.GET.get('property_type'):
-        filters['property_type__code'] = property_type
+        # Filter by prop_type from property_rates if available
+        # This would require a join or subquery
+        pass
     
     if status := request.GET.get('status'):
         filters['status'] = status
     
     if min_value := request.GET.get('min_value'):
-        filters['assessed_value__gte'] = float(min_value)
+        # This would need to be handled with property_rates
+        pass
     
-    # Get properties with proper field names
-    properties = Property.objects.filter(**filters).select_related('zone', 'property_type').values(
-        'id', '', 'address', 'latitude', 'longitude',
-        'zone__name', 'property_type__name', 'assessed_value',
-        'total_area', 'status', 'district', 'street', 'postcode',
-        'region', 'gpsname', 'market_value', 'built_up_area',
-        'floor_count', 'year_built'
-    )
+    # Get polygons with basic info
+    polygons = Polygon.objects.filter(**filters).values(
+        'id', 'location', 'latitude', 'longitude', 'status',
+        'division', 'block', 'property'
+    )[:100]  # Limit to 100 for performance
     
-    # Convert Decimal to float for JSON serialization
-    property_list = []
-    for prop in properties:
-        prop_dict = dict(prop)
+    # Enhance with property rate data if available
+    polygon_list = []
+    for poly in polygons:
+        poly_dict = dict(poly)
+        
+        # Get property rate data if exists
+        property_rate = PropertyRate.objects.filter(
+            polygon_id=poly['id']
+        ).first()
+        
+        if property_rate:
+            poly_dict['assessed_value'] = float(property_rate.rateable_value) if property_rate.rateable_value else 0
+            poly_dict['market_value'] = float(property_rate.rateable_value) if property_rate.rateable_value else 0
+            poly_dict['property_type'] = property_rate.prop_type or ''
+            poly_dict['address'] = property_rate.prop_address or ''
+            poly_dict['owner_name'] = property_rate.surname or ''
+            poly_dict['street'] = property_rate.street_name or ''
+            poly_dict['district'] = property_rate.suburb or ''
+            poly_dict['region'] = property_rate.area_zone or ''
+        else:
+            poly_dict['assessed_value'] = 0
+            poly_dict['market_value'] = 0
+            poly_dict['property_type'] = ''
+            poly_dict['address'] = poly.get('location', '')
+            poly_dict['owner_name'] = ''
+            poly_dict['street'] = ''
+            poly_dict['district'] = ''
+            poly_dict['region'] = ''
+        
         # Convert Decimal fields
-        for field in ['assessed_value', 'market_value', 'total_area', 'built_up_area']:
-            if prop_dict.get(field):
-                prop_dict[field] = float(prop_dict[field])
-        property_list.append(prop_dict)
+        for field in ['assessed_value', 'market_value']:
+            if poly_dict.get(field):
+                poly_dict[field] = float(poly_dict[field])
+        
+        polygon_list.append(poly_dict)
     
-    return JsonResponse(property_list, safe=False)
+    return JsonResponse(polygon_list, safe=False, json_dumps_params={'default': decimal_to_float})
 
-
-
-
-# @api_view(['GET'])
-# def property_detail(request, identifier):
-#     """Get detailed property information"""
-#     try:
-#         if identifier.isdigit():
-#             property_obj = Property.objects.select_related('zone', 'property_type').get(id=int(identifier))
-#         else:
-#             property_obj = Property.objects.select_related('zone', 'property_type').get(property_id=identifier)
+@api_view(['GET'])
+def property_detail(request, identifier):
+    """Get detailed property/polygon information"""
+    try:
+        # Try to get by id
+        if identifier.isdigit():
+            polygon_obj = Polygon.objects.get(id=int(identifier))
+        else:
+            # Try to get by property_id (division-block-property)
+            parts = identifier.split('-')
+            if len(parts) == 3:
+                polygon_obj = Polygon.objects.get(
+                    division=int(parts[0]),
+                    block=int(parts[1]),
+                    property=int(parts[2])
+                )
+            else:
+                polygon_obj = Polygon.objects.get(id=identifier)
         
-#         # Get owners
-#         owners = property_obj.owners.values(
-#             'owner_name', 'owner_type', 'phone_number', 
-#             'email', 'ownership_percentage', 'is_primary_owner'
-#         )
+        # Get property rate data
+        property_rate = PropertyRate.objects.filter(
+            polygon_id=polygon_obj.id
+        ).first()
         
-#         data = {
-#             'id': property_obj.id,
-#             # 'property_id': property_obj.property_id,
-#             # 'address': property_obj.address,
-#             # 'latitude': float(property_obj.latitude) if property_obj.latitude else None,
-#             # 'longitude': float(property_obj.longitude) if property_obj.longitude else None,
-#             # 'zone': property_obj.zone.name if property_obj.zone else None,
-#             # 'zone_code': property_obj.zone.code if property_obj.zone else None,
-#             'property_type': property_obj.property_type.name if property_obj.property_type else None,
-#             'property_type_code': property_obj.property_type.code if property_obj.property_type else None,
-#             'market_value': float(property_obj.market_value) if property_obj.market_value else None,
-#             'assessed_value': float(property_obj.assessed_value) if property_obj.assessed_value else None,
-#             'total_area': float(property_obj.total_area) if property_obj.total_area else None,
-#             'built_up_area': float(property_obj.built_up_area) if property_obj.built_up_area else None,
-#             'floor_count': property_obj.floor_count,
-#             'year_built': property_obj.year_built,
-#             'status': property_obj.status,
-#             'district': property_obj.district,
-#             'street': property_obj.street,
-#             'postcode': property_obj.postcode,
-#             'region': property_obj.region,
-#             'gpsname': property_obj.gpsname,
-#             'coordinates': property_obj.coordinates if property_obj.coordinates else None,
-#             'nlat': float(property_obj.nlat) if property_obj.nlat else None,
-#             'slat': float(property_obj.slat) if property_obj.slat else None,
-#             'wlong': float(property_obj.wlong) if property_obj.wlong else None,
-#             'elong': float(property_obj.elong) if property_obj.elong else None,
-#             'owners': list(owners),
-#             'payment_rate': 85.5,  # This should be calculated from your payment data
-#             'total_revenue': 0,  # Calculate from bills/payments
-#             'paid_bills': 0,  # Calculate from bills
-#             'overdue_bills': 0,  # Calculate from bills
-#             'bills_count': 0,  # Calculate from bills
-#         }
+        # Get session data if exists
+        session = Session.objects.filter(
+            polygon_id=polygon_obj.id,
+            deleted_at__isnull=True
+        ).order_by('-created_at').first()
         
-#         return JsonResponse(data)
-#     except Property.DoesNotExist:
-#         return JsonResponse({'error': 'Property not found'}, status=404)
+        # Get bills for this polygon
+        bills = Bill.objects.filter(
+            polygon_id=polygon_obj.id,
+            deleted_at__isnull=True
+        )
+        
+        # Calculate payment statistics
+        total_bills = bills.count()
+        paid_bills = bills.filter(status='paid').count()
+        total_amount = bills.aggregate(total=Sum('amount'))['total'] or 0
+        total_paid = bills.aggregate(total=Sum('amount_paid'))['total'] or 0
+        overdue_bills = bills.filter(status='overdue').count()
+        
+        # Calculate payment rate
+        payment_rate = (total_paid / total_amount * 100) if total_amount > 0 else 0
+        
+        data = {
+            'id': polygon_obj.id,
+            'property_id': f"{polygon_obj.division}-{polygon_obj.block}-{polygon_obj.property}",
+            'address': property_rate.prop_address if property_rate else polygon_obj.location or '',
+            'street': property_rate.street_name if property_rate else '',
+            'district': property_rate.suburb if property_rate else '',
+            'zone': property_rate.area_zone if property_rate else '',
+            'property_type': property_rate.prop_type if property_rate else '',
+            'owner_name': f"{property_rate.title or ''} {property_rate.surname or ''} {property_rate.first_name or ''}".strip() if property_rate else '',
+            'owner_contact': property_rate.mobile_number if property_rate else '',
+            'owner_email': property_rate.email if property_rate else '',
+            'latitude': float(polygon_obj.latitude) if polygon_obj.latitude else None,
+            'longitude': float(polygon_obj.longitude) if polygon_obj.longitude else None,
+            'status': polygon_obj.status,
+            'division': polygon_obj.division,
+            'block': polygon_obj.block,
+            'property_no': polygon_obj.property,
+            'location': polygon_obj.location or '',
+            'has_geometry': polygon_obj.geom is not None,
+            'assessed_value': float(property_rate.rateable_value) if property_rate and property_rate.rateable_value else 0,
+            'total_area': float(property_rate.rate_input) if property_rate and property_rate.rate_input else 0,
+            'rate_code': float(property_rate.rate_code) if property_rate and property_rate.rate_code else 0,
+            'tin_number': property_rate.tin_number if property_rate else '',
+            'session_status': session.status if session else None,
+            'session_submitted': session.submitted_at if session else None,
+            'payment_rate': round(payment_rate, 2),
+            'total_revenue': float(total_paid),
+            'total_bills': total_bills,
+            'paid_bills': paid_bills,
+            'overdue_bills': overdue_bills,
+            'bills': [
+                {
+                    'id': bill.id,
+                    'bill_number': bill.bill_number,
+                    'bill_type': bill.bill_type,
+                    'amount': float(bill.amount),
+                    'total_due': float(bill.total_due),
+                    'amount_paid': float(bill.amount_paid),
+                    'due_date': bill.due_date,
+                    'status': bill.status,
+                    'issued_at': bill.issued_at
+                }
+                for bill in bills
+            ]
+        }
+        
+        return JsonResponse(data, json_dumps_params={'default': decimal_to_float})
+        
+    except Polygon.DoesNotExist:
+        return JsonResponse({'error': 'Property not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
 def zones_list(request):
-    """Get zones data"""
-    zones = Zone.objects.annotate(
-        property_count=Count('properties')
-    ).values(
-        'id', 'code', 'name', 'zone_type', 'property_count'
-    )
+    """Get zones/districts data from polygons"""
+    # Since we don't have a Zone model, we'll group by area_zone from property_rates
+    zones = PropertyRate.objects.filter(
+        area_zone__isnull=False,
+        area_zone__gt=''
+    ).values('area_zone').annotate(
+        property_count=Count('id', distinct=True),
+        total_value=Sum('rateable_value')
+    ).order_by('area_zone')
     
-    return JsonResponse(list(zones), safe=False)
+    zones_list = []
+    for zone in zones:
+        zones_list.append({
+            'id': zone['area_zone'],
+            'code': zone['area_zone'].lower().replace(' ', '_'),
+            'name': zone['area_zone'],
+            'zone_type': 'residential',  # Default
+            'property_count': zone['property_count'],
+            'total_value': float(zone['total_value']) if zone['total_value'] else 0
+        })
+    
+    return JsonResponse(zones_list, safe=False, json_dumps_params={'default': decimal_to_float})
 
-# In your views.py
 @api_view(['GET'])
 def zones_geojson(request):
-    """Get zones as GeoJSON with proper validation"""
+    """Get zones as GeoJSON using block boundaries"""
     try:
-        zones = Zone.objects.all()
+        # Use block boundaries for zones
+        boundaries = BlockBoundary.objects.all()
         
         features = []
-        for zone in zones:
-            if zone.geom:
-                # Ensure the geometry is valid GeoJSON
+        for boundary in boundaries:
+            if boundary.geom:
                 feature = {
                     "type": "Feature",
-                    "id": zone.id,
-                    "geometry": json.loads(zone.geom.geojson) if hasattr(zone.geom, 'geojson') else None,
+                    "id": boundary.id,
+                    "geometry": json.loads(boundary.geom.geojson) if hasattr(boundary.geom, 'geojson') else None,
                     "properties": {
-                        "id": zone.id,
-                        "name": zone.name,
-                        "code": zone.code,
-                        "zone_type": zone.zone_type or "",
+                        "id": boundary.id,
+                        "name": f"Block {boundary.block}",
+                        "code": f"BLK_{boundary.block}",
+                        "zone_type": "block",
                         "color": "#0dae48",
-                        "description": zone.description or "",
-                        "property_count": zone.properties.count(),
-                        "total_revenue": 0  # Update with actual revenue calculation
+                        "description": f"Division: {boundary.division}, Block: {boundary.block}",
+                        "property_count": boundary.property_count,
+                        "complete_count": boundary.complete_count,
+                        "assessed_count": boundary.assessed_count,
+                        "total_revenue": 0  # Calculate from bills if needed
                     }
                 }
                 features.append(feature)
@@ -154,26 +247,32 @@ def zones_geojson(request):
 
 @api_view(['GET'])
 def districts_geojson(request):
-    """Get districts as GeoJSON with proper validation"""
+    """Get districts/divisions as GeoJSON"""
     try:
-        districts = District.objects.all()
+        # Group block boundaries by division
+        divisions = BlockBoundary.objects.values('division').distinct()
         
         features = []
-        for district in districts:
-            if district.geom:
-                feature = {
-                    "type": "Feature",
-                    "id": district.id,
-                    "geometry": json.loads(district.geom.geojson) if hasattr(district.geom, 'geojson') else None,
-                    "properties": {
-                        "id": district.id,
-                        "name": district.name,
-                        "region": district.region or "",
-                        "property_count": district.properties.count(),
-                        "total_revenue": 0  # Update with actual revenue calculation
+        for div in divisions:
+            boundaries = BlockBoundary.objects.filter(division=div['division'])
+            
+            # Create a combined geometry for the division
+            # For simplicity, return individual blocks with division grouping
+            for boundary in boundaries:
+                if boundary.geom:
+                    feature = {
+                        "type": "Feature",
+                        "id": f"div_{boundary.division}",
+                        "geometry": json.loads(boundary.geom.geojson) if hasattr(boundary.geom, 'geojson') else None,
+                        "properties": {
+                            "id": boundary.division,
+                            "name": f"Division {boundary.division}",
+                            "region": "",
+                            "property_count": boundary.property_count,
+                            "total_revenue": 0
+                        }
                     }
-                }
-                features.append(feature)
+                    features.append(feature)
         
         geojson = {
             "type": "FeatureCollection",
@@ -187,237 +286,203 @@ def districts_geojson(request):
 @api_view(['GET'])
 def zones_performance(request):
     """Get zone performance data"""
-    from django.db.models import Count, Sum
+    from django.db.models import Count, Sum, Avg
     
-    zones = Zone.objects.annotate(
-        property_count=Count('properties'),
-        total_value=Sum('properties__assessed_value'),
-        avg_value=Avg('properties__assessed_value'),
-        collection_rate=Avg('properties__assessed_value')  # Placeholder - replace with actual calculation
-    ).values(
-        'id', 'name', 'property_count', 'total_value', 'avg_value', 'collection_rate'
+    # Get performance by area_zone from property_rates
+    zones = PropertyRate.objects.filter(
+        area_zone__isnull=False,
+        area_zone__gt=''
+    ).values('area_zone').annotate(
+        property_count=Count('id', distinct=True),
+        total_value=Sum('rateable_value'),
+        avg_value=Avg('rateable_value')
     )
     
-    # Convert Decimal to float
     zones_list = []
     for zone in zones:
-        zone_dict = dict(zone)
-        for field in ['total_value', 'avg_value', 'collection_rate']:
-            if zone_dict.get(field):
-                zone_dict[field] = float(zone_dict[field])
-        zones_list.append(zone_dict)
+        zones_list.append({
+            'id': zone['area_zone'],
+            'name': zone['area_zone'],
+            'property_count': zone['property_count'],
+            'total_value': float(zone['total_value']) if zone['total_value'] else 0,
+            'avg_value': float(zone['avg_value']) if zone['avg_value'] else 0,
+            'collection_rate': 0  # Placeholder
+        })
     
-    return JsonResponse(zones_list, safe=False)
+    return JsonResponse(zones_list, safe=False, json_dumps_params={'default': decimal_to_float})
 
 @api_view(['GET'])
 def districts_list(request):
-    """Get districts data"""
-    districts = District.objects.annotate(
-        # property_count=Count('properties')
-    ).values(
-        'id', 'district', 'district_code',
+    """Get districts/divisions data"""
+    districts = BlockBoundary.objects.values('division').distinct().annotate(
+        property_count=Count('property_count')
     )
     
-    return JsonResponse(list(districts), safe=False)
+    districts_list = []
+    for district in districts:
+        districts_list.append({
+            'id': district['division'],
+            'district': f"Division {district['division']}",
+            'district_code': f"DIV_{district['division']}",
+            'property_count': district['property_count']
+        })
+    
+    return JsonResponse(districts_list, safe=False)
 
 @api_view(['GET'])
 def property_types_list(request):
-    """Get property types"""
-    types = PropertyType.objects.values('id', 'name', 'code', 'base_rate')
+    """Get property types from property_rates"""
+    types = PropertyRate.objects.filter(
+        prop_type__isnull=False,
+        prop_type__gt=''
+    ).values('prop_type').annotate(
+        count=Count('id')
+    ).order_by('prop_type')
     
-    # Convert Decimal to float
     types_list = []
     for type_obj in types:
-        type_dict = dict(type_obj)
-        type_dict['base_rate'] = float(type_dict['base_rate']) if type_dict['base_rate'] else None
-        types_list.append(type_dict)
+        types_list.append({
+            'id': type_obj['prop_type'],
+            'name': type_obj['prop_type'],
+            'code': type_obj['prop_type'].lower().replace(' ', '_'),
+            'base_rate': 0,
+            'count': type_obj['count']
+        })
     
     return JsonResponse(types_list, safe=False)
 
-# @api_view(['GET'])
-# def search_properties(request):
-#     """Search properties by various criteria"""
-#     query = request.GET.get('q', '')
+@api_view(['GET'])
+def search_properties(request):
+    """Search properties by various criteria"""
+    query = request.GET.get('q', '').strip()
     
-#     if len(query) < 2:
-#         return JsonResponse([], safe=False)
+    if not query or len(query) < 2:
+        return JsonResponse([], safe=False)
     
-#     properties = Property.objects.filter(
+    # Search in polygons and property_rates
+    polygons = Polygon.objects.filter(
+        Q(location__icontains=query) |
+        Q(division__icontains=query) |
+        Q(block__icontains=query)
+    ).values('id', 'location', 'latitude', 'longitude', 'division', 'block', 'property')[:50]
+    
+    # Enhance with property rate data
+    results = []
+    for poly in polygons:
+        property_rate = PropertyRate.objects.filter(polygon_id=poly['id']).first()
         
-#         Q(address__icontains=query) |
-#         Q(street__icontains=query) |
-#         Q(gpsname__icontains=query) |
-#         Q(district__icontains=query) |
-#         Q(region__icontains=query)
-#     ).select_related('zone', 'property_type').values(
-#         'id', 'address', 'latitude', 'longitude',
-#         'zone__name', 'district'
-#     )[:20]
+        if poly['latitude'] and poly['longitude']:
+            results.append({
+                'id': poly['id'],
+                'property_id': f"{poly['division']}-{poly['block']}-{poly['property']}",
+                'address': property_rate.prop_address if property_rate else poly['location'] or '',
+                'street': property_rate.street_name if property_rate else '',
+                'district': property_rate.suburb if property_rate else '',
+                'zone': property_rate.area_zone if property_rate else '',
+                'owner_name': property_rate.surname if property_rate else '',
+                'latitude': float(poly['latitude']),
+                'longitude': float(poly['longitude'])
+            })
     
-#     # Convert Decimal to float
-#     properties_list = []
-#     for prop in properties:
-#         prop_dict = dict(prop)
-#         if prop_dict.get('assessed_value'):
-#             prop_dict['assessed_value'] = float(prop_dict['assessed_value'])
-#         properties_list.append(prop_dict)
-    
-#     return JsonResponse(properties_list, safe=False)
+    return JsonResponse(results, safe=False, json_dumps_params={'default': decimal_to_float})
 
 @api_view(['GET'])
 def heatmap_data(request):
     """Get data for heatmap visualization"""
-    properties = Property.objects.filter(
+    # Get polygons with coordinates and value data
+    polygons = Polygon.objects.filter(
         latitude__isnull=False,
-        longitude__isnull=False,
-        assessed_value__gt=0
-    ).values('latitude', 'longitude', 'assessed_value')
+        longitude__isnull=False
+    ).select_related().values('id', 'latitude', 'longitude')
     
-    # Convert to list of points with intensity
     points = []
-    for prop in properties:
-        if prop['latitude'] and prop['longitude']:
-            try:
-                points.append({
-                    'latitude': float(prop['latitude']),
-                    'longitude': float(prop['longitude']),
-                    'revenue_intensity': float(prop['assessed_value']) / 1000000
-                })
-            except (TypeError, ValueError):
-                continue
+    for poly in polygons:
+        if poly['latitude'] and poly['longitude']:
+            # Get property rate value if exists
+            property_rate = PropertyRate.objects.filter(polygon_id=poly['id']).first()
+            intensity = 0
+            
+            if property_rate and property_rate.rateable_value:
+                intensity = float(property_rate.rateable_value) / 1000000
+            else:
+                # Default intensity based on polygon status
+                polygon_obj = Polygon.objects.get(id=poly['id'])
+                intensity = 1 if polygon_obj.status == 'complete' else 0.5
+            
+            points.append({
+                'latitude': float(poly['latitude']),
+                'longitude': float(poly['longitude']),
+                'revenue_intensity': intensity,
+                'property_id': poly['id']
+            })
     
-    return JsonResponse(points, safe=False)
+    return JsonResponse(points, safe=False, json_dumps_params={'default': decimal_to_float})
 
 @api_view(['GET'])
 def map_analytics(request):
     """Get analytics data for the map"""
     from django.db.models import Count, Sum, Avg
     
-    # Total properties
-    total_properties = Property.objects.count()
+    # Total polygons/properties
+    total_properties = Polygon.objects.filter(deleted_at__isnull=True).count()
     
-    # Active properties
-    active_properties = Property.objects.filter(status='active').count()
+    # Properties with completed assessment
+    completed_properties = Polygon.objects.filter(
+        status='complete',
+        deleted_at__isnull=True
+    ).count()
     
-    # Total revenue (calculated from assessed values as placeholder)
-    total_revenue = Property.objects.aggregate(
-        total=Sum('assessed_value')
-    )['total'] or 0
+    # Properties with assessment
+    assessed_properties = Polygon.objects.filter(
+        accessed=True,
+        deleted_at__isnull=True
+    ).count()
     
-    # Collection rate (placeholder - should be calculated from actual payments)
-    collection_rate = 75.5
+    # Total revenue from bills
+    total_revenue = Bill.objects.filter(
+        deleted_at__isnull=True
+    ).aggregate(total=Sum('amount_paid'))['total'] or 0
     
-    # Zone stats
-    zone_stats = Zone.objects.annotate(
-        property_count=Count('properties'),
-        total_value=Sum('properties__assessed_value')
-    ).values('name', 'property_count', 'total_value')
+    # Collection rate
+    total_due = Bill.objects.filter(deleted_at__isnull=True).aggregate(total=Sum('total_due'))['total'] or 0
+    collection_rate = (float(total_revenue) / float(total_due) * 100) if total_due > 0 else 0
     
-    # Convert to float
+    # Zone stats by area_zone
+    zone_stats = PropertyRate.objects.filter(
+        area_zone__isnull=False,
+        area_zone__gt=''
+    ).values('area_zone').annotate(
+        property_count=Count('id', distinct=True),
+        total_value=Sum('rateable_value')
+    )[:10]
+    
     zone_stats_list = []
     for zone in zone_stats:
-        zone_dict = dict(zone)
-        zone_dict['total_value'] = float(zone_dict['total_value']) if zone_dict['total_value'] else 0
-        zone_stats_list.append(zone_dict)
+        zone_stats_list.append({
+            'name': zone['area_zone'],
+            'property_count': zone['property_count'],
+            'total_value': float(zone['total_value']) if zone['total_value'] else 0
+        })
+    
+    # Block stats
+    block_stats = BlockBoundary.objects.all()[:10]
+    block_stats_list = []
+    for block in block_stats:
+        block_stats_list.append({
+            'name': f"Block {block.block}",
+            'property_count': block.property_count,
+            'complete_count': block.complete_count,
+            'assessed_count': block.assessed_count
+        })
     
     data = {
         'total_properties': total_properties,
-        'active_properties': active_properties,
+        'completed_properties': completed_properties,
+        'assessed_properties': assessed_properties,
         'total_revenue': float(total_revenue),
-        'collection_rate': collection_rate,
-        'zone_stats': zone_stats_list
+        'collection_rate': round(collection_rate, 2),
+        'zone_stats': zone_stats_list,
+        'block_stats': block_stats_list
     }
     
-    return JsonResponse(data)
-
-
-
-
-# In your views.py
-@api_view(['GET'])
-def property_detail(request, identifier):
-    """Get detailed property information"""
-    try:
-        if identifier.isdigit():
-            property_obj = Property.objects.select_related('zone', 'property_type').get(id=int(identifier))
-        else:
-            property_obj = Property.objects.select_related('zone', 'property_type').get(id=identifier)
-        
-        data = {
-            'id': property_obj.id,
-            'property_id': str(property_obj.id),  # Using id as property_id
-            'address': property_obj.address or '',
-            'street': property_obj.street or '',
-            'district': property_obj.district or '',
-            'zone': property_obj.zone.name if property_obj.zone else '',
-            'zone_code': property_obj.zone.code if property_obj.zone else '',
-            'property_type': property_obj.property_type.name if property_obj.property_type else '',
-            'property_type_code': property_obj.property_type.code if property_obj.property_type else '',
-            'area_in_me': float(property_obj.area_in_me) if property_obj.area_in_me else None,
-            'gpsname': property_obj.gpsname or '',
-            'region': property_obj.region or '',
-            'postcode': property_obj.postcode or '',
-            'status': 'active',  # Default status since your model doesn't have status field
-            'latitude': float(property_obj.latitude) if property_obj.latitude else None,
-            'longitude': float(property_obj.longitude) if property_obj.longitude else None,
-            'nlat': float(property_obj.nlat) if property_obj.nlat else None,
-            'slat': float(property_obj.slat) if property_obj.slat else None,
-            'wlong': float(property_obj.wlong) if property_obj.wlong else None,
-            'elong': float(property_obj.elong) if property_obj.elong else None,
-            'area': float(property_obj.area) if property_obj.area else None,
-            'addressv1': property_obj.addressv1 or '',
-            'geometry': {
-                'type': 'Point' if property_obj.latitude and property_obj.longitude else 'Unknown',
-                'coordinates': {
-                    'latitude': float(property_obj.latitude) if property_obj.latitude else None,
-                    'longitude': float(property_obj.longitude) if property_obj.longitude else None
-                }
-            },
-            'payment_rate': 0,  # You'll need to calculate this from your payment data
-            'marker_color': '#0dae48',  # Default color
-            'assessed_value': 0,  # Your model doesn't have this field
-        }
-        
-        return JsonResponse(data)
-    except Property.DoesNotExist:
-        return JsonResponse({'error': 'Property not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-    
-
-
-@api_view(['GET'])
-def search_properties(request):
-    """Search properties by various fields"""
-    query = request.GET.get('q', '').strip()
-    
-    if not query or len(query) < 2:
-        return JsonResponse([], safe=False)
-    
-    # Search in multiple fields
-    properties = Property.objects.filter(
-        Q(address__icontains=query) |
-        Q(street__icontains=query) |
-        Q(district__icontains=query) |
-        Q(region__icontains=query) |
-        Q(gpsname__icontains=query) |
-        Q(postcode__icontains=query) |
-        Q(zone__name__icontains=query) |
-        Q(property_type__name__icontains=query)
-    ).select_related('zone', 'property_type')[:50]  # Limit results
-    
-    results = []
-    for prop in properties:
-        if prop.latitude and prop.longitude:
-            results.append({
-                'id': prop.id,
-                'property_id': str(prop.id),
-                'address': prop.address or '',
-                'street': prop.street or '',
-                'district': prop.district or '',
-                'zone': prop.zone.name if prop.zone else '',
-                'latitude': float(prop.latitude),
-                'longitude': float(prop.longitude)
-            })
-    
-    return JsonResponse(results, safe=False)
+    return JsonResponse(data, json_dumps_params={'default': decimal_to_float})

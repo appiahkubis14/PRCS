@@ -2,7 +2,7 @@
 {% load i18n static %}
 
 {% block content %}
-
+<div class="container-fluid mt-2 mb-4">
 <div class="row">
   <div class="col-12">
     <div class="card">
@@ -32,7 +32,7 @@
                 <th>Area (m²)</th>
                 <th>Region</th>
                 <th>District</th>
-                <th>Street</th>
+                <th>Area</th>
                 <th>Coordinates</th>
                 <th>Created At</th>
                 <th>Actions</th>
@@ -50,7 +50,7 @@
 
 <!-- Add/Edit Property Modal -->
 <div class="modal fade" id="propertyModal" tabindex="-1" aria-labelledby="propertyModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-x modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header border-bottom-0 pb-0">
         <h5 class="modal-title fw-bold" id="propertyModalLabel">Add New Property</h5>
@@ -191,7 +191,7 @@
 
 <!-- View Property Modal -->
 <div class="modal fade" id="viewPropertyModal" tabindex="-1" aria-labelledby="viewPropertyModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-x modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header border-bottom-0 pb-0">
         <h5 class="modal-title fw-bold" id="viewPropertyModalLabel">Property Details</h5>
@@ -215,7 +215,7 @@
 
 <!-- Success/Error Messages -->
 <div id="messageContainer" class="mt-3"></div>
-
+</div>
 <script>
 // Wait for jQuery to be available
 (function() {
@@ -388,7 +388,7 @@
           },
           { data: 'region' },
           { data: 'district' },
-          { data: 'street' },
+          { data: 'area' },
           { 
             data: null,
             render: function(data, type, row) {

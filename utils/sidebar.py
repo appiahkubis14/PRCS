@@ -36,11 +36,11 @@ class Sidebar:
                     "url": "/users/",
                     "groups": ["Admin", "Assessment Team", "Planning Team"]
                 },
-                "App": {
-                    "icon": "fas fa-clipboard-list",
-                    "url": "/app/",
-                    "groups": ["Admin", "Finance Team", "Assessment Team"]
-                },
+                # "App": {
+                #     "icon": "fas fa-clipboard-list",
+                #     "url": "/app/",
+                #     "groups": ["Admin", "Finance Team", "Assessment Team"]
+                # },
                 
                 # "Property Reports": {
                 #     "icon": "fas fa-file-alt", 
@@ -81,7 +81,7 @@ class Sidebar:
                 },
                 "Permits": {
                     "icon": "fas fa-clipboard-list", 
-                    "url": "/bops/properties/permits/",
+                    "url": "/permits/",
                     "groups": ["Admin", "Finance Team", "Assessment Team"]
                 },
                 # "BOP Overview": {
@@ -91,7 +91,7 @@ class Sidebar:
                 # },
                 "Owners": {
                     "icon": "fas fa-users", 
-                    "url": "/properties/master-data/property-owners/",
+                    "url": "/owners/",
                     "groups": ["Admin", "CEO", "Director", "Planning Team", "Finance Team"]
                 },
             }

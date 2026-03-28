@@ -19,13 +19,23 @@ def payment_monitoring_dashboard(request):
 def get_bops_bills_with_tracking(request):
     """API endpoint to get BOPs bills with tracking data"""
     try:
+        from django.db.models import Count, Sum, Q, F
+        from django.utils import timezone
+        
         # Get query parameters
         status = request.GET.get('status', '')
         year = request.GET.get('year', '')
         search = request.GET.get('search', '')
         
-        # Base queryset
-        bills = BopsBills.objects.filter(is_deleted=False).select_related('business').order_by('last_clicked_at')
+        # Base queryset - use BopsBills directly
+        bills = BopsBills.objects.select_related('business').all()
+        
+        # Debug: Print first bill to see fields
+        first_bill = bills.first()
+        if first_bill:
+            print(f"First bill click_count: {first_bill.click_count}")
+            print(f"First bill last_clicked_at: {first_bill.last_clicked_at}")
+            print(f"First bill hasattr click_count: {hasattr(first_bill, 'click_count')}")
         
         # Apply filters
         if status:
@@ -39,13 +49,9 @@ def get_bops_bills_with_tracking(request):
                 Q(business__account_number__icontains=search)
             )
         
-        # Annotate with payment and click stats
-        bills = bills.annotate(
-            payment_count=Count('payments', filter=Q(payments__status='completed')),
-            total_paid=Sum('payments__amount', filter=Q(payments__status='completed')),
-            click_count_value=F('click_count'),
-            last_click=F('last_clicked_at')
-        )
+        # Annotate with payment stats (if PaymentTransaction exists)
+        # But don't use annotations that might interfere with existing fields
+        bills = bills.order_by('-last_clicked_at')  # Show most recent clicks first
         
         # Prepare data
         data = []
@@ -56,44 +62,61 @@ def get_bops_bills_with_tracking(request):
                 days_since_click = (timezone.now() - bill.last_clicked_at).days
             
             # Determine if visited but not paid
-            visited_not_paid = bill.click_count > 0 and bill.status not in ['paid', 'cancelled']
+            visited_not_paid = (bill.click_count or 0) > 0 and bill.status not in ['paid', 'cancelled']
+            
+            # Get click details from PaymentLinkClick table for this bill
+            recent_clicks = PaymentLinkClick.objects.filter(bill=bill).order_by('-clicked_at')[:5]
+            click_details = []
+            for click in recent_clicks:
+                click_details.append({
+                    'clicked_at': click.clicked_at.strftime('%Y-%m-%d %H:%M'),
+                    'link_type': click.link_type,
+                    'ip_address': click.ip_address
+                })
             
             data.append({
                 'id': bill.id,
                 'bill_number': bill.bill_number,
-                'business_name': bill.business.business_name,
-                'account_number': bill.business.account_number,
-                'owner_name': bill.business.owner_name,
+                'business_name': bill.business.business_name if hasattr(bill.business, 'business_name') else "",
+                'account_number': bill.business.account_number if hasattr(bill.business, 'account_number') else "",
+                'owner_name': bill.business.owner_name if hasattr(bill.business, 'owner_name') else "",
                 'billing_year': bill.billing_year,
                 'tax_amount': float(bill.tax_amount),
                 'penalty_amount': float(bill.penalty_amount),
                 'discount_amount': float(bill.discount_amount),
                 'total_amount': float(bill.total_amount),
                 'status': bill.status,
-                'generated_date': bill.generated_date.strftime('%Y-%m-%d %H:%M') if bill.generated_date else '',
+                'generated_date': bill.issued_at.strftime('%Y-%m-%d %H:%M') if bill.issued_at else '',
                 'due_date': bill.due_date.strftime('%Y-%m-%d') if bill.due_date else '',
                 'sent_date': bill.sent_date.strftime('%Y-%m-%d %H:%M') if bill.sent_date else '',
-                'click_count': bill.click_count or 0,
+                'click_count': bill.click_count or 0,  # This should come from the Bill model
                 'last_clicked_at': bill.last_clicked_at.strftime('%Y-%m-%d %H:%M') if bill.last_clicked_at else 'Never',
                 'last_click_ip': bill.last_click_ip or '',
-                'days_since_click': days_since_click,
+                'days_since_click': days_since_click if days_since_click is not None else -1,
                 'visited_not_paid': visited_not_paid,
-                'payment_count': bill.payment_count or 0,
-                'total_paid': float(bill.total_paid) if bill.total_paid else 0,
+                'recent_clicks': click_details,  # Add recent click details for debugging
                 'payment_status': 'Paid' if bill.status == 'paid' else 'Pending',
-                'phone_number': bill.business.phone_number,
-                'business_email': bill.business.business_email,
+                'phone_number': bill.business.phone_number if hasattr(bill.business, 'phone_number') else "",
+                'business_email': bill.business.business_email if hasattr(bill.business, 'business_email') else "",
             })
         
-        # Get summary stats
+        # Get summary stats - use direct database queries
+        total_bills = BopsBills.objects.count()
+        total_amount = BopsBills.objects.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+        paid_bills = BopsBills.objects.filter(status='paid').count()
+        paid_amount = BopsBills.objects.filter(status='paid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+        overdue_bills = BopsBills.objects.filter(status='overdue').count()
+        sent_bills = BopsBills.objects.filter(status='sent').count()
+        visited_not_paid = BopsBills.objects.filter(click_count__gt=0).exclude(status='paid').count()
+        
         summary = {
-            'total_bills': bills.count(),
-            'total_amount': float(bills.aggregate(Sum('total_amount'))['total_amount__sum'] or 0),
-            'paid_bills': bills.filter(status='paid').count(),
-            'paid_amount': float(bills.filter(status='paid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0),
-            'overdue_bills': bills.filter(status='overdue').count(),
-            'sent_bills': bills.filter(status='sent').count(),
-            'visited_not_paid': bills.filter(click_count__gt=0).exclude(status='paid').count(),
+            'total_bills': total_bills,
+            'total_amount': float(total_amount),
+            'paid_bills': paid_bills,
+            'paid_amount': float(paid_amount),
+            'overdue_bills': overdue_bills,
+            'sent_bills': sent_bills,
+            'visited_not_paid': visited_not_paid,
         }
         
         return JsonResponse({
@@ -110,21 +133,22 @@ def get_bops_bills_with_tracking(request):
             'success': False,
             'error': str(e)
         }, status=500)
+    
 
 def get_bops_bill_detail(request, bill_id):
     """Get detailed tracking information for a specific bill"""
     try:
-        bill = BopsBills.objects.get(id=bill_id, is_deleted=False)
+        bill = BopsBills.objects.get(id=bill_id, )
         
         # Get all link clicks
         clicks = PaymentLinkClick.objects.filter(
             bill_type='business',
-            business_bill=bill
+            bill=bill
         ).order_by('-clicked_at')
         
         # Get all payments
         payments = PaymentTransaction.objects.filter(
-            business_bill=bill
+            bill=bill
         ).order_by('-initiated_at')
         
         click_data = []
@@ -165,7 +189,7 @@ def get_bops_bill_detail(request, bill_id):
                 'total_amount': float(bill.total_amount),
                 'status': bill.status,
                 'due_date': bill.due_date.strftime('%Y-%m-%d'),
-                'generated_date': bill.generated_date.strftime('%Y-%m-%d %H:%M'),
+                'generated_date': bill.issued_at.strftime('%Y-%m-%d %H:%M'),
                 'sent_date': bill.sent_date.strftime('%Y-%m-%d %H:%M') if bill.sent_date else None,
                 'click_count': bill.click_count or 0,
                 'last_clicked_at': bill.last_clicked_at.strftime('%Y-%m-%d %H:%M') if bill.last_clicked_at else None,
@@ -180,6 +204,7 @@ def get_bops_bill_detail(request, bill_id):
     except BopsBills.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Bill not found'}, status=404)
     except Exception as e:
+        print(f"Error in get_bops_bill_detail: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def get_dashboard_stats(request):
@@ -189,16 +214,16 @@ def get_dashboard_stats(request):
         thirty_days_ago = now - timedelta(days=30)
         
         # Overall stats
-        total_bills = BopsBills.objects.filter(is_deleted=False).count()
-        total_amount = BopsBills.objects.filter(is_deleted=False).aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+        total_bills = BopsBills.objects.all().count()
+        total_amount = BopsBills.objects.all().aggregate(Sum('total_amount'))['total_amount__sum'] or 0
         
         # Payment stats
-        paid_bills = BopsBills.objects.filter(is_deleted=False, status='paid').count()
-        paid_amount = BopsBills.objects.filter(is_deleted=False, status='paid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+        paid_bills = BopsBills.objects.filter(status='paid').count()
+        paid_amount = BopsBills.objects.filter(status='paid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
         
         # Overdue stats
         overdue_bills = BopsBills.objects.filter(
-            is_deleted=False,
+            
             status__in=['generated', 'sent'],
             due_date__lt=now.date()
         ).count()
@@ -210,23 +235,23 @@ def get_dashboard_stats(request):
         ).count()
         
         visited_not_paid = BopsBills.objects.filter(
-            is_deleted=False,
+            
             click_count__gt=0
         ).exclude(status='paid').count()
         
         # Recent activity
         recent_clicks = PaymentLinkClick.objects.filter(
             bill_type='business'
-        ).select_related('business_bill').order_by('-clicked_at')[:10]
+        ).select_related('bill').order_by('-clicked_at')[:10]
         
         recent_activity = []
         for click in recent_clicks:
             recent_activity.append({
-                'bill_number': click.business_bill.bill_number,
-                'business_name': click.business_bill.business.business_name,
+                'bill_number': click.bill.bill_number,
+                'business_name': click.bill.business.business_name,
                 'link_type': click.link_type,
                 'clicked_at': click.clicked_at.strftime('%Y-%m-%d %H:%M'),
-                'status': click.business_bill.status,
+                'status': click.bill.status,
                 'paid': click.payment is not None
             })
         
@@ -247,4 +272,5 @@ def get_dashboard_stats(request):
         })
         
     except Exception as e:
+        print(f"Error in get_dashboard_stats: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

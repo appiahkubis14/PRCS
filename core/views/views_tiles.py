@@ -9,7 +9,7 @@ import mimetypes
 
 from dotenv.main import logger
 
-from core.models import Property
+from core.models import Polygon
 
 import os
 from django.http import HttpResponse, Http404, FileResponse
@@ -382,7 +382,7 @@ def get_properties_points(request):
         district_filter = request.GET.get('district', '')
         
         # Get only properties with point coordinates
-        properties = Property.objects.exclude(
+        properties = Polygon.objects.exclude(
             latitude__isnull=True
         ).exclude(
             longitude__isnull=True
@@ -392,7 +392,7 @@ def get_properties_points(request):
             properties = properties.filter(district=district_filter)
         
         # Limit results for performance
-        properties = properties[:5000]  # Limit points for clustering
+        properties = properties[:]  # Limit points for clustering
         
         features = []
         for property in properties:
@@ -431,7 +431,7 @@ def get_properties_points(request):
 from django.http import JsonResponse
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.gis.serializers import geojson
-from core.models import Property
+from core.models import Polygon
 import json
 
 def properties_simple_geojson(request):
@@ -440,7 +440,7 @@ def properties_simple_geojson(request):
     """
     fields = request.GET.get('fields', 'id,address,district,region,zone,property_type,area,area_in_me,status,latitude,longitude,g_code,postcode,street,gpsname').split(',')
     
-    properties = Property.objects.all()
+    properties = Polygon.objects.all()
     
     features = []
     for prop in properties:
@@ -473,7 +473,7 @@ def properties_simple_geojson(request):
 
 from django.http import JsonResponse, HttpResponseNotFound
 from django.views.decorators.http import require_GET
-from core.models import Property
+from core.models import Polygon
 import json
 
 @require_GET
@@ -482,7 +482,7 @@ def property_geojson_for_highlight(request, property_id):
     Return GeoJSON for a single property (for highlighting)
     """
     try:
-        property = Property.objects.get(id=property_id)
+        property = Polygon.objects.get(id=property_id)
         
         if property.geom:
             try:
@@ -526,10 +526,10 @@ def property_geojson_for_highlight(request, property_id):
                 except:
                     pass
             
-            return HttpResponseNotFound('Property has no geometry')
+            return HttpResponseNotFound('Polygon has no geometry')
             
-    except Property.DoesNotExist:
-        return HttpResponseNotFound('Property not found')
+    except Polygon.DoesNotExist:
+        return HttpResponseNotFound('Polygon not found')
     except Exception as e:
         return JsonResponse({
             'error': f'Server error: {str(e)}'

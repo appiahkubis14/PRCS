@@ -1,0 +1,989 @@
+{% extends 'main/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+<div class="container-fluid mt-2 mb-4">
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title">Business Operating Permit Management</h3>
+          <p class="card-subtitle">Manage and review business operating permits</p>
+        </div>
+        <div>
+          <!-- <button class="btn btn-info me-2" id="refreshStats">
+            <i class="fas fa-sync-alt"></i> Refresh Stats
+          </button>
+          <button class="btn btn-success me-2" id="exportBtn">
+            <i class="fas fa-download"></i> Export
+          </button> -->
+          <button class="btn btn-primary" id="bulkApproveBtn">
+            <i class="fas fa-check-double"></i> Bulk Approve
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row" id="statsContainer">
+  <div class="col-12">
+    <div class="text-center py-4">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
+      <p>Loading statistics...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<!-- <div class="card mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="input-group">
+          <input type="text" id="searchInput" class="form-control" placeholder="Search by business name, owner, phone, email...">
+          <button class="btn btn-primary" type="button" id="searchButton">
+            <i class="fas fa-search"></i> Search
+          </button>
+          <button class="btn btn-secondary" type="button" id="clearSearchBtn">
+            <i class="fas fa-times"></i> Clear
+          </button>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select id="statusFilter" class="form-select">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select id="sessionFilter" class="form-select">
+          <option value="">All Sessions</option>
+         
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-danger w-100" id="bulkDeleteBtn">
+          <i class="fas fa-trash"></i> Delete Selected
+        </button>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="permitTable" class="table table-striped table-bordered" style="width: 100%">
+        <thead class="thead-dark">
+          <tr>
+            <th><input type="checkbox" id="selectAllCheckbox"></th>
+            <th>ID</th>
+            <th>Business Name</th>
+            <th>Owner Name</th>
+            <th>Account No.</th>
+            <th>Phone</th>
+            <th>Location</th>
+            <th>Amount (GHS)</th>
+            <th>Status</th>
+            <th>Session</th>
+            <th>Polygon</th>
+            <th>Collector</th>
+            <th>Created</th>
+            <th>Actions</th>
+           </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- View Permit Modal -->
+<div class="modal fade" id="viewPermitModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Permit Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="permitDetailsContent">
+          <!-- Permit details will be loaded here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <div id="approvalActions">
+          <!-- Approval buttons will be shown for pending permits -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Approve Permit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="approveForm">
+          <input type="hidden" id="approvePermitId">
+          <div class="mb-3">
+            <label class="form-label">Review Notes (Optional)</label>
+            <textarea class="form-control" id="approveNotes" rows="3" placeholder="Add any notes about this approval..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="confirmApproveBtn">Approve Permit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Reject Permit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="rejectForm">
+          <input type="hidden" id="rejectPermitId">
+          <div class="mb-3">
+            <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="rejectNotes" rows="3" required placeholder="Please provide a reason for rejection..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmRejectBtn">Reject Permit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Approve Modal -->
+<div class="modal fade" id="bulkApproveModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Bulk Approve Permits</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="bulkApproveForm">
+          <div class="mb-3">
+            <label class="form-label">Review Notes (Optional)</label>
+            <textarea class="form-control" id="bulkApproveNotes" rows="3" placeholder="Add notes for all selected permits..."></textarea>
+          </div>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> You are about to approve <span id="bulkApproveCount">0</span> selected permit(s).
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="confirmBulkApproveBtn">Approve Selected</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="mt-3"></div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+  // Load sessions for filter
+  function loadSessions() {
+    // You can add an API endpoint to get sessions if needed
+    // For now, we'll populate from the data
+  }
+
+  // Initialize DataTable
+  var table = $("#permitTable").DataTable({
+    paging: true,
+    searching: false,
+    ordering: true,
+    info: true,
+    responsive: true,
+    autoWidth: false,
+    processing: true,
+    serverSide: false,
+    lengthMenu: [10, 25, 50, 100],
+    pageLength: 25,
+    ajax: {
+      url: "/api/permits/",
+      type: "GET",
+      dataType: "json",
+      dataSrc: function (json) {
+        if (json.success && json.data) {
+          return json.data;
+        }
+        showMessage("danger", json.error || "Error fetching permits");
+        return [];
+      },
+      error: function (xhr) {
+        showMessage("danger", `Error fetching permits: ${xhr.responseText}`);
+        return [];
+      }
+    },
+    dom: "Bfrtip",
+    buttons: [
+      {
+        extend: "copy",
+        text: '<i class="fas fa-copy"></i> Copy',
+        className: "btn btn-sm btn-outline-secondary",
+      },
+      {
+        extend: "csv",
+        text: '<i class="fas fa-file-csv"></i> CSV',
+        className: "btn btn-sm btn-outline-success",
+      },
+      {
+        extend: "excel",
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        className: "btn btn-sm btn-outline-primary",
+      },
+      {
+        extend: "pdf",
+        text: '<i class="fas fa-file-pdf"></i> PDF',
+        className: "btn btn-sm btn-outline-danger",
+      }
+    ],
+    order: [[1, "desc"]],
+    columns: [
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: function(data, type, row) {
+          if (row.status === 'pending') {
+            return `<input type="checkbox" class="permit-select" data-id="${row.id}">`;
+          }
+          return '';
+        }
+      },
+      { data: 'id' },
+      { 
+        data: 'business_name',
+        render: function(data, type, row) {
+          return `<div class="fw-bold">${escapeHtml(data || 'N/A')}</div>`;
+        }
+      },
+      { data: 'owner_name' },
+      { data: 'account_number' },
+      { 
+        data: 'phone_number',
+        render: function(data) {
+          return data ? `<a href="tel:${data}">${escapeHtml(data)}</a>` : '-';
+        }
+      },
+      { data: 'location' },
+      { 
+        data: 'amount',
+        className: "text-end",
+        render: function(data) {
+          return data ? `GHS ${data.toLocaleString()}` : '-';
+        }
+      },
+      { 
+        data: 'status',
+        render: function(data) {
+          const statusColors = {
+            'pending': 'warning',
+            'approved': 'success',
+            'rejected': 'danger'
+          };
+          const icons = {
+            'pending': 'clock',
+            'approved': 'check-circle',
+            'rejected': 'times-circle'
+          };
+          const color = statusColors[data] || 'secondary';
+          const icon = icons[data] || 'info-circle';
+          return `<span class="badge bg-${color}"><i class="fas fa-${icon}"></i> ${data.toUpperCase()}</span>`;
+        }
+      },
+      { 
+        data: 'session_id',
+        render: function(data) {
+          return data ? `Session #${data}` : '-';
+        }
+      },
+      { 
+        data: 'polygon_display',
+        render: function(data) {
+          return data || '-';
+        }
+      },
+      { data: 'collector_name' },
+      { 
+        data: 'created_at',
+        render: function(data) {
+          return data ? data.split(' ')[0] : '-';
+        }
+      },
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: function(data, type, row) {
+          let buttons = `
+            <div class="d-flex justify-content-center gap-1">
+              <button class="btn btn-sm btn-info view-permit" data-id="${row.id}" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+          `;
+          
+          if (row.status === 'pending') {
+            buttons += `
+              <button class="btn btn-sm btn-success approve-permit" data-id="${row.id}" data-name="${escapeHtml(row.business_name)}" title="Approve">
+                <i class="fas fa-check"></i>
+              </button>
+              <button class="btn btn-sm btn-danger reject-permit" data-id="${row.id}" data-name="${escapeHtml(row.business_name)}" title="Reject">
+                <i class="fas fa-times"></i>
+              </button>
+            `;
+          }
+          
+          if (row.status !== 'approved') {
+            buttons += `<button class="btn btn-sm btn-danger delete-permit" data-id="${row.id}" data-name="${escapeHtml(row.business_name)}" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>`;
+          }
+          
+          buttons += `</div>`;
+          return buttons;
+        },
+      },
+    ],
+    drawCallback: function() {
+      $('[data-bs-toggle="tooltip"]').tooltip();
+    }
+  });
+
+  // Load statistics
+  loadStatistics();
+
+  // Refresh statistics
+  $('#refreshStats').click(function() {
+    loadStatistics();
+  });
+
+  // Export permits
+  $('#exportBtn').click(function() {
+    window.location.href = '/api/permits/export/';
+  });
+
+  // Apply filters
+  function applyFilters() {
+    const status = $('#statusFilter').val();
+    const session = $('#sessionFilter').val();
+    const search = $('#searchInput').val();
+    
+    let url = '/api/permits/?';
+    if (status) url += `status=${status}&`;
+    if (session) url += `session_id=${session}&`;
+    if (search) url += `search=${encodeURIComponent(search)}&`;
+    
+    table.ajax.url(url).load();
+  }
+  
+  $('#statusFilter').change(() => applyFilters());
+  $('#sessionFilter').change(() => applyFilters());
+  $('#searchButton').click(() => applyFilters());
+  $('#clearSearchBtn').click(() => {
+    $('#searchInput').val('');
+    $('#statusFilter').val('');
+    $('#sessionFilter').val('');
+    applyFilters();
+  });
+
+  // View Permit
+  $(document).on('click', '.view-permit', function() {
+    const permitId = $(this).data('id');
+    
+    $('#viewPermitModal').modal('show');
+    $('#permitDetailsContent').html(`
+      <div class="text-center py-4">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <p>Loading permit details...</p>
+      </div>
+    `);
+    $('#approvalActions').empty();
+    
+    $.ajax({
+      url: `/api/permits/${permitId}/`,
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const data = response.data;
+          renderPermitDetails(data);
+          
+          // Add approval buttons if pending
+          if (data.status === 'pending') {
+            $('#approvalActions').html(`
+              <button type="button" class="btn btn-success me-2" id="modalApproveBtn" data-id="${data.id}">
+                <i class="fas fa-check"></i> Approve
+              </button>
+              <button type="button" class="btn btn-danger" id="modalRejectBtn" data-id="${data.id}">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            `);
+            
+            $('#modalApproveBtn').click(function() {
+              $('#viewPermitModal').modal('hide');
+              setTimeout(() => {
+                $('.approve-permit[data-id="' + $(this).data('id') + '"]').click();
+              }, 300);
+            });
+            
+            $('#modalRejectBtn').click(function() {
+              $('#viewPermitModal').modal('hide');
+              setTimeout(() => {
+                $('.reject-permit[data-id="' + $(this).data('id') + '"]').click();
+              }, 300);
+            });
+          }
+        } else {
+          $('#permitDetailsContent').html(`<div class="alert alert-danger">${response.error}</div>`);
+        }
+      },
+      error: function(xhr) {
+        $('#permitDetailsContent').html(`<div class="alert alert-danger">Error loading permit details</div>`);
+      }
+    });
+  });
+
+  function renderPermitDetails(data) {
+    const html = `
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <strong>Business Information</strong>
+            </div>
+            <div class="card-body">
+              <p><strong>Business Name:</strong> ${escapeHtml(data.business_name || 'N/A')}</p>
+              <p><strong>Owner Name:</strong> ${escapeHtml(data.owner_name || 'N/A')}</p>
+              <p><strong>Account Number:</strong> ${escapeHtml(data.account_number || 'N/A')}</p>
+              <p><strong>Business Type:</strong> ${escapeHtml(data.business_type || 'N/A')}</p>
+              <p><strong>Business Category:</strong> ${escapeHtml(data.business_category || 'N/A')}</p>
+              <p><strong>Business Class:</strong> ${escapeHtml(data.business_class || 'N/A')}</p>
+              <p><strong>Amount:</strong> ${data.amount ? `GHS ${data.amount.toLocaleString()}` : 'N/A'}</p>
+            </div>
+          </div>
+          
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <strong>Contact Information</strong>
+            </div>
+            <div class="card-body">
+              <p><strong>Phone:</strong> ${data.phone_number ? `<a href="tel:${data.phone_number}">${escapeHtml(data.phone_number)}</a>` : 'N/A'}</p>
+              <p><strong>Email:</strong> ${data.email ? `<a href="mailto:${data.email}">${escapeHtml(data.email)}</a>` : 'N/A'}</p>
+              <p><strong>Location:</strong> ${escapeHtml(data.location || 'N/A')}</p>
+              <p><strong>Address:</strong> ${escapeHtml(data.address || 'N/A')}</p>
+              <p><strong>Digital Address:</strong> ${escapeHtml(data.digital_address || 'N/A')}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <strong>Permit Information</strong>
+            </div>
+            <div class="card-body">
+              <p><strong>Permit ID:</strong> #${data.id}</p>
+              <p><strong>Status:</strong> <span class="badge bg-${data.status === 'pending' ? 'warning' : data.status === 'approved' ? 'success' : 'danger'}">${data.status.toUpperCase()}</span></p>
+              <p><strong>Mode:</strong> ${data.mode || 'N/A'}</p>
+              <p><strong>Session ID:</strong> ${data.session_id ? `#${data.session_id}` : 'N/A'}</p>
+              <p><strong>Session Status:</strong> ${data.session_status ? `<span class="badge bg-${data.session_status === 'pending' ? 'warning' : 'success'}">${data.session_status}</span>` : 'N/A'}</p>
+            </div>
+          </div>
+          
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <strong>Location Information</strong>
+            </div>
+            <div class="card-body">
+              <p><strong>Polygon:</strong> ${escapeHtml(data.polygon_display || 'N/A')}</p>
+              <p><strong>Division:</strong> ${data.division || 'N/A'}</p>
+              <p><strong>Block:</strong> ${data.block || 'N/A'}</p>
+              ${data.latitude && data.longitude ? `
+                <p><strong>Coordinates:</strong> ${data.latitude}, ${data.longitude}</p>
+              ` : ''}
+            </div>
+          </div>
+          
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <strong>Review Information</strong>
+            </div>
+            <div class="card-body">
+              <p><strong>Collector:</strong> ${escapeHtml(data.collector_name || 'N/A')}</p>
+              <p><strong>Created:</strong> ${data.created_at || 'N/A'}</p>
+              ${data.reviewed_by ? `
+                <p><strong>Reviewed By:</strong> ${escapeHtml(data.reviewed_by)}</p>
+                <p><strong>Reviewed At:</strong> ${data.reviewed_at || 'N/A'}</p>
+                <p><strong>Review Notes:</strong> ${escapeHtml(data.review_notes || 'N/A')}</p>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#permitDetailsContent').html(html);
+  }
+
+  // Approve Permit
+  $(document).on('click', '.approve-permit', function() {
+    const permitId = $(this).data('id');
+    const businessName = $(this).data('name');
+    
+    $('#approvePermitId').val(permitId);
+    $('#approveNotes').val('');
+    $('#approveModal').modal('show');
+  });
+
+  $('#confirmApproveBtn').click(function() {
+    const permitId = $('#approvePermitId').val();
+    const notes = $('#approveNotes').val();
+    
+    Swal.fire({
+      title: 'Approve Permit?',
+      text: 'Are you sure you want to approve this permit?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, approve it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Approving...',
+          text: 'Please wait while the permit is being approved.',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        
+        $.ajax({
+          url: `/api/permits/${permitId}/approve/`,
+          type: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+          data: JSON.stringify({ review_notes: notes }),
+          success: function(response) {
+            if (response.success) {
+              Swal.close();
+              $('#approveModal').modal('hide');
+              showMessage('success', response.message);
+              table.ajax.reload();
+              loadStatistics();
+            } else {
+              Swal.close();
+              showMessage('danger', response.error);
+            }
+          },
+          error: function(xhr) {
+            Swal.close();
+            showMessage('danger', 'Error approving permit');
+          }
+        });
+      }
+    });
+  });
+
+  // Reject Permit
+  $(document).on('click', '.reject-permit', function() {
+    const permitId = $(this).data('id');
+    const businessName = $(this).data('name');
+    
+    $('#rejectPermitId').val(permitId);
+    $('#rejectNotes').val('');
+    $('#rejectModal').modal('show');
+  });
+
+  $('#confirmRejectBtn').click(function() {
+    const permitId = $('#rejectPermitId').val();
+    const notes = $('#rejectNotes').val();
+    
+    if (!notes) {
+      showMessage('warning', 'Please provide a reason for rejection');
+      return;
+    }
+    
+    Swal.fire({
+      title: 'Reject Permit?',
+      text: 'Are you sure you want to reject this permit?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, reject it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Rejecting...',
+          text: 'Please wait while the permit is being rejected.',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        
+        $.ajax({
+          url: `/api/permits/${permitId}/reject/`,
+          type: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+          data: JSON.stringify({ review_notes: notes }),
+          success: function(response) {
+            if (response.success) {
+              Swal.close();
+              $('#rejectModal').modal('hide');
+              showMessage('success', response.message);
+              table.ajax.reload();
+              loadStatistics();
+            } else {
+              Swal.close();
+              showMessage('danger', response.error);
+            }
+          },
+          error: function(xhr) {
+            Swal.close();
+            showMessage('danger', 'Error rejecting permit');
+          }
+        });
+      }
+    });
+  });
+
+  // Delete Permit
+  $(document).on('click', '.delete-permit', function() {
+    const permitId = $(this).data('id');
+    const businessName = $(this).data('name');
+    
+    Swal.fire({
+      title: 'Delete Permit?',
+      html: `Are you sure you want to delete permit for <strong>${escapeHtml(businessName)}</strong>?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Deleting...',
+          text: 'Please wait while the permit is being deleted.',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        
+        $.ajax({
+          url: `/api/permits/${permitId}/delete/`,
+          type: 'DELETE',
+          headers: { 'X-CSRFToken': getCSRFToken() },
+          success: function(response) {
+            if (response.success) {
+              Swal.close();
+              showMessage('success', response.message);
+              table.ajax.reload();
+              loadStatistics();
+            } else {
+              Swal.close();
+              showMessage('danger', response.error);
+            }
+          },
+          error: function(xhr) {
+            Swal.close();
+            showMessage('danger', 'Error deleting permit');
+          }
+        });
+      }
+    });
+  });
+
+  // Select All Checkbox
+  $(document).on('change', '#selectAllCheckbox', function() {
+    $('.permit-select').prop('checked', $(this).is(':checked'));
+  });
+
+  // Bulk Approve
+  $('#bulkApproveBtn').click(function() {
+    const selected = $('.permit-select:checked');
+    const permitIds = selected.map(function() {
+      return $(this).data('id');
+    }).get();
+    
+    if (permitIds.length === 0) {
+      showMessage('warning', 'Please select permits to approve');
+      return;
+    }
+    
+    $('#bulkApproveCount').text(permitIds.length);
+    $('#bulkApproveNotes').val('');
+    $('#bulkApproveModal').modal('show');
+  });
+
+  $('#confirmBulkApproveBtn').click(function() {
+    const selected = $('.permit-select:checked');
+    const permitIds = selected.map(function() {
+      return $(this).data('id');
+    }).get();
+    const notes = $('#bulkApproveNotes').val();
+    
+    Swal.fire({
+      title: 'Bulk Approve Permits?',
+      text: `Are you sure you want to approve ${permitIds.length} selected permits?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, approve all!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Approving...',
+          text: 'Please wait while the permits are being approved.',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        
+        $.ajax({
+          url: '/api/permits/bulk-approve/',
+          type: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+          data: JSON.stringify({ permit_ids: permitIds, review_notes: notes }),
+          success: function(response) {
+            if (response.success) {
+              Swal.close();
+              $('#bulkApproveModal').modal('hide');
+              showMessage('success', response.message);
+              table.ajax.reload();
+              loadStatistics();
+            } else {
+              Swal.close();
+              showMessage('danger', response.error);
+            }
+          },
+          error: function(xhr) {
+            Swal.close();
+            showMessage('danger', 'Error approving permits');
+          }
+        });
+      }
+    });
+  });
+
+  // Load Statistics
+  function loadStatistics() {
+    $.ajax({
+      url: '/api/permits/stats/',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          const stats = response.data;
+          renderStatistics(stats);
+        } else {
+          $('#statsContainer').html(`
+            <div class="col-12">
+              <div class="alert alert-danger">Failed to load statistics: ${response.error}</div>
+            </div>
+          `);
+        }
+      },
+      error: function(xhr) {
+        $('#statsContainer').html(`
+          <div class="col-12">
+            <div class="alert alert-danger">Failed to load statistics</div>
+          </div>
+        `);
+      }
+    });
+  }
+
+  // Render Statistics
+  function renderStatistics(stats) {
+    let statsHTML = `
+      <div class="col-xl-3 col-md-6">
+        <div class="card card-animate">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <p class="text-uppercase fw-medium text-muted mb-0">Total Permits</p>
+                <h4 class="fs-22 fw-semibold ff-secondary mb-0">${stats.total_permits}</h4>
+              </div>
+              <div class="flex-shrink-0">
+                <div class="avatar-sm flex-shrink-0">
+                  <span class="avatar-title bg-primary rounded-circle fs-3">
+                    <i class="fas fa-file-alt"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-xl-3 col-md-6">
+        <div class="card card-animate">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <p class="text-uppercase fw-medium text-muted mb-0">Pending</p>
+                <h4 class="fs-22 fw-semibold ff-secondary mb-0">${stats.pending_permits}</h4>
+              </div>
+              <div class="flex-shrink-0">
+                <div class="avatar-sm flex-shrink-0">
+                  <span class="avatar-title bg-warning rounded-circle fs-3">
+                    <i class="fas fa-clock"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-xl-3 col-md-6">
+        <div class="card card-animate">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <p class="text-uppercase fw-medium text-muted mb-0">Approved</p>
+                <h4 class="fs-22 fw-semibold ff-secondary mb-0">${stats.approved_permits}</h4>
+              </div>
+              <div class="flex-shrink-0">
+                <div class="avatar-sm flex-shrink-0">
+                  <span class="avatar-title bg-success rounded-circle fs-3">
+                    <i class="fas fa-check-circle"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-xl-3 col-md-6">
+        <div class="card card-animate">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <p class="text-uppercase fw-medium text-muted mb-0">Total Value</p>
+                <h4 class="fs-22 fw-semibold ff-secondary mb-0">GHS ${stats.total_value.toLocaleString()}</h4>
+              </div>
+              <div class="flex-shrink-0">
+                <div class="avatar-sm flex-shrink-0">
+                  <span class="avatar-title bg-info rounded-circle fs-3">
+                    <i class="fas fa-chart-line"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#statsContainer').html(statsHTML);
+  }
+
+  // Helper Functions
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function getCSRFToken() {
+    let cookieValue = null;
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith("csrftoken=")) {
+        cookieValue = cookie.substring("csrftoken=".length);
+        break;
+      }
+    }
+    return cookieValue;
+  }
+
+  function showMessage(type, message) {
+    $("#messageContainer").html(`
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `);
+    setTimeout(() => {
+      $(".alert").fadeOut("slow");
+    }, 4000);
+  }
+});
+</script>
+
+<style>
+  #permitTable tbody tr td {
+    vertical-align: middle;
+  }
+
+  .btn-sm {
+    margin: 1px;
+  }
+  
+  .card-animate:hover {
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+  }
+  
+  .avatar-sm {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .avatar-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+  }
+  
+  @media print {
+    .card-header .btn,
+    .dt-buttons,
+    #refreshStats,
+    #exportBtn,
+    #bulkApproveBtn,
+    .view-permit,
+    .approve-permit,
+    .reject-permit,
+    .delete-permit {
+      display: none !important;
+    }
+  }
+</style>
+{% endblock %}

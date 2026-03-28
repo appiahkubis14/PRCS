@@ -41,26 +41,34 @@ def track_payment_link_click(request):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
 def payment_link_redirect(request, bill_type, bill_number, link_type='web'):
     """Redirect endpoint for payment links that tracks clicks"""
     try:
+        print(f"Payment link redirect called: bill_type={bill_type}, bill_number={bill_number}, link_type={link_type}")
+        
         # Find the bill
-        if bill_type == 'business':
+        if bill_type == 'business' or bill_type == 'bop':
+            # Try to find in BopsBills (which is a proxy to Bill)
             bill = get_object_or_404(BopsBills, bill_number=bill_number)
-       
-        else:
-            return HttpResponseRedirect('/')
-        
-        # Record the click
-        bill.record_click(link_type, request)
-        
-        # Redirect to actual payment page
-        if bill_type == 'business':
+            print(f"Found bill: {bill.bill_number}, current click_count: {bill.click_count}")
+            
+            # Record the click
+            try:
+                click = bill.record_click(link_type, request)
+                print(f"Click recorded successfully. New click_count: {bill.click_count}")
+                print(f"Click ID: {click.id}")
+            except Exception as e:
+                print(f"Error recording click: {e}")
+                import traceback
+                traceback.print_exc()
+            
+            # Redirect to the bill view
             return HttpResponseRedirect(f'/bopeasycollectible/?bill_id={bill.id}')
         else:
-            return HttpResponseRedirect(f'/pay/bill/{bill_number}')
+            return HttpResponseRedirect('/')
             
     except Exception as e:
         print(f"Error in payment link redirect: {e}")
+        import traceback
+        traceback.print_exc()
         return HttpResponseRedirect('/')

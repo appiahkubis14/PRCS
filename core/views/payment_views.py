@@ -161,11 +161,11 @@ def bop_easy_collectible_list(request):
 
         if bill_id:
             try:
-                qs = BopsBills.objects.filter(id=int(bill_id), is_deleted=False).select_related('business')
+                qs = BopsBills.objects.filter(id=int(bill_id), ).select_related('business')
             except (ValueError, TypeError):
                 qs = BopsBills.objects.none()
         else:
-            qs = BopsBills.objects.filter(billing_year=billing_year, is_deleted=False).select_related('business')
+            qs = BopsBills.objects.filter(billing_year=billing_year, ).select_related('business')
             if block:
                 qs = qs.filter(business__block=block)
             if division:
@@ -206,7 +206,7 @@ def bops_bills_list_page(request):
 def bops_bill_receipt(request, bill_id):
     """Render the BOP bill receipt for a single bill."""
     bill = get_object_or_404(
-        BopsBills.objects.filter(is_deleted=False).select_related('business'),
+        BopsBills.objects.all().select_related('business'),
         id=bill_id,
     )
     return render(request, 'core/main/billing/newbop.html', {
@@ -224,7 +224,7 @@ def get_bops_list(request):
     """Get all Bops businesses for dropdown / Select2."""
     try:
         search = request.GET.get('search', '').strip()
-        qs     = Bops.objects.filter(is_deleted=False)
+        qs     = Bops.objects.all()
 
         if search:
             qs = qs.filter(
@@ -263,7 +263,7 @@ def get_billing_years(request):
         current_year = timezone.now().year
         try:
             years = list(
-                BopsBills.objects.filter(is_deleted=False)
+                BopsBills.objects.all()
                 .values_list('billing_year', flat=True)
                 .distinct()
             )
@@ -282,7 +282,7 @@ def get_bops_blocks(request):
     """Get distinct blocks from Bops."""
     try:
         blocks = (
-            Bops.objects.filter(is_deleted=False)
+            Bops.objects.all()
             .values_list('block', flat=True)
             .distinct()
             .order_by('block')
@@ -298,7 +298,7 @@ def get_bops_divisions(request):
     """Get distinct divisions from Bops (optionally filtered by block)."""
     try:
         block = request.GET.get('block', '').strip()
-        qs    = Bops.objects.filter(is_deleted=False).exclude(division__isnull=True).exclude(division__exact='')
+        qs    = Bops.objects.all().exclude(division__isnull=True).exclude(division__exact='')
         if block:
             qs = qs.filter(block=block)
         divisions = sorted({d.strip() for d in qs.values_list('division', flat=True).distinct() if d and d.strip()})
@@ -312,7 +312,7 @@ def get_bops_blocks_by_division(request):
     """Get distinct blocks for a given division."""
     try:
         division = request.GET.get('division', '').strip()
-        qs       = Bops.objects.filter(is_deleted=False).exclude(block__isnull=True).exclude(block__exact='')
+        qs       = Bops.objects.all().exclude(block__isnull=True).exclude(block__exact='')
         if division:
             qs = qs.filter(division__iexact=division)
         blocks = sorted({b.strip() for b in qs.values_list('block', flat=True).distinct() if b and b.strip()})
@@ -330,7 +330,7 @@ def get_bops_bills_list(request):
         order_column = int(request.GET.get('order[0][column]', 0))
         order_dir    = request.GET.get('order[0][dir]', 'asc')
 
-        qs = BopsBills.objects.filter(is_deleted=False).select_related('business')
+        qs = BopsBills.objects.all().select_related('business')
 
         if search_value:
             qs = qs.filter(
@@ -368,7 +368,7 @@ def get_bops_bills_list(request):
             'discount_amount':str(b.discount_amount),
             'total_amount':   str(b.total_amount),
             'status':         b.status,
-            'generated_date': b.generated_date.strftime('%Y-%m-%d %H:%M') if b.generated_date else '',
+            'generated_date': b.issued_at.strftime('%Y-%m-%d %H:%M') if b.issued_at else '',
             'due_date':       b.due_date.strftime('%Y-%m-%d') if b.due_date else '',
             'business_id':    b.business.id,
         } for b in qs]
@@ -437,7 +437,7 @@ def generate_bops_bills(request: HttpRequest) -> JsonResponse:
             try:
                 with transaction.atomic():
                     try:
-                        business = Bops.objects.get(id=business_id, is_deleted=False)
+                        business = Bops.objects.get(id=business_id, )
                     except Bops.DoesNotExist:
                         errors.append(f"Business ID {business_id} not found")
                         continue
@@ -445,7 +445,7 @@ def generate_bops_bills(request: HttpRequest) -> JsonResponse:
                     existing = BopsBills.objects.filter(
                         business=business,
                         billing_year=billing_year,
-                        is_deleted=False,
+                        
                     ).exclude(status='cancelled').first()
 
                     if existing:
@@ -532,12 +532,12 @@ def generate_bops_bills(request: HttpRequest) -> JsonResponse:
 def regenerate_bops_bill(request, bill_id):
     """Regenerate (re-activate) a specific BopsBill."""
     try:
-        bill = BopsBills.objects.get(id=bill_id, is_deleted=False)
+        bill = BopsBills.objects.get(id=bill_id, )
 
         conflict = BopsBills.objects.filter(
             business=bill.business,
             billing_year=bill.billing_year,
-            is_deleted=False,
+            
         ).exclude(id=bill_id).exclude(status='cancelled').first()
 
         if conflict:
@@ -562,7 +562,7 @@ def regenerate_bops_bill(request, bill_id):
 def send_bops_bill_message(request, bill_id):
     """Send (or re-send) the billing SMS for a specific BopsBill."""
     try:
-        bill    = BopsBills.objects.get(id=bill_id, is_deleted=False)
+        bill    = BopsBills.objects.get(id=bill_id, )
         ok, res = send_bops_billing_sms(bill)
 
         if ok:
@@ -622,7 +622,7 @@ def track_payment_link_click(request: HttpRequest) -> JsonResponse:
         if bill_type != 'business':
             return view.json_response(False, error="Only bill_type 'business' is supported", status=400)
 
-        bill  = get_object_or_404(BopsBills, id=bill_id, is_deleted=False)
+        bill  = get_object_or_404(BopsBills, id=bill_id, )
         click = _record_click(bill, link_type, request)
 
         return view.json_response(True, data={
@@ -643,10 +643,10 @@ def payment_link_redirect(request: HttpRequest, bill_type: str,
     URL: /pay/l/<bill_type>/<bill_number>/<link_type>/
     """
     try:
-        if bill_type != 'business':
+        if bill_type != 'bops' or bill_type != 'business':
             return HttpResponseRedirect('/')
 
-        bill         = get_object_or_404(BopsBills, bill_number=bill_number, is_deleted=False)
+        bill         = get_object_or_404(BopsBills, bill_number=bill_number, )
         redirect_url = f"https://collections.kowri.app/130/{bill_number}"
 
         _record_click(bill, link_type, request)
@@ -804,7 +804,7 @@ def _link_click_to_transaction(notification_data: dict) -> None:
         txn_id         = notification_data.get('transaction_id')
 
         txn  = PaymentTransaction.objects.filter(transaction_id=txn_id).first()
-        bill = BopsBills.objects.filter(bill_number=bill_reference, is_deleted=False).first()
+        bill = BopsBills.objects.filter(bill_number=bill_reference, ).first()
         if not txn or not bill:
             return
 
@@ -831,7 +831,7 @@ def get_payment_status(request: HttpRequest, bill_id: int,
     """Get payment status for a BopsBill."""
     view = PaymentViewMixin()
     try:
-        bill   = get_object_or_404(BopsBills, id=bill_id, is_deleted=False)
+        bill   = get_object_or_404(BopsBills, id=bill_id, )
         txn_qs = PaymentTransaction.objects.filter(business_bill=bill).order_by('-initiated_at')
 
         bill_info = {
@@ -1046,7 +1046,7 @@ def resend_bill_sms(request: HttpRequest, bill_id: int) -> JsonResponse:
     """Manually resend the billing SMS for a BopsBill."""
     view = PaymentViewMixin()
     try:
-        bill    = get_object_or_404(BopsBills, id=bill_id, is_deleted=False)
+        bill    = get_object_or_404(BopsBills, id=bill_id, )
         ok, res = send_bops_billing_sms(bill)
 
         if ok:

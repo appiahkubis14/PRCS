@@ -63,6 +63,49 @@ INSTALLED_APPS = [
 ]
 
 
+# settings.py
+
+# Django REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day',
+        'otp_request': '5/hour',  # Add this line - 5 requests per hour per email
+        # You can also add other custom scopes
+        'login': '10/minute',
+        'sync': '50/hour',
+    },
+}
+
+
+# JWT Settings
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+JWT_ACCESS_TOKEN_LIFETIME = 900  # 15 minutes in seconds
+JWT_REFRESH_TOKEN_LIFETIME = 604800  # 7 days in seconds
+
+# Email Settings
+EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST='smtp.gmail.com'
+EMAIL_PORT=465
+EMAIL_USE_SSL=True 
+EMAIL_HOST_USER='amplogisticsltd@gmail.com'
+EMAIL_HOST_PASSWORD='qesb odkc ykst nif'
+DEFAULT_FROM_EMAIL='AMP Logistics <noreply@amplogistics.com>'
+
+# Test OTP bypass (for development only)
+ALLOW_TEST_OTP = os.environ.get('ALLOW_TEST_OTP', 'False') == 'True'
+TEST_OTP_CODE = '000000'
 
 
 JAZZMIN_SETTINGS = {
@@ -228,18 +271,39 @@ WSGI_APPLICATION = 'PRCS.wsgi.application'
 # }
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
+#         # 'NAME': 'prc',
+#          'NAME': 'gema_new_db',
+#         'USER':'postgres',
+#         'PASSWORD':'sak@2001server',
+#         # 'PASSWORD':'kwarteng19',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     },
+   
+# }
+
+# settings.py
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        # 'NAME': 'prc',
-         'NAME': 'property_rate',
-        'USER':'postgres',
-        'PASSWORD':'sak@2001server',
-        # 'PASSWORD':'kwarteng19',
+        'NAME': 'gema_new_db',
+        'USER': 'postgres',
+        'PASSWORD': 'sak@2001server',
         'HOST': 'localhost',
         'PORT': '5432',
     },
-   
+    'property_rate': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'property_rate',
+        'USER': 'postgres',
+        'PASSWORD': 'sak@2001server',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
 }
 
 

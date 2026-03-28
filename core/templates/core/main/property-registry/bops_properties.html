@@ -2,7 +2,7 @@
 {% load i18n static %}
 
 {% block content %}
-
+<div class="container-fluid mt-2 mb-4">
 <div class="row">
   <div class="col-12">
     <div class="card">
@@ -50,7 +50,7 @@
 
 <!-- Add/Edit Property Modal -->
 <div class="modal fade" id="propertyModal" tabindex="-1" aria-labelledby="propertyModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-l modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="propertyModalLabel">Add New Property</h5>
@@ -224,7 +224,7 @@
 
 <!-- View Property Modal -->
 <div class="modal fade" id="viewPropertyModal" tabindex="-1" aria-labelledby="viewPropertyModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-l modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="viewPropertyModalLabel">Property Details</h5>
@@ -248,6 +248,7 @@
 
 <!-- Success/Error Messages -->
 <div id="messageContainer" class="mt-3"></div>
+</div>
 
 <script>
 // Wait for jQuery to be available

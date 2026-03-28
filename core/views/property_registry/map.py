@@ -3,30 +3,49 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Sum, Count, Avg, Q, F
-from core.models import Property, Zone, District, Region, PropertyType, Bops
+from core.models import Polygon, BlockBoundary, PropertyRate, Business, Session, Bill
 import json
 from django.utils import timezone
-from django.core.serializers import serialize
-from django.contrib.gis.geos import GEOSGeometry, Polygon, Point
+from django.contrib.gis.geos import GEOSGeometry, Point, Polygon as GISPolygon
 from decimal import Decimal
 import logging
 
 # Setup logger
 logger = logging.getLogger(__name__)
 
+# Helper function to convert Decimal to float
+def decimal_to_float(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
 @login_required
 def property_mapping(request):
     """Main GIS mapping view"""
-    zones = Zone.objects.all().values('id', 'name', 'code')
-    property_types = PropertyType.objects.all().values('id', 'name', 'code')
-    districts = District.objects.all().values('id', 'district')
+    # Get unique zones from property rates
+    zones = PropertyRate.objects.filter(
+        area_zone__isnull=False,
+        area_zone__gt=''
+    ).values('area_zone').distinct()
+    
+    # Get unique property types from property rates
+    property_types = PropertyRate.objects.filter(
+        prop_type__isnull=False,
+        prop_type__gt=''
+    ).values('prop_type').distinct()
+    
+    # Get unique districts from property rates (suburb field)
+    districts = PropertyRate.objects.filter(
+        suburb__isnull=False,
+        suburb__gt=''
+    ).values('suburb').distinct()
     
     context = {
         'page_title': 'GIS Property Mapping',
         'active_page': 'gis_mapping',
-        'zones': zones,
-        'property_types': property_types,
-        'districts': districts,
+        'zones': [{'id': z['area_zone'], 'name': z['area_zone'], 'code': z['area_zone'].lower().replace(' ', '_')} for z in zones],
+        'property_types': [{'id': p['prop_type'], 'name': p['prop_type'], 'code': p['prop_type'].lower().replace(' ', '_')} for p in property_types],
+        'districts': [{'id': d['suburb'], 'district': d['suburb']} for d in districts],
     }
     return render(request, 'core/main/map/map.html', context)
 
@@ -36,159 +55,126 @@ def get_properties_geojson(request):
     try:
         # Get filter parameters
         zone_filter = request.GET.get('zone', '')
-        # property_type_filter = request.GET.get('property_type', '')
+        property_type_filter = request.GET.get('property_type', '')
         status_filter = request.GET.get('status', '')
         district_filter = request.GET.get('district', '')
         
-        # Start with all properties
-        properties = Property.objects.all()
+        # Start with all polygons
+        polygons = Polygon.objects.filter(deleted_at__isnull=True)
         
-        # # Apply filters
-        # if zone_filter:
-        #     properties = properties.filter(zone__code=zone_filter)
-        # if property_type_filter:
-        #     properties = properties.filter(property_type__code=property_type_filter)
-        # if status_filter:
-        #     properties = properties.filter(status=status_filter)
-        if district_filter:
-            properties = properties.filter(district=district_filter)
+        # Apply filters by joining with property_rates
+        if zone_filter or property_type_filter or district_filter:
+            # Get property rates with filters
+            property_rates = PropertyRate.objects.all()
+            
+            if zone_filter:
+                property_rates = property_rates.filter(area_zone__icontains=zone_filter)
+            if property_type_filter:
+                property_rates = property_rates.filter(prop_type__icontains=property_type_filter)
+            if district_filter:
+                property_rates = property_rates.filter(suburb__icontains=district_filter)
+            
+            # Get polygon IDs from filtered property rates
+            polygon_ids = property_rates.values_list('polygon_id', flat=True).distinct()
+            polygons = polygons.filter(id__in=polygon_ids)
         
-        # Limit results for performance
-        properties = properties
+        # Apply status filter directly on polygons
+        if status_filter:
+            polygons = polygons.filter(status=status_filter)
         
-        logger.info(f"Processing {properties.count()} properties")
+        # Limit for performance
+        polygons = polygons[:500]
+        
+        logger.info(f"Processing {polygons.count()} properties")
         
         # Create GeoJSON FeatureCollection
         features = []
         
-        for property in properties:
+        for polygon in polygons:
             geometry = None
             geometry_type = None
             
-            # Try to get geometry from geom field first
-            if property.geom and str(property.geom).strip():
+            # Get property rate data
+            property_rate = PropertyRate.objects.filter(polygon_id=polygon.id).first()
+            
+            # Try to get geometry from geom field
+            if polygon.geom:
                 try:
-                    # Check if geom is valid GEOSGeometry
-                    if hasattr(property.geom, 'geojson'):
-                        geometry = json.loads(property.geom.geojson)
+                    if hasattr(polygon.geom, 'geojson'):
+                        geometry = json.loads(polygon.geom.geojson)
                         geometry_type = geometry.get('type')
-                        logger.debug(f"Property {property.id}: Successfully parsed geom as GEOSGeometry")
+                        logger.debug(f"Polygon {polygon.id}: Successfully parsed geom")
                     else:
                         # Try to parse as string
-                        geom_str = str(property.geom)
-                        # Try to parse as WKT
+                        geom_str = str(polygon.geom)
                         try:
-                            from django.contrib.gis.geos import GEOSGeometry
                             geom = GEOSGeometry(geom_str)
                             geometry = json.loads(geom.geojson)
                             geometry_type = geometry.get('type')
-                            logger.debug(f"Property {property.id}: Parsed geom string as WKT")
-                        except Exception as wkt_error:
-                            logger.warning(f"Property {property.id}: Failed to parse geom as WKT: {wkt_error}")
-                            
-                            # Try to parse as GeoJSON string
-                            try:
-                                geom_dict = json.loads(geom_str)
-                                if 'type' in geom_dict and 'coordinates' in geom_dict:
-                                    geometry = geom_dict
-                                    geometry_type = geom_dict.get('type')
-                                    logger.debug(f"Property {property.id}: Parsed geom as GeoJSON string")
-                                elif 'geometry' in geom_dict:
-                                    geometry = geom_dict['geometry']
-                                    geometry_type = geometry.get('type')
-                                    logger.debug(f"Property {property.id}: Found geometry in GeoJSON dict")
-                            except json.JSONDecodeError:
-                                logger.warning(f"Property {property.id}: geom is not valid JSON: {geom_str[:100]}")
+                        except Exception:
+                            pass
                 except Exception as geom_error:
-                    logger.warning(f"Property {property.id}: Error processing geom field: {geom_error}")
+                    logger.warning(f"Polygon {polygon.id}: Error processing geom: {geom_error}")
             
             # Fallback: Use point coordinates if available
-            if not geometry and property.latitude and property.longitude:
+            if not geometry and polygon.latitude and polygon.longitude:
                 try:
                     geometry = {
                         "type": "Point",
                         "coordinates": [
-                            float(property.longitude),
-                            float(property.latitude)
+                            float(polygon.longitude),
+                            float(polygon.latitude)
                         ]
                     }
                     geometry_type = "Point"
-                    logger.debug(f"Property {property.id}: Using lat/long as Point geometry")
-                except (ValueError, TypeError) as point_error:
-                    logger.warning(f"Property {property.id}: Invalid lat/long coordinates: {point_error}")
+                except (ValueError, TypeError):
+                    pass
             
-            # Additional fallback: Create polygon from bounding coordinates
-            if not geometry and all([property.nlat, property.slat, property.wlong, property.elong]):
-                try:
-                    geometry = {
-                        "type": "Polygon",
-                        "coordinates": [[
-                            [float(property.wlong), float(property.slat)],
-                            [float(property.elong), float(property.slat)],
-                            [float(property.elong), float(property.nlat)],
-                            [float(property.wlong), float(property.nlat)],
-                            [float(property.wlong), float(property.slat)]
-                        ]]
-                    }
-                    geometry_type = "Polygon"
-                    logger.debug(f"Property {property.id}: Created polygon from bounding coordinates")
-                except (ValueError, TypeError) as bbox_error:
-                    logger.warning(f"Property {property.id}: Invalid bounding coordinates: {bbox_error}")
-            
-            # Skip if no geometry could be created
+            # Skip if no geometry
             if not geometry:
-                logger.debug(f"Property {property.id}: Skipping - no valid geometry data")
+                logger.debug(f"Polygon {polygon.id}: Skipping - no valid geometry")
                 continue
             
             # Prepare property information
             property_info = {
-                "id": property.id,
-                "property_id": f"PROP-{property.id}",
-                "address": property.address or property.addressv1 or "No address",
-                # "property_type": property.property_type.name if property.property_type else "Unknown",
-                # "zone": property.zone.name if property.zone else "Unknown",
-                # "zone_code": property.zone.code if property.zone else "",
-                "district": property.district or "Unknown",
-                "region": property.region or "Unknown",
-                # "status": property.status or "active",
-                "has_geom": property.geom is not None and str(property.geom).strip() != '',
-                "has_point": property.latitude is not None and property.longitude is not None,
+                "id": polygon.id,
+                "property_id": f"{polygon.division}-{polygon.block}-{polygon.property}",
+                "address": property_rate.prop_address if property_rate else polygon.location or "No address",
+                "property_type": property_rate.prop_type if property_rate else "Unknown",
+                "zone": property_rate.area_zone if property_rate else "Unknown",
+                "zone_code": (property_rate.area_zone.lower().replace(' ', '_') if property_rate and property_rate.area_zone else ""),
+                "district": property_rate.suburb if property_rate else "Unknown",
+                "region": property_rate.area_zone if property_rate else "Unknown",
+                "status": polygon.status,
+                "has_geom": polygon.geom is not None,
+                "has_point": polygon.latitude is not None and polygon.longitude is not None,
                 "geometry_type": geometry_type,
-                "geometry_source": "geom" if property.geom else "coordinates" if property.latitude else "bbox"
+                "geometry_source": "geom" if polygon.geom else "coordinates"
             }
             
             # Add numeric coordinates if available
-            if property.latitude and property.longitude:
+            if polygon.latitude and polygon.longitude:
                 try:
-                    property_info["latitude"] = float(property.latitude)
-                    property_info["longitude"] = float(property.longitude)
+                    property_info["latitude"] = float(polygon.latitude)
+                    property_info["longitude"] = float(polygon.longitude)
                 except (ValueError, TypeError):
                     pass
             
-            # Add area information if available
-            if property.area:
-                try:
-                    property_info["area"] = float(property.area)
-                except (ValueError, TypeError):
-                    pass
+            # Add valuation data if available
+            if property_rate:
+                if property_rate.rateable_value:
+                    property_info["assessed_value"] = float(property_rate.rateable_value)
+                if property_rate.rate_input:
+                    property_info["total_area"] = float(property_rate.rate_input)
+                if property_rate.prop_name:
+                    property_info["property_name"] = property_rate.prop_name
+                if property_rate.surname:
+                    property_info["owner_name"] = f"{property_rate.title or ''} {property_rate.surname} {property_rate.first_name or ''}".strip()
             
-            if property.area_in_me:
-                try:
-                    property_info["area_in_me"] = float(property.area_in_me)
-                except (ValueError, TypeError):
-                    pass
-            
-            # Add bounding box information
-            if all([property.nlat, property.slat, property.wlong, property.elong]):
-                try:
-                    property_info["bbox"] = {
-                        "north": float(property.nlat),
-                        "south": float(property.slat),
-                        "west": float(property.wlong),
-                        "east": float(property.elong)
-                    }
-                except (ValueError, TypeError):
-                    pass
+            # Add division, block, property info
+            property_info["division"] = polygon.division
+            property_info["block"] = polygon.block
+            property_info["property_no"] = polygon.property
             
             # Create feature
             feature = {
@@ -208,18 +194,16 @@ def get_properties_geojson(request):
                 "with_point_coordinates": len([f for f in features if f['properties']['has_point']]),
                 "timestamp": timezone.now().isoformat(),
                 "filters_applied": {
-                    # "zone": zone_filter,
-                    # "property_type": property_type_filter,
-                    # "status": status_filter,
+                    "zone": zone_filter,
+                    "property_type": property_type_filter,
+                    "status": status_filter,
                     "district": district_filter
                 }
             }
         }
-
-        print(geojson)
         
         logger.info(f"Generated GeoJSON with {len(features)} features")
-        return JsonResponse(geojson, json_dumps_params={'ensure_ascii': False, 'indent': 2})
+        return JsonResponse(geojson, json_dumps_params={'ensure_ascii': False, 'default': decimal_to_float})
     
     except Exception as e:
         logger.error(f"Error in get_properties_geojson: {str(e)}\n{traceback.format_exc()}")
@@ -231,52 +215,39 @@ def get_properties_geojson(request):
 
 @login_required
 def get_zones_geojson(request):
-    """API endpoint to get zones as GeoJSON"""
+    """API endpoint to get zones as GeoJSON using block boundaries"""
     try:
-        zones = Zone.objects.all().exclude(boundary__isnull=True).exclude(boundary='')
+        # Use block boundaries as zones
+        boundaries = BlockBoundary.objects.all().exclude(geom__isnull=True)
         
         features = []
-        for zone in zones:
-            geometry = None
+        for boundary in boundaries:
+            if not boundary.geom:
+                continue
             
             try:
-                if zone.boundary:
-                    if isinstance(zone.boundary, str):
-                        try:
-                            # Try to parse as JSON
-                            geom_dict = json.loads(zone.boundary)
-                            if 'coordinates' in geom_dict:
-                                geometry = geom_dict
-                            else:
-                                # Try to parse as WKT
-                                geom = GEOSGeometry(zone.boundary)
-                                geometry = json.loads(geom.geojson)
-                        except json.JSONDecodeError:
-                            # Try to parse as WKT
-                            geom = GEOSGeometry(zone.boundary)
-                            geometry = json.loads(geom.geojson)
-                    else:
-                        geometry = zone.boundary
+                geometry = json.loads(boundary.geom.geojson)
             except Exception as e:
-                logger.warning(f"Failed to parse boundary for zone {zone.id}: {e}")
+                logger.warning(f"Failed to parse geometry for boundary {boundary.id}: {e}")
                 continue
             
-            if not geometry:
-                continue
-            
-            # Count properties in this zone
-            property_count = Property.objects.filter(zone=zone).count()
+            # Count properties in this block boundary
+            property_count = boundary.property_count or 0
             
             feature = {
                 "type": "Feature",
                 "geometry": geometry,
                 "properties": {
-                    "id": zone.id,
-                    "name": zone.name,
-                    "code": zone.code,
-                    "zone_type": zone.zone_type,
+                    "id": boundary.id,
+                    "name": f"Block {boundary.block}",
+                    "code": f"BLK_{boundary.block}",
+                    "zone_type": "block",
                     "property_count": property_count,
-                    "color": get_zone_color(zone.zone_type)
+                    "division": boundary.division,
+                    "block": boundary.block,
+                    "complete_count": boundary.complete_count or 0,
+                    "assessed_count": boundary.assessed_count or 0,
+                    "color": get_zone_color("block")
                 }
             }
             features.append(feature)
@@ -304,46 +275,53 @@ def get_zone_color(zone_type):
         'industrial': '#ff9800',       # Orange
         'agricultural': '#228B22',     # Forest Green
         'mixed_use': '#ff5722',        # Deep Orange
-        'mixed': '#ff5722',            # Deep Orange (alternative)
+        'block': '#6c757d',            # Gray for blocks
+        'mixed': '#ff5722',
     }
     return colors.get(zone_type.lower(), '#0dae48')
 
 @login_required
 def get_districts_geojson(request):
-    """API endpoint to get districts as GeoJSON"""
+    """API endpoint to get districts as GeoJSON (grouped by division)"""
     try:
-        districts = District.objects.all().exclude(geom__isnull=True)
+        # Group block boundaries by division
+        divisions = BlockBoundary.objects.values('division').distinct().exclude(division__isnull=True)
         
         features = []
-        for district in districts:
-            geometry = None
+        for div in divisions:
+            boundaries = BlockBoundary.objects.filter(division=div['division']).exclude(geom__isnull=True)
             
-            try:
-                if district.geom:
-                    # Assuming geom is already a GEOSGeometry field
-                    geometry = json.loads(district.geom.geojson)
-            except Exception as e:
-                logger.warning(f"Failed to parse geometry for district {district.id}: {e}")
-                continue
-            
-            if not geometry:
-                continue
-            
-            # Count properties in this district
-            property_count = Property.objects.filter(district=district.district).count()
-            
-            feature = {
-                "type": "Feature",
-                "geometry": geometry,
-                "properties": {
-                    "id": district.id,
-                    "name": district.district,
-                    "region": district.region,
-                    "property_count": property_count,
-                    "color": '#6c757d'  # Gray for districts
+            # For each division, we could create a union of geometries
+            # For simplicity, we'll create separate features for each block
+            for boundary in boundaries:
+                if not boundary.geom:
+                    continue
+                
+                try:
+                    geometry = json.loads(boundary.geom.geojson)
+                except Exception as e:
+                    logger.warning(f"Failed to parse geometry for boundary {boundary.id}: {e}")
+                    continue
+                
+                # Get property rates in this division
+                property_rates = PropertyRate.objects.filter(
+                    division=div['division']
+                ).count()
+                
+                feature = {
+                    "type": "Feature",
+                    "geometry": geometry,
+                    "properties": {
+                        "id": div['division'],
+                        "name": f"Division {div['division']}",
+                        "region": "",
+                        "property_count": property_rates,
+                        "block": boundary.block,
+                        "division": div['division'],
+                        "color": '#6c757d'
+                    }
                 }
-            }
-            features.append(feature)
+                features.append(feature)
         
         geojson = {
             "type": "FeatureCollection",
@@ -362,94 +340,77 @@ def get_districts_geojson(request):
 
 @login_required
 def get_bops_geojson(request):
-    """API endpoint to get Bops (businesses) as GeoJSON for the map.
-    Uses only centroid (never loads geom) to avoid WKT parse errors from invalid geom data in DB.
-    """
+    """API endpoint to get Businesses as GeoJSON"""
     try:
-        from django.db.models import Q
-        # Use all_objects to avoid is_deleted filter (column may not exist on lanma_businesses).
-        # Do NOT select geom - DB may contain invalid/empty strings that raise WKT errors when deserialized.
-        bops_qs = Bops.all_objects.all()
+        # Get all businesses
+        businesses = Business.objects.filter(is_deleted=False)
         
-        # Debug: Print first few records to see structure
-        print(f"Total records: {bops_qs.count()}")
-        if bops_qs.exists():
-            sample = bops_qs.first()
-            print(f"Sample record ID: {sample.id}")
-            print(f"Available attributes: {dir(sample)}")
-            print(f"Centroid value: {getattr(sample, 'centroid', 'NOT FOUND')}")
-            print(f"Location value: {sample.location if hasattr(sample, 'location') else 'NOT FOUND'}")
-            print(f"Address value: {sample.address if hasattr(sample, 'address') else 'NOT FOUND'}")
+        # Apply filters if needed
+        business_type = request.GET.get('business_type', '')
+        if business_type:
+            businesses = businesses.filter(business_type__slug=business_type)
+        
+        # Limit for performance
+        businesses = businesses[:500]
         
         features = []
-        for bop in bops_qs:
+        for business in businesses:
             geometry = None
             
-            # Try multiple possible field names for coordinates
-            centroid_value = None
-            
-            # Check for centroid field
-            if hasattr(bop, 'centroid') and bop.centroid:
-                centroid_value = bop.centroid
-            # Check for geom field as fallback
-            elif hasattr(bop, 'geom') and bop.geom:
-                # If geom is a Point object with coordinates
+            # Try to get geometry from lat/lng
+            if business.lat and business.lng:
                 try:
-                    if hasattr(bop.geom, 'coords') and bop.geom.coords:
-                        coords = bop.geom.coords
-                        if len(coords) >= 2:
-                            geometry = {"type": "Point", "coordinates": [coords[0], coords[1]]}
-                except:
+                    lat = float(business.lat)
+                    lng = float(business.lng)
+                    geometry = {
+                        "type": "Point",
+                        "coordinates": [lng, lat]
+                    }
+                except (ValueError, TypeError):
                     pass
-            # Check for lat/lon fields
-            elif hasattr(bop, 'latitude') and hasattr(bop, 'longitude'):
-                if bop.latitude and bop.longitude:
+            
+            # Try centroid field if available
+            if not geometry and hasattr(business, 'centroid') and business.centroid:
+                centroid_value = business.centroid
+                if isinstance(centroid_value, str) and ',' in centroid_value:
                     try:
-                        lat = float(bop.latitude)
-                        lon = float(bop.longitude)
-                        geometry = {"type": "Point", "coordinates": [lon, lat]}
+                        parts = centroid_value.split(',')
+                        if len(parts) == 2:
+                            first, second = float(parts[0].strip()), float(parts[1].strip())
+                            # Assume lat,lon format
+                            geometry = {"type": "Point", "coordinates": [second, first]}
                     except (ValueError, TypeError):
                         pass
             
-            # Process centroid if it's a string
-            if centroid_value and isinstance(centroid_value, str) and ',' in centroid_value:
+            # Try geometry field
+            if not geometry and hasattr(business, 'geometry') and business.geometry:
                 try:
-                    parts = centroid_value.split(',')
-                    if len(parts) == 2:
-                        # Try to determine if it's lat,lon or lon,lat format
-                        first, second = float(parts[0].strip()), float(parts[1].strip())
-                        
-                        # Usually latitude is between -90 and 90, longitude between -180 and 180
-                        if -90 <= first <= 90 and -180 <= second <= 180:
-                            # Format is likely lat,lon
-                            geometry = {"type": "Point", "coordinates": [second, first]}
-                        elif -180 <= first <= 180 and -90 <= second <= 90:
-                            # Format is likely lon,lat
-                            geometry = {"type": "Point", "coordinates": [first, second]}
-                        else:
-                            # If we can't determine, assume lat,lon (most common)
-                            geometry = {"type": "Point", "coordinates": [second, first]}
-                except (ValueError, TypeError):
-                    print(f"Error parsing centroid for bop {bop.id}: {centroid_value}")
+                    if hasattr(business.geometry, 'geojson'):
+                        geometry = json.loads(business.geometry.geojson)
+                except Exception:
                     pass
             
-            # Skip if no valid geometry found
+            # Skip if no valid geometry
             if not geometry:
-                print(f"Skipping bop {bop.id} - no valid coordinates found")
                 continue
             
-            # Create property dictionary with safe access
+            # Create properties
             properties = {
-                "id": bop.id,
-                "account_number": getattr(bop, 'account_number', '') or '',
-                "business_name": getattr(bop, 'business_name', '') or '',
-                "business_category": getattr(bop, 'business_category', '') or '',
-                "business_class": getattr(bop, 'business_class', '') or '',
-                "location": getattr(bop, 'location', '') or '',
-                "address": getattr(bop, 'address', '') or '',
-                "division": getattr(bop, 'division', '') or '',
-                "block": getattr(bop, 'block', '') or '',
-                "owner_name": getattr(bop, 'owner_name', '') or '',
+                "id": business.id,
+                "account_number": business.account_number or '',
+                "business_name": business.business_name or '',
+                "business_category": business.business_category or '',
+                "business_class": business.business_class or '',
+                "location": business.location or '',
+                "address": business.address or '',
+                "division": business.division or '',
+                "block": business.block or '',
+                "owner_name": business.owner_name or '',
+                "phone_number": business.phone_number or '',
+                "email": business.email or '',
+                "business_type": business.business_type.name if business.business_type else '',
+                "business_sub_type": business.business_sub_type.name if business.business_sub_type else '',
+                "flat_rate": float(business.flat_rate) if business.flat_rate else 0,
             }
             
             feature = {
@@ -464,16 +425,13 @@ def get_bops_geojson(request):
             "features": features,
             "metadata": {
                 "total": len(features),
-                "total_records": bops_qs.count(),
+                "total_records": businesses.count(),
                 "timestamp": timezone.now().isoformat()
             }
         }
-
-        print(f"Features found: {len(features)} out of {bops_qs.count()} total records")
-        if len(features) == 0:
-            print("No features found. Check the centroid field name and format in your database.")
         
-        return JsonResponse(geojson, json_dumps_params={'ensure_ascii': False})
+        logger.info(f"Generated {len(features)} business features")
+        return JsonResponse(geojson, json_dumps_params={'ensure_ascii': False, 'default': decimal_to_float})
         
     except Exception as e:
         logger.error(f"Error in get_bops_geojson: {str(e)}\n{traceback.format_exc()}")
@@ -483,57 +441,97 @@ def get_bops_geojson(request):
 def get_property_details(request, property_id):
     """API endpoint to get detailed property information"""
     try:
-        # Try to get by property_id or id
+        # Try to get polygon by id
         try:
-            property = Property.objects.get(id=property_id)
-        except Property.DoesNotExist:
-            try:
-                property = Property.objects.get(id=property_id)
-            except (Property.DoesNotExist, ValueError):
+            polygon = Polygon.objects.get(id=int(property_id))
+        except (Polygon.DoesNotExist, ValueError):
+            # Try to get by division-block-property format
+            parts = property_id.split('-')
+            if len(parts) == 3:
+                try:
+                    polygon = Polygon.objects.get(
+                        division=int(parts[0]),
+                        block=int(parts[1]),
+                        property=int(parts[2])
+                    )
+                except Polygon.DoesNotExist:
+                    return JsonResponse({"error": "Property not found", "status": "error"}, status=404)
+            else:
                 return JsonResponse({"error": "Property not found", "status": "error"}, status=404)
         
-        # Parse geometry if available
-        # geometry_info = None
-        # if property.geom:
-        #     try:
-        #         # Try to parse as JSON
-        #         geom_dict = json.loads(property.geom)
-        #         geometry_info = geom_dict
-        #     except json.JSONDecodeError:
-        #         try:
-        #             # Try to parse as WKT
-        #             geom = GEOSGeometry(property.geom)
-        #             geometry_info = json.loads(geom.geojson)
-        #         except Exception:
-        #             geometry_info = None
+        # Get property rate data
+        property_rate = PropertyRate.objects.filter(polygon_id=polygon.id).first()
         
-        # Get basic property data
+        # Get session data
+        session = Session.objects.filter(
+            polygon_id=polygon.id,
+            deleted_at__isnull=True
+        ).order_by('-created_at').first()
+        
+        # Get bills
+        bills = Bill.objects.filter(
+            polygon_id=polygon.id,
+            deleted_at__isnull=True
+        )
+        
+        # Calculate statistics
+        total_bills = bills.count()
+        paid_bills = bills.filter(status='paid').count()
+        total_amount = bills.aggregate(total=Sum('amount'))['total'] or 0
+        total_paid = bills.aggregate(total=Sum('amount_paid'))['total'] or 0
+        overdue_bills = bills.filter(status='overdue').count()
+        payment_rate = (total_paid / total_amount * 100) if total_amount > 0 else 0
+        
+        # Parse geometry
+        geometry_info = None
+        if polygon.geom:
+            try:
+                geometry_info = json.loads(polygon.geom.geojson)
+            except Exception:
+                pass
+        
+        # Build property data
         property_data = {
-            "id": property.id,
-            # "property_id": getattr(property, 'property_id', f"PROP-{property.id}"),
-            "address": property.address or property.addressv1,
-            "street": property.street,
-            "district": property.district,
-            "region": property.region,
-            "postcode": property.postcode,
-            # "property_type": property.property_type.name if property.property_type else "Unknown",
-            # "zone": property.zone.name if property.zone else "Unknown",
-            # "status": property.status,
-            # "total_area": float(property.total_area) if property.total_area else None,
-            # "built_up_area": float(property.built_up_area) if property.built_up_area else None,
-            # "floor_count": property.floor_count,
-            # "year_built": property.year_built,
-            "latitude": float(property.latitude) if property.latitude else None,
-            "longitude": float(property.longitude) if property.longitude else None,
-            # "geometry": geometry_info,
-            "has_geom": bool(property.geom),
-            "has_point": bool(property.latitude and property.longitude)
+            "id": polygon.id,
+            "property_id": f"{polygon.division}-{polygon.block}-{polygon.property}",
+            "address": property_rate.prop_address if property_rate else polygon.location or "",
+            "street": property_rate.street_name if property_rate else "",
+            "district": property_rate.suburb if property_rate else "",
+            "region": property_rate.area_zone if property_rate else "",
+            "postcode": "",
+            "property_type": property_rate.prop_type if property_rate else "Unknown",
+            "zone": property_rate.area_zone if property_rate else "Unknown",
+            "status": polygon.status,
+            "total_area": float(property_rate.rate_input) if property_rate and property_rate.rate_input else None,
+            "built_up_area": None,
+            "floor_count": None,
+            "year_built": None,
+            "latitude": float(polygon.latitude) if polygon.latitude else None,
+            "longitude": float(polygon.longitude) if polygon.longitude else None,
+            "geometry": geometry_info,
+            "has_geom": polygon.geom is not None,
+            "has_point": polygon.latitude is not None and polygon.longitude is not None,
+            "owner_name": f"{property_rate.title or ''} {property_rate.surname or ''} {property_rate.first_name or ''}".strip() if property_rate else "",
+            "owner_contact": property_rate.mobile_number if property_rate else "",
+            "owner_email": property_rate.email if property_rate else "",
+            "assessed_value": float(property_rate.rateable_value) if property_rate and property_rate.rateable_value else 0,
+            "division": polygon.division,
+            "block": polygon.block,
+            "property_no": polygon.property,
+            "session_status": session.status if session else None,
+            "session_submitted": session.submitted_at if session else None,
+            "total_bills": total_bills,
+            "paid_bills": paid_bills,
+            "overdue_bills": overdue_bills,
+            "total_amount": float(total_amount),
+            "total_paid": float(total_paid),
+            "payment_rate": round(payment_rate, 2)
         }
         
-        return JsonResponse({"data": property_data, "status": "success"})
+        return JsonResponse({"data": property_data, "status": "success"}, json_dumps_params={'default': decimal_to_float})
     
     except Exception as e:
-        logger.error(f"Error in get_property_details: {str(e)}")
+        logger.error(f"Error in get_property_details: {str(e)}\n{traceback.format_exc()}")
         return JsonResponse({"error": str(e), "status": "error"}, status=500)
 
 @login_required
@@ -544,87 +542,131 @@ def search_properties(request):
         if not query or len(query) < 2:
             return JsonResponse({"results": [], "status": "success"})
         
-        # Build search query
-        search_filter = (
-            Q(address__icontains=query) |
-            Q(addressv1__icontains=query) |
-            Q(street__icontains=query) |
-            Q(gpsname__icontains=query) |
-            Q(district__icontains=query) |
-            Q(region__icontains=query)
-        )
+        # Search in polygons
+        polygon_filter = Q()
         
-        # Try to search by ID if query is numeric
+        # Search by location
+        polygon_filter |= Q(location__icontains=query)
+        
+        # Search by division, block, property
         if query.isdigit():
-            search_filter |= Q(id__exact=int(query))
+            polygon_filter |= Q(division=int(query))
+            polygon_filter |= Q(block=int(query))
+            polygon_filter |= Q(property=int(query))
         
-        # Also search by custom property ID formats
-        # Remove common prefixes to search by ID
-        clean_query = query.upper().replace('PROP-', '').replace('GM', '').strip()
-        if clean_query.isdigit():
-            search_filter |= Q(id__exact=int(clean_query))
+        polygons = Polygon.objects.filter(polygon_filter, deleted_at__isnull=True)[:50]
         
-        properties = Property.objects.filter(search_filter).select_related('zone', 'property_type')[:20]
+        # Search in property rates
+        property_rate_filter = Q()
+        property_rate_filter |= Q(prop_address__icontains=query)
+        property_rate_filter |= Q(street_name__icontains=query)
+        property_rate_filter |= Q(suburb__icontains=query)
+        property_rate_filter |= Q(area_zone__icontains=query)
+        property_rate_filter |= Q(surname__icontains=query)
+        property_rate_filter |= Q(first_name__icontains=query)
+        property_rate_filter |= Q(prop_name__icontains=query)
         
+        property_rates = PropertyRate.objects.filter(property_rate_filter)[:50]
+        
+        # Combine results
         results = []
-        for property in properties:
-            # Generate display ID
-            display_id = f"PROP-{property.id}"
+        processed_ids = set()
+        
+        # Add polygon results
+        for polygon in polygons:
+            if polygon.id in processed_ids:
+                continue
+            processed_ids.add(polygon.id)
             
-            # Check if this was an exact ID match for highlighting
-            is_id_match = False
-            if query.isdigit() and property.id == int(query):
-                is_id_match = True
-            elif clean_query.isdigit() and property.id == int(clean_query):
-                is_id_match = True
+            property_rate = PropertyRate.objects.filter(polygon_id=polygon.id).first()
             
             result = {
-                "id": property.id,
-                "display_id": display_id,
-                "address": property.address or property.addressv1 or "",
-                "district": property.district or "",
-                "zone": property.zone.name if property.zone else "",
-                "zone_code": property.zone.code if property.zone else "",
-                "property_type": property.property_type.name if property.property_type else "",
-                "property_type_code": property.property_type.code if property.property_type else "",
-                "latitude": float(property.latitude) if property.latitude else None,
-                "longitude": float(property.longitude) if property.longitude else None,
-                "has_geom": bool(property.geom),
-                "has_point": bool(property.latitude and property.longitude),
-                "area": float(property.area) if property.area else None,
-                "area_in_me": float(property.area_in_me) if property.area_in_me else None,
-                "status": property.status or "active",
-                "is_id_match": is_id_match
+                "id": polygon.id,
+                "display_id": f"{polygon.division}-{polygon.block}-{polygon.property}",
+                "address": property_rate.prop_address if property_rate else polygon.location or "",
+                "district": property_rate.suburb if property_rate else "",
+                "zone": property_rate.area_zone if property_rate else "",
+                "zone_code": property_rate.area_zone.lower().replace(' ', '_') if property_rate and property_rate.area_zone else "",
+                "property_type": property_rate.prop_type if property_rate else "",
+                "property_type_code": property_rate.prop_type.lower().replace(' ', '_') if property_rate and property_rate.prop_type else "",
+                "latitude": float(polygon.latitude) if polygon.latitude else None,
+                "longitude": float(polygon.longitude) if polygon.longitude else None,
+                "has_geom": polygon.geom is not None,
+                "has_point": polygon.latitude is not None and polygon.longitude is not None,
+                "area": float(property_rate.rate_input) if property_rate and property_rate.rate_input else None,
+                "area_in_me": None,
+                "status": polygon.status,
+                "division": polygon.division,
+                "block": polygon.block,
+                "property_no": polygon.property,
+                "is_id_match": query.isdigit() and (polygon.id == int(query) or 
+                                                    polygon.division == int(query) or
+                                                    polygon.block == int(query) or
+                                                    polygon.property == int(query))
             }
             
-            # Add matching field info for debugging
-            if is_id_match:
+            # Determine match type
+            if result["is_id_match"]:
                 result["match_type"] = "id"
-            elif property.address and query.lower() in property.address.lower():
+            elif property_rate and property_rate.prop_address and query.lower() in property_rate.prop_address.lower():
                 result["match_type"] = "address"
-            elif property.district and query.lower() in property.district.lower():
+            elif property_rate and property_rate.suburb and query.lower() in property_rate.suburb.lower():
                 result["match_type"] = "district"
-            elif property.region and query.lower() in property.region.lower():
-                result["match_type"] = "region"
-            elif property.zone and property.zone.name and query.lower() in property.zone.name.lower():
+            elif property_rate and property_rate.area_zone and query.lower() in property_rate.area_zone.lower():
                 result["match_type"] = "zone"
+            elif polygon.location and query.lower() in polygon.location.lower():
+                result["match_type"] = "location"
             
             results.append(result)
         
-        # Log what we found
-        logger.info(f"Search for '{query}' found {len(results)} results")
-        if results:
-            logger.info(f"First result: ID {results[0]['id']} - {results[0]['address'][:50]}")
+        # Add property rate results that aren't already in polygons
+        for property_rate in property_rates:
+            if property_rate.polygon_id and property_rate.polygon_id in processed_ids:
+                continue
+            
+            # Try to get the polygon
+            polygon = None
+            if property_rate.polygon_id:
+                try:
+                    polygon = Polygon.objects.get(id=property_rate.polygon_id)
+                except Polygon.DoesNotExist:
+                    pass
+            
+            result = {
+                "id": property_rate.id,
+                "display_id": f"PR-{property_rate.id}",
+                "address": property_rate.prop_address or "",
+                "district": property_rate.suburb or "",
+                "zone": property_rate.area_zone or "",
+                "zone_code": property_rate.area_zone.lower().replace(' ', '_') if property_rate.area_zone else "",
+                "property_type": property_rate.prop_type or "",
+                "property_type_code": property_rate.prop_type.lower().replace(' ', '_') if property_rate.prop_type else "",
+                "latitude": float(polygon.latitude) if polygon and polygon.latitude else None,
+                "longitude": float(polygon.longitude) if polygon and polygon.longitude else None,
+                "has_geom": polygon and polygon.geom is not None,
+                "has_point": polygon and polygon.latitude is not None and polygon.longitude is not None,
+                "area": float(property_rate.rate_input) if property_rate.rate_input else None,
+                "area_in_me": None,
+                "status": polygon.status if polygon else "unknown",
+                "division": property_rate.division,
+                "block": property_rate.block,
+                "property_no": None,
+                "is_id_match": query.isdigit() and property_rate.id == int(query),
+                "match_type": "valuation"
+            }
+            
+            results.append(result)
         
+        logger.info(f"Search for '{query}' found {len(results)} results")
         return JsonResponse({
-            "results": results, 
+            "results": results,
             "status": "success",
             "query": query,
             "count": len(results)
-        })
+        }, json_dumps_params={'default': decimal_to_float})
     
     except Exception as e:
-        logger.error(f"Error in search_properties: {str(e)}")
+        logger.error(f"Error in search_properties: {str(e)}\n{traceback.format_exc()}")
         return JsonResponse({
             "error": "Search failed",
             "details": str(e),
@@ -636,81 +678,86 @@ def get_map_stats(request):
     """API endpoint for map statistics"""
     try:
         # Property statistics
-        total_properties = Property.objects.all().count()
-        properties_with_geom = Property.objects.filter(
-            
-        ).exclude(
-            Q(geom__isnull=True) | Q(geom='')
+        total_properties = Polygon.objects.filter(deleted_at__isnull=True).count()
+        
+        properties_with_geom = Polygon.objects.filter(
+            geom__isnull=False,
+            deleted_at__isnull=True
         ).count()
         
-        properties_with_point = Property.objects.filter(
-            
+        properties_with_point = Polygon.objects.filter(
             latitude__isnull=False,
-            longitude__isnull=False
+            longitude__isnull=False,
+            deleted_at__isnull=True
         ).count()
         
-        # Zone statistics
-        zones_with_boundaries = Zone.objects.filter(
-            
-        ).exclude(
-            Q(boundary__isnull=True) | Q(boundary='')
+        # Block boundaries statistics
+        blocks_with_boundaries = BlockBoundary.objects.filter(
+            geom__isnull=False
         ).count()
         
-        # District statistics
-        districts_with_geom = District.objects.filter(
-            
-        ).exclude(
-            geom__isnull=True
+        # Property rates statistics
+        property_rates_count = PropertyRate.objects.count()
+        
+        # Business statistics
+        businesses_count = Business.objects.filter(is_deleted=False).count()
+        businesses_with_coords = Business.objects.filter(
+            lat__isnull=False,
+            lng__isnull=False
         ).count()
         
         stats = {
             "total_properties": total_properties,
             "properties_with_geom": properties_with_geom,
             "properties_with_point": properties_with_point,
-            "zones_with_boundaries": zones_with_boundaries,
-            "districts_with_geom": districts_with_geom,
+            "blocks_with_boundaries": blocks_with_boundaries,
+            "property_rates_count": property_rates_count,
+            "businesses_count": businesses_count,
+            "businesses_with_coords": businesses_with_coords,
             "timestamp": timezone.now().isoformat()
         }
         
-        return JsonResponse({"data": stats, "status": "success"})
+        return JsonResponse({"data": stats, "status": "success"}, json_dumps_params={'default': decimal_to_float})
     
     except Exception as e:
-        logger.error(f"Error in get_map_stats: {str(e)}")
+        logger.error(f"Error in get_map_stats: {str(e)}\n{traceback.format_exc()}")
         return JsonResponse({"error": str(e), "status": "error"}, status=500)
 
 @login_required
 def get_property_geometry(request, property_id):
     """API endpoint to get only property geometry"""
     try:
-        # Try to get by property_id or id
+        # Try to get polygon by id
         try:
-            property = Property.objects.get(property_id=property_id)
-        except Property.DoesNotExist:
-            try:
-                property = Property.objects.get(id=property_id)
-            except (Property.DoesNotExist, ValueError):
+            polygon = Polygon.objects.get(id=int(property_id))
+        except (Polygon.DoesNotExist, ValueError):
+            # Try to get by division-block-property format
+            parts = property_id.split('-')
+            if len(parts) == 3:
+                try:
+                    polygon = Polygon.objects.get(
+                        division=int(parts[0]),
+                        block=int(parts[1]),
+                        property=int(parts[2])
+                    )
+                except Polygon.DoesNotExist:
+                    return JsonResponse({"error": "Property not found", "status": "error"}, status=404)
+            else:
                 return JsonResponse({"error": "Property not found", "status": "error"}, status=404)
         
         geometry = None
-        if property.geom:
+        if polygon.geom:
             try:
-                # Try to parse as JSON
-                geom_dict = json.loads(property.geom)
-                geometry = geom_dict
-            except json.JSONDecodeError:
-                try:
-                    # Try to parse as WKT
-                    geom = GEOSGeometry(property.geom)
-                    geometry = json.loads(geom.geojson)
-                except Exception as e:
-                    logger.warning(f"Failed to parse geometry for property {property_id}: {e}")
+                geometry = json.loads(polygon.geom.geojson)
+            except Exception as e:
+                logger.warning(f"Failed to parse geometry for property {property_id}: {e}")
         
         return JsonResponse({
-            # "property_id": getattr(property, 'property_id', f"PROP-{property.id}"),
+            "property_id": f"{polygon.division}-{polygon.block}-{polygon.property}",
             "geometry": geometry,
             "has_geometry": bool(geometry),
             "status": "success"
-        })
+        }, json_dumps_params={'default': decimal_to_float})
     
     except Exception as e:
         logger.error(f"Error in get_property_geometry: {str(e)}")
@@ -722,22 +769,30 @@ def get_properties_without_geometry(request):
     try:
         limit = int(request.GET.get('limit', 10))
         
-        properties_without_geom = Property.objects.filter(
-            
-            geom__isnull=True
-        )[:limit].values('id', 'address', 'district', 'zone__name')
+        # Properties without geometry
+        properties_without_geom = Polygon.objects.filter(
+            geom__isnull=True,
+            deleted_at__isnull=True
+        )[:limit].values('id', 'location', 'division', 'block', 'property', 'status')
         
-        properties_with_bad_geom = Property.objects.filter(
-            
-            geom__isnull=False
-        ).exclude(geom='')[:limit].values('id', 'address', 'district', 'zone__name', 'geom')
+        # Properties with bad geometry
+        properties_with_bad_geom = Polygon.objects.filter(
+            geom__isnull=False,
+            deleted_at__isnull=True
+        ).exclude(geom='')[:limit].values('id', 'location', 'division', 'block', 'property', 'status')
+        
+        # Property rates without polygon association
+        property_rates_without_polygon = PropertyRate.objects.filter(
+            polygon_id__isnull=True
+        )[:limit].values('id', 'prop_address', 'suburb', 'division', 'block')
         
         return JsonResponse({
             "without_geometry": list(properties_without_geom),
             "with_bad_geometry": list(properties_with_bad_geom),
+            "property_rates_without_polygon": list(property_rates_without_polygon),
             "status": "success"
-        })
+        }, json_dumps_params={'default': decimal_to_float})
     
     except Exception as e:
-        logger.error(f"Error in get_properties_without_geometry: {str(e)}")
+        logger.error(f"Error in get_properties_without_geometry: {str(e)}\n{traceback.format_exc()}")
         return JsonResponse({"error": str(e), "status": "error"}, status=500)

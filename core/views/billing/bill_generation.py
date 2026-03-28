@@ -10,7 +10,7 @@ import json
 from django.http import HttpRequest
 from django.utils import timezone
 from datetime import datetime
-from core.models import Property, TaxRate, Bops, BopsBills
+from core.models import Bill, Polygon, PropertyRate, Bops, BopsBills
 
 
 def bill_generation_page(request):
@@ -62,7 +62,7 @@ def bill_generation_page(request):
 #             4: 'billing_cycle__name',
 #             5: 'total_amount',
 #             6: 'status',
-#             7: 'generated_date',
+#             7: 'issued_date',
 #             8: 'due_date'
 #         }
         
@@ -91,7 +91,7 @@ def bill_generation_page(request):
 #                 'discount_amount': str(bill.discount_amount),
 #                 'total_amount': str(bill.total_amount),
 #                 'status': bill.status,
-#                 'generated_date': bill.generated_date.strftime('%Y-%m-%d %H:%M:%S'),
+#                 'issued_date': bill.issued_date.strftime('%Y-%m-%d %H:%M:%S'),
 #                 'due_date': bill.due_date.strftime('%Y-%m-%d'),
 #                 'created_by': bill.created_by.get_full_name() or bill.created_by.username,
 #             })
@@ -113,8 +113,8 @@ def bill_generation_page(request):
 def get_properties_for_billing(request):
     """Get properties that can be billed"""
     try:
-        properties = Property.objects.select_related('zone', 'property_type').filter(
-            is_deleted=False
+        properties = Polygon.objects.select_related('zone', 'property_type').filter(
+            
         ).prefetch_related('owners')
         
         property_data = []
@@ -188,15 +188,15 @@ def calculate_tax_amount(request):
         if not property_id or not billing_cycle_id:
             return JsonResponse({
                 'success': False,
-                'error': 'Property ID and Billing Cycle ID are required'
+                'error': 'Polygon ID and Billing Cycle ID are required'
             }, status=400)
         
-        property_obj = Property.objects.get(id=property_id)
+        property_obj = Polygon.objects.get(id=property_id)
         billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
         
         # Get current tax rate for the property's zone and type
         current_date = datetime.now().date()
-        tax_rate = TaxRate.objects.filter(
+        tax_rate = PropertyRate.objects.filter(
             zone=property_obj.zone,
             property_type=property_obj.property_type,
             effective_from__lte=current_date,
@@ -219,10 +219,10 @@ def calculate_tax_amount(request):
             'assessed_value': str(property_obj.assessed_value)
         })
         
-    except Property.DoesNotExist:
+    except Polygon.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'error': 'Property not found'
+            'error': 'Polygon not found'
         }, status=404)
     except BillingCycle.DoesNotExist:
         return JsonResponse({
@@ -254,10 +254,10 @@ def calculate_tax_amount(request):
 #             if not all([property_id, billing_cycle_id, tax_amount]):
 #                 return JsonResponse({
 #                     'success': False,
-#                     'error': 'Property, billing cycle, and tax amount are required'
+#                     'error': 'Polygon, billing cycle, and tax amount are required'
 #                 }, status=400)
             
-#             property_obj = Property.objects.get(id=property_id)
+#             property_obj = Polygon.objects.get(id=property_id)
 #             billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
             
 #             # Generate unique bill number
@@ -287,10 +287,10 @@ def calculate_tax_amount(request):
 #                 'bill_number': bill_number
 #             })
             
-#     except Property.DoesNotExist:
+#     except Polygon.DoesNotExist:
 #         return JsonResponse({
 #             'success': False,
-#             'error': 'Property not found'
+#             'error': 'Polygon not found'
 #         }, status=404)
 #     except BillingCycle.DoesNotExist:
 #         return JsonResponse({
@@ -324,10 +324,10 @@ def calculate_tax_amount(request):
 #             if not all([property_id, billing_cycle_id, tax_amount]):
 #                 return JsonResponse({
 #                     'success': False,
-#                     'error': 'Property, billing cycle, and tax amount are required'
+#                     'error': 'Polygon, billing cycle, and tax amount are required'
 #                 }, status=400)
             
-#             property_obj = Property.objects.get(id=property_id)
+#             property_obj = Polygon.objects.get(id=property_id)
 #             billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
             
 #             # Generate unique bill number
@@ -369,10 +369,10 @@ def calculate_tax_amount(request):
 #                 'payment_links': payment_links
 #             })
             
-#     except Property.DoesNotExist:
+#     except Polygon.DoesNotExist:
 #         return JsonResponse({
 #             'success': False,
-#             'error': 'Property not found'
+#             'error': 'Polygon not found'
 #         }, status=404)
 #     except BillingCycle.DoesNotExist:
 #         return JsonResponse({
@@ -495,7 +495,7 @@ def get_bill_details(request, bill_id):
                 'total_amount': str(bill.total_amount)
             },
             'status': bill.status,
-            'generated_date': bill.generated_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'issued_date': bill.issued_date.strftime('%Y-%m-%d %H:%M:%S'),
             'due_date': bill.due_date.strftime('%Y-%m-%d'),
             'created_by': bill.created_by.get_full_name() or bill.created_by.username
         }
@@ -530,7 +530,7 @@ def bulk_generate_bills(request):
             if not property_ids or not billing_cycle_id:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Property IDs and billing cycle are required'
+                    'error': 'Polygon IDs and billing cycle are required'
                 }, status=400)
             
             billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
@@ -539,11 +539,11 @@ def bulk_generate_bills(request):
             
             for property_id in property_ids:
                 try:
-                    property_obj = Property.objects.get(id=property_id)
+                    property_obj = Polygon.objects.get(id=property_id)
                     
                     # Calculate tax amount
                     current_date = datetime.now().date()
-                    tax_rate = TaxRate.objects.filter(
+                    tax_rate = PropertyRate.objects.filter(
                         zone=property_obj.zone,
                         property_type=property_obj.property_type,
                         effective_from__lte=current_date,
@@ -575,8 +575,8 @@ def bulk_generate_bills(request):
                     
                     generated_bills.append(bill_number)
                     
-                except Property.DoesNotExist:
-                    errors.append(f'Property {property_id} not found')
+                except Polygon.DoesNotExist:
+                    errors.append(f'Polygon {property_id} not found')
                 except Exception as e:
                     errors.append(f'Error generating bill for property {property_id}: {str(e)}')
             
@@ -624,7 +624,7 @@ def bop_easy_collectible_list(request):
                 bill_id_int = int(bill_id)
                 bop_easy_collectibles = BopsBills.objects.filter(
                     id=bill_id_int,
-                    is_deleted=False
+                    
                 ).select_related('business')
             except (ValueError, TypeError):
                 bop_easy_collectibles = BopsBills.objects.none()
@@ -632,7 +632,7 @@ def bop_easy_collectible_list(request):
             # Start with base queryset
             bop_easy_collectibles = BopsBills.objects.filter(
                 billing_year=billing_year,
-                is_deleted=False
+                
             ).select_related('business')
             
             # Apply filters only if values are provided
@@ -755,7 +755,7 @@ def generate_bops_bills(request):
                 # Use a savepoint for each business so one failure doesn't abort the whole transaction
                 with transaction.atomic():
                     try:
-                        business = Bops.objects.get(id=business_id, is_deleted=False)
+                        business = Bops.objects.get(id=business_id, )
                     except Bops.DoesNotExist:
                         errors.append(f"Business with ID {business_id} not found")
                         continue
@@ -768,7 +768,7 @@ def generate_bops_bills(request):
                         existing_bill = BopsBills.objects.filter(
                             business=business,
                             billing_year=billing_year,
-                            is_deleted=False
+                            
                         ).exclude(status='cancelled').first()
                         
                         if existing_bill:
@@ -890,7 +890,7 @@ def get_bops_list(request):
         search = request.GET.get('search', '').strip()
         
         # Get all Bops (not deleted)
-        bops = Bops.objects.filter(is_deleted=False)
+        bops = Bops.objects.filter()
         
         # Apply search filter if provided
         # Now also searchable by block and division
@@ -958,7 +958,7 @@ def get_billing_years(request):
         # Try to get distinct billing years from BopsBills (not deleted)
         try:
             years = BopsBills.objects.filter(
-                is_deleted=False
+                
             ).values_list('billing_year', flat=True).distinct().order_by('-billing_year')
             
             years_list = list(years)
@@ -995,7 +995,7 @@ def get_bops_blocks(request):
     try:
         # Get distinct non-empty blocks from businesses that have bills
         blocks = (
-            Bops.objects.filter(is_deleted=False).order_by('block')
+            Bops.objects.filter().order_by('block')
             
             .values_list('block', flat=True)
             .distinct()
@@ -1024,7 +1024,7 @@ def get_bops_divisions(request):
         block = request.GET.get('block', '').strip()
 
         # Base queryset: only businesses with a non-empty division
-        qs = Bops.objects.filter(is_deleted=False).exclude(division__isnull=True).exclude(division__exact='')
+        qs = Bops.objects.filter().exclude(division__isnull=True).exclude(division__exact='')
 
         # If a block is provided, filter by it
         if block:
@@ -1054,7 +1054,7 @@ def get_bops_blocks_by_division(request):
         division = request.GET.get('division', '').strip()
 
         # Base queryset: only businesses with a non-empty block
-        qs = Bops.objects.filter(is_deleted=False).exclude(block__isnull=True).exclude(block__exact='')
+        qs = Bops.objects.filter().exclude(block__isnull=True).exclude(block__exact='')
 
         # If a division is provided, filter by it (case-insensitive)
         if division:
@@ -1089,7 +1089,7 @@ def bops_bills_list_page(request):
 def bops_bill_receipt(request, bill_id):
     """Render the BOP bill receipt (newbop.html) for a single bill by ID."""
     bill = get_object_or_404(
-        BopsBills.objects.filter(is_deleted=False).select_related('business'),
+        BopsBills.objects.filter().select_related('business'),
         id=bill_id
     )
     return render(request, 'core/main/billing/newbop.html', {
@@ -1109,7 +1109,7 @@ def get_bops_bills_list(request):
         search_value = request.GET.get('search[value]', '')
         
         # Base queryset
-        bills = BopsBills.objects.filter(is_deleted=False).select_related('business')
+        bills = BopsBills.objects.filter().select_related('business')
         
         # Apply search filter
         if search_value:
@@ -1141,7 +1141,7 @@ def get_bops_bills_list(request):
             8: 'discount_amount',
             9: 'total_amount',
             10: 'status',
-            11: 'generated_date',
+            11: 'issued_date',
             12: 'due_date'
             # Column 13 is Actions (not sortable)
         }
@@ -1174,17 +1174,19 @@ def get_bops_bills_list(request):
                 'discount_amount': str(bill.discount_amount),
                 'total_amount': str(bill.total_amount),
                 'status': bill.status,
-                'generated_date': bill.generated_date.strftime('%Y-%m-%d %H:%M') if bill.generated_date else '',
+                'issued_date': bill.issued_date.strftime('%Y-%m-%d %H:%M') if bill.issued_date else '',
                 'due_date': bill.due_date.strftime('%Y-%m-%d') if bill.due_date else '',
                 'business_id': bill.business.id
             })
-        
+        print(data)
         return JsonResponse({
             'draw': draw,
             'recordsTotal': total_records,
             'recordsFiltered': total_records,
             'data': data
         })
+
+        # print(f"Total records found: {total_records}")
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
@@ -1203,13 +1205,13 @@ def get_bops_bills_list(request):
 def regenerate_bops_bill(request, bill_id):
     """Regenerate a specific BopsBill"""
     try:
-        bill = BopsBills.objects.get(id=bill_id, is_deleted=False)
+        bill = BopsBills.objects.get(id=bill_id, )
         
         # Check if bill already exists for this business and year
         existing_bill = BopsBills.objects.filter(
             business=bill.business,
             billing_year=bill.billing_year,
-            is_deleted=False
+            
         ).exclude(id=bill_id).exclude(status='cancelled').first()
         
         if existing_bill:
@@ -1260,7 +1262,7 @@ def regenerate_bops_bill(request, bill_id):
 # def send_bops_bill_message(request, bill_id):
 #     """Send message/notification for a BopsBill"""
 #     try:
-#         bill = BopsBills.objects.get(id=bill_id, is_deleted=False)
+#         bill = BopsBills.objects.get(id=bill_id, )
 #         contact = bill.business.phone_number
 #         host = request.get_host()
 #         messagebody = f"Your BOP bill for {bill.billing_year} is due on {bill.due_date}. Please pay it online at {host}/bopeasycollectible/?bill_id={bill.id}"
@@ -1341,7 +1343,7 @@ def get_payment_message_template(bill, payment_links, recipient_name=""):
     # Main message template
     message = f"""{greeting}Your property tax bill ({bill.bill_number}) of {formatted_amount} is ready.
 
-🏠 Property: {bill.property.property_name if hasattr(bill.property, 'property_name') else bill.property.address}
+🏠 Polygon: {bill.property.property_name if hasattr(bill.property, 'property_name') else bill.property.address}
 📅 Due Date: {formatted_due_date}
 
 💳 Quick Payment Options:
@@ -1391,7 +1393,7 @@ def send_bops_bill_message(request, bill_id):
     """Send message/notification for a BopsBill with tracked links"""
     try:
         print(f"Sending message for bill ID: {bill_id}")
-        bill = BopsBills.objects.get(id=bill_id, is_deleted=False)
+        bill = BopsBills.objects.get(id=bill_id, )
         contact = bill.business.phone_number
         host = request.get_host()
         scheme = request.scheme
@@ -1441,7 +1443,7 @@ COCOAREHAB Revenue Collection"""
 # def send_bops_bill_message(request, bill_id):
 #     """Send message/notification for a BopsBill"""
 #     try:
-#         bill = BopsBills.objects.get(id=bill_id, is_deleted=False)
+#         bill = BopsBills.objects.get(id=bill_id, )
 #         contact = bill.business.phone_number
 #         business_name = bill.business.business_name if hasattr(bill.business, 'business_name') else ""
         
@@ -1505,10 +1507,10 @@ COCOAREHAB Revenue Collection"""
 #             if not all([property_id, billing_cycle_id, tax_amount]):
 #                 return JsonResponse({
 #                     'success': False,
-#                     'error': 'Property, billing cycle, and tax amount are required'
+#                     'error': 'Polygon, billing cycle, and tax amount are required'
 #                 }, status=400)
             
-#             property_obj = Property.objects.get(id=property_id)
+#             property_obj = Polygon.objects.get(id=property_id)
 #             billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
             
 #             # Generate unique bill number
@@ -1582,10 +1584,10 @@ COCOAREHAB Revenue Collection"""
             
 #             return JsonResponse(response_data)
             
-#     except Property.DoesNotExist:
+#     except Polygon.DoesNotExist:
 #         return JsonResponse({
 #             'success': False,
-#             'error': 'Property not found'
+#             'error': 'Polygon not found'
 #         }, status=404)
 #     except BillingCycle.DoesNotExist:
 #         return JsonResponse({
@@ -1617,7 +1619,7 @@ def resend_bill_sms(request, bill_id):
         if not bill.property.contact_number:
             return JsonResponse({
                 'success': False,
-                'error': 'Property has no contact number'
+                'error': 'Polygon has no contact number'
             }, status=400)
         
         # Generate payment links
@@ -1714,10 +1716,10 @@ def generate_bill(request):
             if not all([property_id, billing_cycle_id, tax_amount]):
                 return JsonResponse({
                     'success': False,
-                    'error': 'Property, billing cycle, and tax amount are required'
+                    'error': 'Polygon, billing cycle, and tax amount are required'
                 }, status=400)
             
-            property_obj = Property.objects.select_related('owner').get(id=property_id)
+            property_obj = Polygon.objects.select_related('owner').get(id=property_id)
             billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
             
             # Generate unique bill number
@@ -1781,8 +1783,8 @@ def generate_bill(request):
             
             return JsonResponse(response_data)
             
-    except Property.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Property not found'}, status=404)
+    except Polygon.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Polygon not found'}, status=404)
     except BillingCycle.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Billing cycle not found'}, status=404)
     except json.JSONDecodeError:
@@ -1862,7 +1864,7 @@ def prepare_bill_data(bill):
         'owner_name': owner_name,
         'owner_contact': owner_contact,
         
-        # Property details for template fields
+        # Polygon details for template fields
         'serial_no': bill.bill_number.split('-')[-1] if '-' in bill.bill_number else bill.bill_number,
         'account_number': property_obj.property_id or property_obj.id,
         'suburb': property_obj.suburb or property_obj.location or '',
@@ -1905,7 +1907,7 @@ def generate_and_render_bill(request):
             discount_amount = data.get('discount_amount', 0)
             notes = data.get('notes', '')
             
-            property_obj = Property.objects.get(id=property_id)
+            property_obj = Polygon.objects.get(id=property_id)
             billing_cycle = BillingCycle.objects.get(id=billing_cycle_id)
             
             bill_number = f"BILL-{datetime.now().strftime('%Y%m%d')}-{Bill.objects.count() + 1:06d}"

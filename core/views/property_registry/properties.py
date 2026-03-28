@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from decimal import Decimal, InvalidOperation
-from core.models import Property, Zone, PropertyType
+from core.models import Polygon
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def list_properties(request):
         search = request.GET.get('search', '')
         
         # Base queryset - exclude soft-deleted items
-        queryset = Property.objects.all()
+        queryset = Polygon.objects.all()
         
         # Apply search if provided
         if search:
@@ -76,6 +76,7 @@ def list_properties(request):
                 'district': prop.district,
                 'postcode': prop.postcode,
                 'street': prop.street,
+                'area': str(prop.area) if prop.area else None,
                 'latitude': float(prop.latitude) if prop.latitude else None,
                 'longitude': float(prop.longitude) if prop.longitude else None,
                 'nlat': float(prop.nlat) if prop.nlat else None,
@@ -112,7 +113,7 @@ def list_properties(request):
 def get_property(request, property_id):
     """Get a single property by ID"""
     try:
-        property = get_object_or_404(Property, id=property_id, is_deleted=False)
+        property = get_object_or_404(Polygon, id=property_id,)
         
         data = {
             'id': property.id,
@@ -154,8 +155,9 @@ def get_property(request, property_id):
 def get_zone_options(request):
     """Get all zones for dropdown"""
     try:
-        zones = Zone.objects.filter(is_deleted=False, is_active=True).values('id', 'name', 'code')
-        return JsonResponse({'data': list(zones)})
+        # zones = Zone.objects.filter(is_deleted=False, is_active=True).values('id', 'name', 'code')
+        # return JsonResponse({'data': list(zones)})
+        pass
     except Exception as e:
         logger.error(f"Error getting zones: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
@@ -165,8 +167,9 @@ def get_zone_options(request):
 def get_property_type_options(request):
     """Get all property types for dropdown"""
     try:
-        types = PropertyType.objects.filter(is_deleted=False, is_active=True).values('id', 'name', 'code')
-        return JsonResponse({'data': list(types)})
+        # types = PropertyType.objects.filter(is_deleted=False, is_active=True).values('id', 'name', 'code')
+        # return JsonResponse({'data': list(types)})
+        pass
     except Exception as e:
         logger.error(f"Error getting property types: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
@@ -183,23 +186,23 @@ def create_property(request):
             return JsonResponse({'error': 'Zone is required'}, status=400)
         
         if not data.get('property_type_id'):
-            return JsonResponse({'error': 'Property type is required'}, status=400)
+            return JsonResponse({'error': 'Polygon type is required'}, status=400)
         
         # Get zone and property type
-        try:
-            zone = Zone.objects.get(id=data['zone_id'], is_deleted=False)
-        except Zone.DoesNotExist:
-            return JsonResponse({'error': 'Selected zone does not exist'}, status=400)
+        # try:
+        #     zone = Zone.objects.get(id=data['zone_id'],)
+        # except Zone.DoesNotExist:
+        #     return JsonResponse({'error': 'Selected zone does not exist'}, status=400)
         
-        try:
-            property_type = PropertyType.objects.get(id=data['property_type_id'], is_deleted=False)
-        except PropertyType.DoesNotExist:
-            return JsonResponse({'error': 'Selected property type does not exist'}, status=400)
+        # try:
+        #     property_type = PropertyType.objects.get(id=data['property_type_id'],)
+        # except PropertyType.DoesNotExist:
+        #     return JsonResponse({'error': 'Selected property type does not exist'}, status=400)
         
         # Create new property
-        property = Property()
-        property.zone = zone
-        property.property_type = property_type
+        property = Polygon()
+        # property.zone = zone
+        # property.property_type = property_type
         
         # Set fields
         property.address = data.get('address', '')
@@ -280,7 +283,7 @@ def create_property(request):
         property.save()
         
         return JsonResponse({
-            'message': 'Property created successfully',
+            'message': 'Polygon created successfully',
             'id': property.id
         }, status=201)
         
@@ -297,7 +300,7 @@ def create_property(request):
 def update_property(request, property_id):
     """Update an existing property"""
     try:
-        property = get_object_or_404(Property, id=property_id, is_deleted=False)
+        property = get_object_or_404(Polygon, id=property_id,)
         data = json.loads(request.body)
         
        
@@ -388,7 +391,7 @@ def update_property(request, property_id):
         property.save()
         
         return JsonResponse({
-            'message': 'Property updated successfully',
+            'message': 'Polygon updated successfully',
             'id': property.id
         })
         
@@ -408,7 +411,7 @@ def update_property(request, property_id):
 def delete_property(request, property_id):
     """Soft delete a property"""
     try:
-        property = get_object_or_404(Property, id=property_id, is_deleted=False)
+        property = get_object_or_404(Polygon, id=property_id,)
         
         # Soft delete
         property.is_deleted = True
@@ -420,7 +423,7 @@ def delete_property(request, property_id):
         property.save()
         
         return JsonResponse({
-            'message': 'Property deleted successfully',
+            'message': 'Polygon deleted successfully',
             'id': property_id
         })
         
@@ -440,7 +443,7 @@ def bulk_delete_properties(request):
             return JsonResponse({'error': 'No property IDs provided'}, status=400)
         
         # Get all properties that exist and are not deleted
-        properties = Property.objects.filter(id__in=property_ids, is_deleted=False)
+        properties = Polygon.objects.filter(id__in=property_ids,)
         
         if not properties.exists():
             return JsonResponse({'error': 'No valid properties found to delete'}, status=404)
@@ -454,7 +457,7 @@ def bulk_delete_properties(request):
                 prop.deleted_by = request.user
         
         # Bulk update
-        Property.objects.bulk_update(properties, ['is_deleted', 'deleted_at', 'deleted_by'])
+        Polygon.objects.bulk_update(properties, ['is_deleted', 'deleted_at', 'deleted_by'])
         
         return JsonResponse({
             'message': f'{len(properties)} properties deleted successfully',
@@ -476,7 +479,7 @@ def export_properties(request):
         search = request.GET.get('search', '')
         
         # Get queryset
-        queryset = Property.objects.filter(is_deleted=False).select_related('zone', 'property_type')
+        queryset = Polygon.objects.filter(is_deleted=False).select_related('zone', 'property_type')
         
         # Apply search if provided
         if search:
