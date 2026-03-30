@@ -36778,7 +36778,7 @@ table.dataTable thead tr>.dtfc-fixed-left {
 }
 
 .authentication-bg {
-    background-image: url(/static/assets/images/login.webp);
+    /* background-image: url(/static/assets/images/login.webp); */
     height: 100vh;
     background-size: cover;
     background-position: center
