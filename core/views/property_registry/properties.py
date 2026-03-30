@@ -21,85 +21,169 @@ def properties_page(request):
     return render(request, 'core/main/property-registry/properties.html')
 
 # API Views
+# @csrf_exempt
+# @require_http_methods(["GET"])
+# def list_properties(request):
+#     """List all properties with pagination and search"""
+#     try:
+#         # Get query parameters
+#         page = int(request.GET.get('page', 1))
+#         page_size = int(request.GET.get('page_size', 10000))
+#         search = request.GET.get('search', '')
+        
+#         # Base queryset - exclude soft-deleted items
+#         queryset = Polygon.objects.all()
+        
+#         # Apply search if provided
+#         if search:
+#             queryset = queryset.filter(
+#                 Q(address__icontains=search) |
+#                 Q(g_code__icontains=search) |
+#                 Q(gpsname__icontains=search) |
+#                 Q(region__icontains=search) |
+#                 Q(district__icontains=search) |
+#                 Q(street__icontains=search) |
+#                 Q(addressv1__icontains=search)
+#             )
+        
+#         # Order by id
+#         queryset = queryset.order_by('-id')
+        
+#         # Paginate
+#         paginator = Paginator(queryset, page_size)
+#         properties_page = paginator.get_page(page)
+        
+#         # Prepare response data
+#         data = []
+#         for prop in properties_page:
+#             data.append({
+#                 'id': prop.id,
+#                 'address': prop.address,
+#                 'g_code': prop.g_code,
+#                 'gpsname': prop.gpsname,
+#                 # 'zone': {
+#                 #     'id': prop.zone.id,
+#                 #     'name': prop.zone.name,
+#                 #     'code': prop.zone.code
+#                 # } if prop.zone else None,
+#                 # 'property_type': {
+#                 #     'id': prop.property_type.id,
+#                 #     'name': prop.property_type.name,
+#                 #     'code': prop.property_type.code
+#                 # } if prop.property_type else None,
+#                 'area_in_me': float(prop.area_in_me) if prop.area_in_me else None,
+#                 'region': prop.region,
+#                 'district': prop.district,
+#                 'postcode': prop.postcode,
+#                 'street': prop.street,
+#                 'area': str(prop.area) if prop.area else None,
+#                 'latitude': float(prop.latitude) if prop.latitude else None,
+#                 'longitude': float(prop.longitude) if prop.longitude else None,
+#                 'nlat': float(prop.nlat) if prop.nlat else None,
+#                 'slat': float(prop.slat) if prop.slat else None,
+#                 'wlong': float(prop.wlong) if prop.wlong else None,
+#                 'elong': float(prop.elong) if prop.elong else None,
+#                 'area': str(prop.area) if prop.area else None,
+#                 'addressv1': prop.addressv1,
+#                 'coordinates': prop.coordinates,
+#                 'geom': prop.geom.geojson if prop.geom else None,
+#                 'created_at': prop.created_at.strftime('%Y-%m-%d %H:%M:%S') if prop.created_at else None,
+#                 'updated_at': prop.updated_at.strftime('%Y-%m-%d %H:%M:%S') if prop.updated_at else None,
+#             })
+        
+#         return JsonResponse({
+#             'data': data,
+#             'pagination': {
+#                 'current_page': properties_page.number,
+#                 'total_pages': paginator.num_pages,
+#                 'total_records': paginator.count,
+#                 'page_size': page_size,
+#                 'has_next': properties_page.has_next(),
+#                 'has_previous': properties_page.has_previous(),
+#             }
+#         })
+        
+#     except Exception as e:
+#         print(f"Error listing properties: {str(e)}")
+#         logger.error(f"Error listing properties: {str(e)}", exc_info=True)
+#         return JsonResponse({'error': str(e)}, status=500)
+
+
+from django.core.cache import cache
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+import logging
+
+logger = logging.getLogger(__name__)
+
 @csrf_exempt
 @require_http_methods(["GET"])
 def list_properties(request):
-    """List all properties with pagination and search"""
+    """List all properties with pagination and search using cached data"""
     try:
         # Get query parameters
         page = int(request.GET.get('page', 1))
-        page_size = int(request.GET.get('page_size', 1000))
+        page_size = int(request.GET.get('page_size', 10000))
         search = request.GET.get('search', '')
         
-        # Base queryset - exclude soft-deleted items
-        queryset = Polygon.objects.all()
+        # Get cached properties list
+        cached_properties = cache.get('properties_list')
         
-        # Apply search if provided
+        if cached_properties is None:
+            # If cache is empty, return loading status
+            return JsonResponse({
+                'data': [],
+                'status': 'loading',
+                'message': 'Property data is being loaded. Please refresh in a moment.',
+                'pagination': {
+                    'current_page': 1,
+                    'total_pages': 0,
+                    'total_records': 0,
+                    'page_size': page_size,
+                    'has_next': False,
+                    'has_previous': False,
+                }
+            }, status=202)
+        
+        # Apply search filter if provided
         if search:
-            queryset = queryset.filter(
-                Q(address__icontains=search) |
-                Q(g_code__icontains=search) |
-                Q(gpsname__icontains=search) |
-                Q(region__icontains=search) |
-                Q(district__icontains=search) |
-                Q(street__icontains=search) |
-                Q(addressv1__icontains=search)
-            )
+            filtered_properties = []
+            search_lower = search.lower()
+            for prop in cached_properties:
+                if (search_lower in str(prop.get('address', '')).lower() or
+                    search_lower in str(prop.get('g_code', '')).lower() or
+                    search_lower in str(prop.get('gpsname', '')).lower() or
+                    search_lower in str(prop.get('region', '')).lower() or
+                    search_lower in str(prop.get('district', '')).lower() or
+                    search_lower in str(prop.get('street', '')).lower() or
+                    search_lower in str(prop.get('addressv1', '')).lower()):
+                    filtered_properties.append(prop)
+        else:
+            filtered_properties = cached_properties
         
-        # Order by id
-        queryset = queryset.order_by('-id')
+        # Reverse to maintain order (newest first) like original queryset
+        filtered_properties = list(reversed(filtered_properties))
         
-        # Paginate
-        paginator = Paginator(queryset, page_size)
-        properties_page = paginator.get_page(page)
+        # Calculate pagination
+        total_records = len(filtered_properties)
+        total_pages = (total_records + page_size - 1) // page_size
         
-        # Prepare response data
-        data = []
-        for prop in properties_page:
-            data.append({
-                'id': prop.id,
-                'address': prop.address,
-                'g_code': prop.g_code,
-                'gpsname': prop.gpsname,
-                # 'zone': {
-                #     'id': prop.zone.id,
-                #     'name': prop.zone.name,
-                #     'code': prop.zone.code
-                # } if prop.zone else None,
-                # 'property_type': {
-                #     'id': prop.property_type.id,
-                #     'name': prop.property_type.name,
-                #     'code': prop.property_type.code
-                # } if prop.property_type else None,
-                'area_in_me': float(prop.area_in_me) if prop.area_in_me else None,
-                'region': prop.region,
-                'district': prop.district,
-                'postcode': prop.postcode,
-                'street': prop.street,
-                'area': str(prop.area) if prop.area else None,
-                'latitude': float(prop.latitude) if prop.latitude else None,
-                'longitude': float(prop.longitude) if prop.longitude else None,
-                'nlat': float(prop.nlat) if prop.nlat else None,
-                'slat': float(prop.slat) if prop.slat else None,
-                'wlong': float(prop.wlong) if prop.wlong else None,
-                'elong': float(prop.elong) if prop.elong else None,
-                'area': str(prop.area) if prop.area else None,
-                'addressv1': prop.addressv1,
-                'coordinates': prop.coordinates,
-                'geom': prop.geom.geojson if prop.geom else None,
-                'created_at': prop.created_at.strftime('%Y-%m-%d %H:%M:%S') if prop.created_at else None,
-                'updated_at': prop.updated_at.strftime('%Y-%m-%d %H:%M:%S') if prop.updated_at else None,
-            })
+        # Get current page data
+        start_index = (page - 1) * page_size
+        end_index = start_index + page_size
+        page_data = filtered_properties[start_index:end_index]
         
         return JsonResponse({
-            'data': data,
+            'data': page_data,
             'pagination': {
-                'current_page': properties_page.number,
-                'total_pages': paginator.num_pages,
-                'total_records': paginator.count,
+                'current_page': page,
+                'total_pages': total_pages,
+                'total_records': total_records,
                 'page_size': page_size,
-                'has_next': properties_page.has_next(),
-                'has_previous': properties_page.has_previous(),
+                'has_next': page < total_pages,
+                'has_previous': page > 1,
             }
         })
         

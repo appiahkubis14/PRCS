@@ -434,41 +434,75 @@ from django.contrib.gis.serializers import geojson
 from core.models import Polygon
 import json
 
+# def properties_simple_geojson(request):
+#     """
+#     Return simplified GeoJSON for interactive overlay
+#     """
+#     fields = request.GET.get('fields', 'id,address,district,region,zone,property_type,area,area_in_me,status,latitude,longitude,g_code,postcode,street,gpsname').split(',')
+    
+#     properties = Polygon.objects.all()
+    
+    
+#     features = []
+#     for prop in properties:
+#         feature = {
+#             "type": "Feature",
+#             "geometry": json.loads(prop.geom.geojson) if prop.geom else None,
+#             "properties": {}
+#         }
+        
+#         for field in fields:
+#             # if field == 'zone' and prop.zone:
+#             #     feature['properties']['zone'] = prop.zone.name
+#             # if field == 'property_type' and prop.property_type:
+#             #     feature['properties']['property_type'] = prop.property_type.name
+#             if hasattr(prop, field):
+#                 value = getattr(prop, field)
+#                 if value is not None:
+#                     feature['properties'][field] = str(value)
+        
+#         if feature['geometry']:
+#             features.append(feature)
+    
+#     return JsonResponse({
+#         "type": "FeatureCollection",
+#         "features": features
+#     })
+
+
+import json
+from django.core.cache import cache
+from django.http import JsonResponse
+
 def properties_simple_geojson(request):
     """
-    Return simplified GeoJSON for interactive overlay
+    Return simplified GeoJSON from cache (pre-loaded on app startup)
     """
-    fields = request.GET.get('fields', 'id,address,district,region,zone,property_type,area,area_in_me,status,latitude,longitude,g_code,postcode,street,gpsname').split(',')
+    # Get data from cache
+    geojson_data = cache.get('properties_geojson')
     
-    properties = Polygon.objects.all()[:50000]
+    if geojson_data is None:
+        # If cache is empty (first load), return loading status
+        return JsonResponse({
+            "type": "FeatureCollection",
+            "features": [],
+            "status": "loading",
+            "message": "Property data is being loaded. Please refresh in a moment."
+        }, status=202)
     
+    # Check if it's the final data or still loading
+    if 'loading_progress' in geojson_data:
+        # Still loading, return what we have so far
+        return JsonResponse({
+            "type": "FeatureCollection",
+            "features": geojson_data['features'],
+            "status": "loading",
+            "progress": geojson_data['loading_progress'],
+            "message": f"Loading properties: {geojson_data['loading_progress']}"
+        })
     
-    features = []
-    for prop in properties:
-        feature = {
-            "type": "Feature",
-            "geometry": json.loads(prop.geom.geojson) if prop.geom else None,
-            "properties": {}
-        }
-        
-        for field in fields:
-            # if field == 'zone' and prop.zone:
-            #     feature['properties']['zone'] = prop.zone.name
-            # if field == 'property_type' and prop.property_type:
-            #     feature['properties']['property_type'] = prop.property_type.name
-            if hasattr(prop, field):
-                value = getattr(prop, field)
-                if value is not None:
-                    feature['properties'][field] = str(value)
-        
-        if feature['geometry']:
-            features.append(feature)
-    
-    return JsonResponse({
-        "type": "FeatureCollection",
-        "features": features
-    })
-
+    # Return the fully loaded data
+    return JsonResponse(geojson_data)
 
 
 
