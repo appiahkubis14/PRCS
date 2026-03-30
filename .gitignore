@@ -78,3 +78,4 @@ data/
 # static/tiles/
 .DS_Store
 **/.DS_Store
+static/tiles/*.pmtiles
