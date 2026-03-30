@@ -434,119 +434,41 @@ from django.contrib.gis.serializers import geojson
 from core.models import Polygon
 import json
 
-# def properties_simple_geojson(request):
-#     """
-#     Return simplified GeoJSON for interactive overlay
-#     """
-#     fields = request.GET.get('fields', 'id,address,district,region,zone,property_type,area,area_in_me,status,latitude,longitude,g_code,postcode,street,gpsname').split(',')
-    
-#     properties = Polygon.objects.all()
-    
-    
-#     features = []
-#     for prop in properties:
-#         feature = {
-#             "type": "Feature",
-#             "geometry": json.loads(prop.geom.geojson) if prop.geom else None,
-#             "properties": {}
-#         }
-        
-#         for field in fields:
-#             # if field == 'zone' and prop.zone:
-#             #     feature['properties']['zone'] = prop.zone.name
-#             # if field == 'property_type' and prop.property_type:
-#             #     feature['properties']['property_type'] = prop.property_type.name
-#             if hasattr(prop, field):
-#                 value = getattr(prop, field)
-#                 if value is not None:
-#                     feature['properties'][field] = str(value)
-        
-#         if feature['geometry']:
-#             features.append(feature)
-    
-#     return JsonResponse({
-#         "type": "FeatureCollection",
-#         "features": features
-#     })
-import json
-from django.http import JsonResponse
-from django.contrib.gis.geos import Polygon as GISPolygon
-# from django.contrib.gis.db.models.functions import Simplify
-# from django.db import connection
-
 def properties_simple_geojson(request):
     """
-    Return simplified GeoJSON with bounding box filtering
+    Return simplified GeoJSON for interactive overlay
     """
-    try:
-        # Get bounding box from request (west, south, east, north)
-        bbox = request.GET.get('bbox')
-        limit = int(request.GET.get('limit', 1000))  # Load 1000 at a time
-        offset = int(request.GET.get('offset', 0))
+    fields = request.GET.get('fields', 'id,address,district,region,zone,property_type,area,area_in_me,status,latitude,longitude,g_code,postcode,street,gpsname').split(',')
+    
+    properties = Polygon.objects.all()[:50000]
+    
+    
+    features = []
+    for prop in properties:
+        feature = {
+            "type": "Feature",
+            "geometry": json.loads(prop.geom.geojson) if prop.geom else None,
+            "properties": {}
+        }
         
-        fields = request.GET.get('fields', 'id,address,district,region,zone,property_type,area,area_in_me,status,latitude,longitude,g_code,postcode,street,gpsname').split(',')
+        for field in fields:
+            # if field == 'zone' and prop.zone:
+            #     feature['properties']['zone'] = prop.zone.name
+            # if field == 'property_type' and prop.property_type:
+            #     feature['properties']['property_type'] = prop.property_type.name
+            if hasattr(prop, field):
+                value = getattr(prop, field)
+                if value is not None:
+                    feature['properties'][field] = str(value)
         
-        # Start with all properties
-        queryset = Polygon.objects.all()
-        
-        # Apply bounding box filter if provided
-        if bbox:
-            try:
-                # Parse bbox: "west,south,east,north"
-                west, south, east, north = map(float, bbox.split(','))
-                bbox_polygon = GISPolygon.from_bbox((west, south, east, north))
-                queryset = queryset.filter(geom__intersects=bbox_polygon)
-            except Exception as e:
-                print(f"Bbox parsing error: {e}")
-        
-        # Get total count for pagination info
-        total = queryset.count()
-        
-        # Apply pagination
-        properties = queryset[offset:offset + limit]
-        
-        features = []
-        for prop in properties:
-            try:
-                feature = {
-                    "type": "Feature",
-                    "geometry": json.loads(prop.geom.geojson) if prop.geom else None,
-                    "properties": {}
-                }
-                
-                for field in fields:
-                    if hasattr(prop, field):
-                        value = getattr(prop, field)
-                        if value is not None:
-                            # Keep numbers as numbers, convert others to string
-                            if isinstance(value, (int, float, bool)):
-                                feature['properties'][field] = value
-                            else:
-                                feature['properties'][field] = str(value)
-                
-                if feature['geometry']:
-                    features.append(feature)
-            except Exception as e:
-                print(f"Error processing property {prop.id}: {e}")
-                continue
-        
-        return JsonResponse({
-            "type": "FeatureCollection",
-            "features": features,
-            "pagination": {
-                "offset": offset,
-                "limit": limit,
-                "total": total,
-                "has_more": offset + limit < total
-            }
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            "error": str(e),
-            "type": "FeatureCollection",
-            "features": []
-        }, status=500)
+        if feature['geometry']:
+            features.append(feature)
+    
+    return JsonResponse({
+        "type": "FeatureCollection",
+        "features": features
+    })
+
 
 
 
