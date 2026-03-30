@@ -471,8 +471,8 @@ import json
 import json
 from django.http import JsonResponse
 from django.contrib.gis.geos import Polygon as GISPolygon
-from django.contrib.gis.db.models.functions import Simplify
-from django.db import connection
+# from django.contrib.gis.db.models.functions import Simplify
+# from django.db import connection
 
 def properties_simple_geojson(request):
     """
