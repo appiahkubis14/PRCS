@@ -73,9 +73,8 @@ target/
 .python-version
 
 # celery*.tif
-# *.pmtiles
+*.pmtiles
 data/
-# static/tiles/
+static/tiles/
 .DS_Store
 **/.DS_Store
-static/tiles/*.pmtiles
