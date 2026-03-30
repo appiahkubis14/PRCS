@@ -107,10 +107,7 @@ def properties_page(request):
 #         print(f"Error listing properties: {str(e)}")
 #         logger.error(f"Error listing properties: {str(e)}", exc_info=True)
 #         return JsonResponse({'error': str(e)}, status=500)
-
-
 from django.core.cache import cache
-from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -128,15 +125,46 @@ def list_properties(request):
         page_size = int(request.GET.get('page_size', 10000))
         search = request.GET.get('search', '')
         
+        # Check if loading is in progress
+        if cache.get('properties_loading'):
+            partial_data = cache.get('properties_list_partial')
+            if partial_data:
+                return JsonResponse({
+                    'data': [],
+                    'status': 'loading',
+                    'message': f'Loading properties: {len(partial_data)} loaded so far',
+                    'pagination': {
+                        'current_page': 1,
+                        'total_pages': 0,
+                        'total_records': 0,
+                        'page_size': page_size,
+                        'has_next': False,
+                        'has_previous': False,
+                    }
+                }, status=202)
+            else:
+                return JsonResponse({
+                    'data': [],
+                    'status': 'loading',
+                    'message': 'Property data is being loaded. Please refresh in a moment.',
+                    'pagination': {
+                        'current_page': 1,
+                        'total_pages': 0,
+                        'total_records': 0,
+                        'page_size': page_size,
+                        'has_next': False,
+                        'has_previous': False,
+                    }
+                }, status=202)
+        
         # Get cached properties list
-        cached_properties = cache.get('properties_list')
+        cached_properties = cache.get('properties_list_final')
         
         if cached_properties is None:
-            # If cache is empty, return loading status
             return JsonResponse({
                 'data': [],
-                'status': 'loading',
-                'message': 'Property data is being loaded. Please refresh in a moment.',
+                'status': 'error',
+                'message': 'Property data not available. Please try again later.',
                 'pagination': {
                     'current_page': 1,
                     'total_pages': 0,
@@ -145,7 +173,7 @@ def list_properties(request):
                     'has_next': False,
                     'has_previous': False,
                 }
-            }, status=202)
+            }, status=503)
         
         # Apply search filter if provided
         if search:
@@ -192,6 +220,7 @@ def list_properties(request):
         logger.error(f"Error listing properties: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
+        
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_property(request, property_id):

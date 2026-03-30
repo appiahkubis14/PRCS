@@ -474,36 +474,45 @@ import json
 from django.core.cache import cache
 from django.http import JsonResponse
 
+import json
+from django.core.cache import cache
+from django.http import JsonResponse
+
 def properties_simple_geojson(request):
     """
     Return simplified GeoJSON from cache (pre-loaded on app startup)
     """
-    # Get data from cache
-    geojson_data = cache.get('properties_geojson')
+    # Check if loading is in progress
+    if cache.get('properties_loading'):
+        partial_data = cache.get('properties_geojson_partial')
+        if partial_data:
+            return JsonResponse({
+                "type": "FeatureCollection",
+                "features": partial_data['features'],
+                "status": "loading",
+                "progress": partial_data.get('loading_progress', 'Loading...'),
+                "message": f"Loading properties: {partial_data.get('loading_progress', 'Loading...')}"
+            }, status=202)
+        else:
+            return JsonResponse({
+                "type": "FeatureCollection",
+                "features": [],
+                "status": "loading",
+                "message": "Property data is being loaded. Please refresh in a moment."
+            }, status=202)
+    
+    # Get final data from cache
+    geojson_data = cache.get('properties_geojson_final')
     
     if geojson_data is None:
-        # If cache is empty (first load), return loading status
         return JsonResponse({
             "type": "FeatureCollection",
             "features": [],
-            "status": "loading",
-            "message": "Property data is being loaded. Please refresh in a moment."
-        }, status=202)
+            "status": "error",
+            "message": "Property data not available. Please try again later."
+        }, status=503)
     
-    # Check if it's the final data or still loading
-    if 'loading_progress' in geojson_data:
-        # Still loading, return what we have so far
-        return JsonResponse({
-            "type": "FeatureCollection",
-            "features": geojson_data['features'],
-            "status": "loading",
-            "progress": geojson_data['loading_progress'],
-            "message": f"Loading properties: {geojson_data['loading_progress']}"
-        })
-    
-    # Return the fully loaded data
     return JsonResponse(geojson_data)
-
 
 
 from django.http import JsonResponse, HttpResponseNotFound
