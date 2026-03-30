@@ -46,7 +46,7 @@ def _get_client_ip(request: HttpRequest) -> str:
 
 def get_tracked_payment_link(bill_type: str, bill_number: str, link_type: str = 'web') -> str:
     """Return a redirect URL that tracks the click before forwarding to the payment page."""
-    base_url = getattr(settings, 'BASE_URL', 'http://192.168.3.15:8000/').rstrip('/')
+    base_url = getattr(settings, 'BASE_URL', 'http://lanmma.sktlive.com/').rstrip('/')
     return f"{base_url}/pay/l/{bill_type}/{bill_number}/{link_type}/"
 
 

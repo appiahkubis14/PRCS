@@ -18,6 +18,7 @@ from core.views.billing.payment_track import *
 from core.views.dashboard.dashboard_new import *
 from core.views.users import *
 from core.views.permit import *
+from core.views.export import *
 from core.views.views_tiles import get_properties_points, pmtiles_options, properties_simple_geojson, property_geojson_for_highlight, serve_pmtiles
 
 
@@ -288,5 +289,14 @@ urlpatterns = [
     path('api/permits/bulk-approve/', bulk_approve_permits, name='bulk_approve_permits'),
     path('api/permits/stats/', get_permit_stats, name='get_permit_stats'),
     path('api/permits/export/', export_permits, name='export_permits'),
+
+    # Report Builder Pages
+    path('reports/builder/', login_required(report_builder), name='report_builder'),
+    
+    # API Endpoints
+    path('api/reports/preview/', report_preview, name='report_preview'),
+    path('api/reports/export/', report_export, name='report_export'),
+    path('api/reports/fields/', get_model_fields, name='get_model_fields'),
+    path('api/reports/models/', get_export_models, name='get_export_models'),
 
 ]

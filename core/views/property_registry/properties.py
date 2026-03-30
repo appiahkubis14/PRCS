@@ -28,7 +28,7 @@ def list_properties(request):
     try:
         # Get query parameters
         page = int(request.GET.get('page', 1))
-        page_size = int(request.GET.get('page_size', 100000))
+        page_size = int(request.GET.get('page_size', 1000))
         search = request.GET.get('search', '')
         
         # Base queryset - exclude soft-deleted items
