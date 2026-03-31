@@ -1564,6 +1564,11 @@ class PropertyRevenueGIS {
             maxZoom: 19,
             pane: 'basemapPane' // Add to basemap pane
         }),
+        // osm: L.tileLayer('https://leaflet-extras.github.io/leaflet-providers/preview/index.html', {
+        //     // attribution: '© OpenStreetMap contributors',
+        //     // maxZoom: 19,
+        //     // pane: 'basemapPane'
+        // }),
         carto_positron: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap © CARTO',
             maxZoom: 20,
@@ -1596,7 +1601,7 @@ class PropertyRevenueGIS {
         })
     };
     
-    this.basemapLayers.osm.addTo(this.map);
+    this.basemapLayers.esri_imagery.addTo(this.map);
     
     // Rest of your initialization code...
     this.addFullscreenControl();

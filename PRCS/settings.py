@@ -387,7 +387,7 @@ LOGGING = {
 
 
 
-BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')
+BASE_URL = os.getenv('BASE_URL', 'https://lanmma.sktlive.com/')
 
 # settings.py
 
