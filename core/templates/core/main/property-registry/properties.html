@@ -2,543 +2,577 @@
 {% load i18n static %}
 
 {% block content %}
-<div class="container-fluid mt-2 mb-4">
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-          <h3 class="card-title">Properties Management</h3>
-          <p class="card-subtitle">View and manage property records</p>
-        </div>
-        <div>
-          <button type="button" class="btn btn-success" id="addPropertyBtn">
-            <i class="fas fa-plus"></i> Add New Property
-          </button>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table id="propertiesTable" class="table table-striped table-bordered table-hover" style="width:100%">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th style="width:60px;">Shape</th>
-                <!-- <th>Address</th> -->
-                <th>G-Code</th>
-                <th>GPS Name</th>
-                <!-- <th>Zone</th> -->
-                <!-- <th>Property Type</th> -->
-                <th>Area (m²)</th>
-                <th>Region</th>
-                <th>District</th>
-                <th>Area</th>
-                <th>Coordinates</th>
-                <th>Created At</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- DataTables will populate this -->
-            </tbody>
-          </table>
-        </div>
-      </div>
+<div class="container-fluid mt-0 mb-4" style="padding: 20px; background: #f5f7fa; min-height: 100vh;">
+
+  <!-- Page Header (mirrors dashboard filter-bar style) -->
+  <div style="background:white; border-radius:12px; padding:16px 24px; margin-bottom:24px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h5 style="font-size:16px; font-weight:600; color:#1e293b; margin:0;">Properties Management</h5>
+      <p style="font-size:12px; color:#64748b; margin:4px 0 0;">View and manage property records</p>
+    </div>
+    <button type="button" id="addPropertyBtn"
+      style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1e293b;color:white;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:background .2s;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add New Property
+    </button>
+  </div>
+
+  <!-- Table Card -->
+  <div style="background:white; border-radius:12px; padding:20px; border:1px solid #e2e8f0;">
+    <div class="table-responsive">
+      <table id="propertiesTable" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th style="width:60px;">Shape</th>
+            <th>G-Code</th>
+            <th>GPS Name</th>
+            <th>Area (m²)</th>
+            <th>Region</th>
+            <th>District</th>
+            <th>Area</th>
+            <th>Coordinates</th>
+            <th>Created At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
+
+  <!-- Message container -->
+  <div id="messageContainer" class="mt-3"></div>
 </div>
 
-<!-- Add/Edit Property Modal -->
+<!-- ═══════════════════════════ Add / Edit Modal ═══════════════════════════ -->
 <div class="modal fade" id="propertyModal" tabindex="-1" aria-labelledby="propertyModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header border-bottom-0 pb-0">
-        <h5 class="modal-title fw-bold" id="propertyModalLabel">Add New Property</h5>
+    <div class="modal-content" style="border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,.08);">
+      <div class="modal-header" style="border-bottom:1px solid #e2e8f0; padding:20px 24px 16px;">
+        <h5 class="modal-title" id="propertyModalLabel" style="font-size:16px;font-weight:600;color:#1e293b;margin:0;">Add New Property</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body pt-2">
+      <div class="modal-body" style="padding:24px;">
         <form id="propertyForm">
           <input type="hidden" id="propertyId" name="propertyId">
-          
-          <!-- Basic Information - Minimal Card -->
-          <div class="mb-4">
-            <h6 class="text-uppercase small fw-bold  mb-3">Basic Information</h6>
-            <div class="row g-3">
-              <!-- <div class="col-md-6">
-                <label for="zone_id" class="form-label small fw-medium">Zone <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" id="zone_id" name="zone_id" required>
-                  <option value="">Select Zone</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="property_type_id" class="form-label small fw-medium">Property Type <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" id="property_type_id" name="property_type_id" required>
-                  <option value="">Select Property Type</option>
-                </select>
-              </div> -->
-              <div class="col-md-6">
-                <label for="g_code" class="form-label small fw-medium">G-Code</label>
-                <input type="text" class="form-control form-control-sm" id="g_code" name="g_code">
-              </div>
-              <div class="col-md-6">
-                <label for="gpsname" class="form-label small fw-medium">GPS Name</label>
-                <input type="text" class="form-control form-control-sm" id="gpsname" name="gpsname">
-              </div>
+
+          <!-- Section helper macro (inline via repeated markup) -->
+          <p class="form-section-label">Basic Information</p>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="field-label">G-Code</label>
+              <input type="text" class="field-input" id="g_code" name="g_code">
+            </div>
+            <div class="col-md-6">
+              <label class="field-label">GPS Name</label>
+              <input type="text" class="field-input" id="gpsname" name="gpsname">
             </div>
           </div>
-          
-          <!-- Address Information -->
-          <div class="mb-4">
-            <h6 class="text-uppercase small fw-bold  mb-3">Address Information</h6>
-            <div class="row g-3">
-              <div class="col-12">
-                <label for="address" class="form-label small fw-medium">Full Address</label>
-                <textarea class="form-control form-control-sm" id="address" name="address" rows="2"></textarea>
-              </div>
-              <div class="col-md-6">
-                <label for="addressv1" class="form-label small fw-medium">Alternative Address</label>
-                <textarea class="form-control form-control-sm" id="addressv1" name="addressv1" rows="2"></textarea>
-              </div>
-              <div class="col-md-6">
-                <label for="street" class="form-label small fw-medium">Street Name</label>
-                <input type="text" class="form-control form-control-sm" id="street" name="street">
-              </div>
-              <div class="col-md-4">
-                <label for="region" class="form-label small fw-medium">Region</label>
-                <input type="text" class="form-control form-control-sm" id="region" name="region">
-              </div>
-              <div class="col-md-4">
-                <label for="district" class="form-label small fw-medium">District</label>
-                <input type="text" class="form-control form-control-sm" id="district" name="district">
-              </div>
-              <div class="col-md-4">
-                <label for="postcode" class="form-label small fw-medium">Postal Code</label>
-                <input type="text" class="form-control form-control-sm" id="postcode" name="postcode">
-              </div>
+
+          <p class="form-section-label">Address Information</p>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <label class="field-label">Full Address</label>
+              <textarea class="field-input" id="address" name="address" rows="2"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="field-label">Alternative Address</label>
+              <textarea class="field-input" id="addressv1" name="addressv1" rows="2"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="field-label">Street Name</label>
+              <input type="text" class="field-input" id="street" name="street">
+            </div>
+            <div class="col-md-4">
+              <label class="field-label">Region</label>
+              <input type="text" class="field-input" id="region" name="region">
+            </div>
+            <div class="col-md-4">
+              <label class="field-label">District</label>
+              <input type="text" class="field-input" id="district" name="district">
+            </div>
+            <div class="col-md-4">
+              <label class="field-label">Postal Code</label>
+              <input type="text" class="field-input" id="postcode" name="postcode">
             </div>
           </div>
-          
-          <!-- Area & Coordinates - Two Column Layout -->
+
           <div class="row">
             <div class="col-md-6">
-              <div class="mb-4">
-                <h6 class="text-uppercase small fw-bold  mb-3">Area Information</h6>
-                <div class="row g-3">
-                  <div class="col-12">
-                    <label for="area_in_me" class="form-label small fw-medium">Area (Square Meters)</label>
-                    <input type="number" step="0.01" class="form-control form-control-sm" id="area_in_me" name="area_in_me">
-                  </div>
-                  <div class="col-12">
-                    <label for="area" class="form-label small fw-medium">Area (Alternative)</label>
-                    <input type="number" step="0.01" class="form-control form-control-sm" id="area" name="area">
-                  </div>
+              <p class="form-section-label">Area Information</p>
+              <div class="row g-3 mb-4">
+                <div class="col-12">
+                  <label class="field-label">Area (m²)</label>
+                  <input type="number" step="0.01" class="field-input" id="area_in_me" name="area_in_me">
+                </div>
+                <div class="col-12">
+                  <label class="field-label">Area (Alternative)</label>
+                  <input type="number" step="0.01" class="field-input" id="area" name="area">
                 </div>
               </div>
             </div>
-            
             <div class="col-md-6">
-              <div class="mb-4">
-                <h6 class="text-uppercase small fw-bold  mb-3">Coordinates</h6>
-                <div class="row g-3">
-                  <div class="col-6">
-                    <label for="latitude" class="form-label small fw-medium">Latitude</label>
-                    <input type="number" step="any" class="form-control form-control-sm" id="latitude" name="latitude">
-                  </div>
-                  <div class="col-6">
-                    <label for="longitude" class="form-label small fw-medium">Longitude</label>
-                    <input type="number" step="any" class="form-control form-control-sm" id="longitude" name="longitude">
-                  </div>
-                  <div class="col-12">
-                    <label for="coordinates" class="form-label small fw-medium">Coordinates (JSON)</label>
-                    <textarea class="form-control form-control-sm" id="coordinates" name="coordinates" rows="2" placeholder='{"lat": 0, "lng": 0}'></textarea>
-                  </div>
+              <p class="form-section-label">Coordinates</p>
+              <div class="row g-3 mb-4">
+                <div class="col-6">
+                  <label class="field-label">Latitude</label>
+                  <input type="number" step="any" class="field-input" id="latitude" name="latitude">
+                </div>
+                <div class="col-6">
+                  <label class="field-label">Longitude</label>
+                  <input type="number" step="any" class="field-input" id="longitude" name="longitude">
+                </div>
+                <div class="col-12">
+                  <label class="field-label">Coordinates (JSON)</label>
+                  <textarea class="field-input" id="coordinates" name="coordinates" rows="2" placeholder='{"lat": 0, "lng": 0}'></textarea>
                 </div>
               </div>
             </div>
           </div>
-          
-          <!-- Boundary Coordinates -->
-          <div class="mb-3">
-            <h6 class="text-uppercase small fw-bold  mb-3">Boundary Coordinates</h6>
-            <div class="row g-3">
-              <div class="col-md-3 col-6">
-                <label for="nlat" class="form-label small fw-medium">North</label>
-                <input type="number" step="any" class="form-control form-control-sm" id="nlat" name="nlat" placeholder="Latitude">
-              </div>
-              <div class="col-md-3 col-6">
-                <label for="slat" class="form-label small fw-medium">South</label>
-                <input type="number" step="any" class="form-control form-control-sm" id="slat" name="slat" placeholder="Latitude">
-              </div>
-              <div class="col-md-3 col-6">
-                <label for="wlong" class="form-label small fw-medium">West</label>
-                <input type="number" step="any" class="form-control form-control-sm" id="wlong" name="wlong" placeholder="Longitude">
-              </div>
-              <div class="col-md-3 col-6">
-                <label for="elong" class="form-label small fw-medium">East</label>
-                <input type="number" step="any" class="form-control form-control-sm" id="elong" name="elong" placeholder="Longitude">
-              </div>
+
+          <p class="form-section-label">Boundary Coordinates</p>
+          <div class="row g-3">
+            <div class="col-md-3 col-6">
+              <label class="field-label">North</label>
+              <input type="number" step="any" class="field-input" id="nlat" name="nlat" placeholder="Latitude">
+            </div>
+            <div class="col-md-3 col-6">
+              <label class="field-label">South</label>
+              <input type="number" step="any" class="field-input" id="slat" name="slat" placeholder="Latitude">
+            </div>
+            <div class="col-md-3 col-6">
+              <label class="field-label">West</label>
+              <input type="number" step="any" class="field-input" id="wlong" name="wlong" placeholder="Longitude">
+            </div>
+            <div class="col-md-3 col-6">
+              <label class="field-label">East</label>
+              <input type="number" step="any" class="field-input" id="elong" name="elong" placeholder="Longitude">
             </div>
           </div>
         </form>
       </div>
-      <div class="modal-footer border-top-0 pt-0">
-        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-dark" id="savePropertyBtn">Save Property</button>
+      <div class="modal-footer" style="border-top:1px solid #e2e8f0; padding:16px 24px; gap:8px;">
+        <button type="button" class="btn-secondary-action" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-primary-action" id="savePropertyBtn">Save Property</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- View Property Modal -->
+<!-- ═══════════════════════════ View Modal ════════════════════════════════ -->
 <div class="modal fade" id="viewPropertyModal" tabindex="-1" aria-labelledby="viewPropertyModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header border-bottom-0 pb-0">
-        <h5 class="modal-title fw-bold" id="viewPropertyModalLabel">Property Details</h5>
+    <div class="modal-content" style="border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,.08);">
+      <div class="modal-header" style="border-bottom:1px solid #e2e8f0; padding:20px 24px 16px;">
+        <h5 class="modal-title" id="viewPropertyModalLabel" style="font-size:16px;font-weight:600;color:#1e293b;margin:0;">Property Details</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body pt-2" id="viewPropertyBody">
+      <div class="modal-body" id="viewPropertyBody" style="padding:0;">
         <div class="text-center py-5">
-          <div class="spinner-border " role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <p class="mt-2 text-muted">Loading property details...</p>
+          <div class="spinner-border text-secondary" role="status"><span class="visually-hidden">Loading...</span></div>
+          <p class="mt-2 text-muted small">Loading property details...</p>
         </div>
       </div>
-      <div class="modal-footer border-top-0 pt-0">
-        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-dark" id="editFromViewBtn">Edit Property</button>
+      <div class="modal-footer" style="border-top:1px solid #e2e8f0; padding:16px 24px; gap:8px;">
+        <button type="button" class="btn-secondary-action" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn-primary-action" id="editFromViewBtn">Edit Property</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Success/Error Messages -->
-<div id="messageContainer" class="mt-3"></div>
-</div>
+<!-- ═══════════════════════════ Styles ═══════════════════════════════════ -->
+<style>
+  /* ── Form fields ── */
+  .form-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+    margin-bottom: 5px;
+  }
+  .field-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #1e293b;
+    background: white;
+    transition: border-color .15s;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .field-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.08); }
+
+  /* ── Modal action buttons ── */
+  .btn-primary-action {
+    padding: 8px 18px;
+    background: #1e293b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-primary-action:hover { background: #0f172a; }
+  .btn-secondary-action {
+    padding: 8px 18px;
+    background: white;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-secondary-action:hover { background: #f8fafc; }
+
+  /* ── DataTable row actions ── */
+  .tbl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #475569;
+    cursor: pointer;
+    transition: all .15s;
+    font-size: 12px;
+  }
+  .tbl-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+  .tbl-btn.danger:hover { background: #fee2e2; border-color: #fca5a5; color: #e74c3c; }
+
+  /* ── DataTable overrides ── */
+  table.dataTable thead th {
+    background: #f8fafc;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 12px 14px;
+  }
+  table.dataTable tbody td {
+    font-size: 13px;
+    color: #334155;
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  table.dataTable tbody tr:hover { background: #f8fafc; }
+  table.dataTable { border-collapse: collapse !important; }
+
+  .dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    outline: none;
+  }
+  .dataTables_wrapper .dataTables_filter input:focus { border-color: #3b82f6; }
+  .dataTables_wrapper .dataTables_length select {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 13px;
+  }
+  .dataTables_wrapper .dataTables_info { font-size: 12px; color: #64748b; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 6px !important;
+    font-size: 12px;
+    padding: 4px 10px !important;
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #1e293b !important;
+    color: white !important;
+    border-color: #1e293b !important;
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+    border-color: #e2e8f0 !important;
+  }
+  /* DT Buttons bar */
+  .dt-buttons { margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .dt-button {
+    padding: 6px 14px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: white !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    color: #475569 !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    transition: background .15s !important;
+  }
+  .dt-button:hover { background: #f1f5f9 !important; border-color: #94a3b8 !important; }
+  .dt-button.danger-btn { border-color: #fca5a5 !important; color: #e74c3c !important; }
+  .dt-button.danger-btn:hover { background: #fee2e2 !important; }
+
+  /* ── Alert messages ── */
+  .prop-alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .prop-alert.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .prop-alert.error   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  .prop-alert.warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+
+  /* ── View property panel ── */
+  .vp-hero {
+    display: flex; gap: 1.1rem; align-items: flex-start;
+    padding: 20px 24px 18px;
+    background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+  }
+  .vp-shape-hero {
+    flex-shrink: 0; width: 80px; height: 80px;
+    border: 1px solid #e2e8f0; border-radius: 8px;
+    background: white; display: flex; align-items: center; justify-content: center;
+  }
+  .vp-shape-placeholder {
+    flex-shrink: 0; width: 80px; height: 80px;
+    border: 1px dashed #e2e8f0; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .vp-hero-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 3px; font-family: ui-monospace,monospace; }
+  .vp-hero-sub   { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+  .vp-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .vp-chip {
+    font-size: 11px; font-weight: 500;
+    padding: 3px 9px; border-radius: 20px;
+    background: white; border: 1px solid #e2e8f0; color: #475569;
+  }
+
+  .vp-body { padding: 0 24px 8px; }
+  .vp-section { padding: 14px 0; border-bottom: 1px solid #f1f5f9; }
+  .vp-section-last { border-bottom: none; }
+  .vp-section-title {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: #94a3b8; margin-bottom: 12px;
+  }
+  .vp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px 20px;
+  }
+  .vp-field { display: flex; flex-direction: column; gap: 2px; }
+  .vp-field-full { margin-bottom: 8px; }
+  .vp-label {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em; color: #94a3b8;
+  }
+  .vp-value { font-size: 13px; color: #1e293b; font-weight: 500; word-break: break-word; }
+  .vp-value.vp-empty { color: #cbd5e1; font-weight: 400; }
+  .vp-value.vp-mono {
+    font-family: ui-monospace,monospace; font-size: 12px;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 5px; padding: 2px 7px; display: inline-block;
+  }
+  .vp-coord-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vp-coord-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; font-family: ui-monospace,monospace;
+  }
+  .vp-coord-label {
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; color: #94a3b8;
+  }
+  .vp-coord-val { color: #1e293b; }
+  .vp-shape-detail {
+    border: 1px solid #e2e8f0; border-radius: 8px;
+    background: #f8fafc; padding: 1rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .vp-pre {
+    font-size: 12px; background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 6px; padding: 8px 12px;
+    max-height: 120px; overflow: auto; margin: 0; color: #475569;
+  }
+</style>
+
+<!-- ═══════════════════════════ Scripts ══════════════════════════════════ -->
 <script>
-// Wait for jQuery to be available
 (function() {
   function initPropertiesTable() {
-    if (typeof jQuery === 'undefined' || typeof window.$ === 'undefined') {
-      console.log('Waiting for jQuery...');
-      setTimeout(initPropertiesTable, 100);
-      return;
-    }
-    
-    var $ = window.jQuery || window.$;
-    
+    if (typeof jQuery === 'undefined') { setTimeout(initPropertiesTable, 100); return; }
+    var $ = window.jQuery;
+
     $(document).ready(function () {
-      // Function to show messages
+
       function showMessage(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-warning';
-        const messageHtml = `<div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-          ${message}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        const html = `<div class="prop-alert ${type}">
+          <span>${message}</span>
+          <button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:inherit;opacity:.5;">×</button>
         </div>`;
-        $('#messageContainer').html(messageHtml);
-        setTimeout(() => {
-          $('.alert').fadeOut();
-        }, 5000);
+        $('#messageContainer').html(html);
+        setTimeout(() => { $('.prop-alert').fadeOut(400, function(){ $(this).remove(); }); }, 5000);
       }
 
-      // Load dropdown options
       function loadZoneOptions() {
-        $.ajax({
-          url: '/api/zones/options/',
-          type: 'GET',
-          success: function(response) {
-            const select = $('#zone_id');
-            select.empty().append('<option value="">Select Zone</option>');
-            response.data.forEach(zone => {
-              select.append(`<option value="${zone.id}">${zone.name} (${zone.code})</option>`);
-            });
-          },
-          error: function(xhr) {
-            console.error('Error loading zones:', xhr);
-          }
-        });
+        $.ajax({ url: '/api/zones/options/', type: 'GET', success: function(r) {
+          const s = $('#zone_id').empty().append('<option value="">Select Zone</option>');
+          r.data.forEach(z => s.append(`<option value="${z.id}">${z.name} (${z.code})</option>`));
+        }});
       }
 
       function loadPropertyTypeOptions() {
-        $.ajax({
-          url: '/api/property-types/options/',
-          type: 'GET',
-          success: function(response) {
-            const select = $('#property_type_id');
-            select.empty().append('<option value="">Select Property Type</option>');
-            response.data.forEach(type => {
-              select.append(`<option value="${type.id}">${type.name} (${type.code})</option>`);
-            });
-          },
-          error: function(xhr) {
-            console.error('Error loading property types:', xhr);
-          }
-        });
+        $.ajax({ url: '/api/property-types/options/', type: 'GET', success: function(r) {
+          const s = $('#property_type_id').empty().append('<option value="">Select Property Type</option>');
+          r.data.forEach(t => s.append(`<option value="${t.id}">${t.name} (${t.code})</option>`));
+        }});
       }
 
-      // Initialize DataTable
+      // ── Geometry SVG renderer ────────────────────────────────────────────
+      function renderGeomSVG(geojson, size, padding) {
+        size = size || 48; padding = padding || 4;
+        let rings = [];
+        if (geojson.type === 'Polygon')           rings = geojson.coordinates;
+        else if (geojson.type === 'MultiPolygon') geojson.coordinates.forEach(p => rings = rings.concat(p));
+        else return null;
+        let all = [];
+        rings.forEach(r => r.forEach(pt => all.push(pt)));
+        if (!all.length) return null;
+        const xs = all.map(p=>p[0]), ys = all.map(p=>p[1]);
+        const mnX=Math.min(...xs), mxX=Math.max(...xs), mnY=Math.min(...ys), mxY=Math.max(...ys);
+        const rX=mxX-mnX||1, rY=mxY-mnY||1;
+        const draw=size-padding*2;
+        let scX=draw,scY=draw;
+        if (rX/rY>1) scY=draw/(rX/rY); else scX=draw*(rX/rY);
+        const offX=padding+(draw-scX)/2, offY=padding+(draw-scY)/2;
+        const sp=pt=>{
+          const x=offX+((pt[0]-mnX)/rX)*scX;
+          const y=offY+((mxY-pt[1])/rY)*scY;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        };
+        const sw=size<=60?1.2:1.5;
+        const polys=rings.map(r=>`<polygon points="${r.map(sp).join(' ')}" fill="rgba(59,130,246,.07)" stroke="#475569" stroke-width="${sw}" stroke-linejoin="round"/>`).join('');
+        return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${polys}</svg>`;
+      }
+
+      // ── DataTable ────────────────────────────────────────────────────────
       var table = $("#propertiesTable").DataTable({
-        paging: true,
-        searching: true,
-        ordering: true,
-        info: true,
-        responsive: true,
-        autoWidth: false,
-        processing: true,
-        serverSide: false,
-        lengthMenu: [10, 25, 50, 100],
-        pageLength: 25,
+        paging: true, searching: true, ordering: true, info: true,
+        responsive: true, autoWidth: false, processing: true,
+        serverSide: false, lengthMenu: [10,25,50,100], pageLength: 25,
         ajax: {
-          url: "/api/properties/list/",
-          type: "GET",
-          dataType: "json",
-          dataSrc: function (json) {
-            if (json.error) {
-              showMessage('error', `Error: ${json.error}`);
-              return [];
-            }
-            if (!json.data || !Array.isArray(json.data)) {
-              console.error('Invalid data format:', json);
-              showMessage('error', 'Invalid data format received from server');
-              return [];
-            }
+          url: "/api/properties/list/", type: "GET", dataType: "json",
+          dataSrc: function(json) {
+            if (json.error) { showMessage('error', `Error: ${json.error}`); return []; }
+            if (!json.data || !Array.isArray(json.data)) { showMessage('error','Invalid data format'); return []; }
             return json.data;
           },
-          error: function (xhr, error, thrown) {
-            console.error('DataTables error:', error, thrown);
-            let errorMsg = 'Unknown error';
-            if (xhr.responseJSON && xhr.responseJSON.error) {
-              errorMsg = xhr.responseJSON.error;
-            } else if (xhr.responseText) {
-              try {
-                const errorData = JSON.parse(xhr.responseText);
-                errorMsg = errorData.error || errorMsg;
-              } catch (e) {
-                errorMsg = xhr.responseText.substring(0, 200);
-              }
-            }
-            showMessage("error", `Error fetching properties: ${errorMsg}`);
+          error: function(xhr) {
+            let msg = 'Unknown error';
+            try { msg = xhr.responseJSON?.error || JSON.parse(xhr.responseText).error || msg; } catch(e){}
+            showMessage('error', `Error fetching properties: ${msg}`);
           }
         },
         dom: "Bfrtip",
         buttons: [
-          {
-            extend: "copy",
-            text: '<i class="fas fa-copy"></i> Copy',
-            className: "btn btn-sm btn-outline-secondary",
-          },
-          {
-            extend: "csv",
-            text: '<i class="fas fa-file-csv"></i> CSV',
-            className: "btn btn-sm btn-outline-success",
-          },
-          {
-            extend: "excel",
-            text: '<i class="fas fa-file-excel"></i> Excel',
-            className: "btn btn-sm btn-outline-primary",
-          },
-          {
-            extend: "pdf",
-            text: '<i class="fas fa-file-pdf"></i> PDF',
-            className: "btn btn-sm btn-outline-danger",
-          },
-          {
-            text: '<i class="fas fa-trash"></i> Delete Selected',
-            className: "btn btn-sm btn-outline-danger",
-            action: function(e, dt, node, config) {
-              deleteSelectedProperties(dt);
-            }
-          }
+          { extend:"copy",  text:'Copy',  className:"dt-button" },
+          { extend:"csv",   text:'CSV',   className:"dt-button" },
+          { extend:"excel", text:'Excel', className:"dt-button" },
+          { extend:"pdf",   text:'PDF',   className:"dt-button" },
+          { text:'Delete Selected', className:"dt-button danger-btn",
+            action: function(e,dt) { deleteSelectedProperties(dt); } }
         ],
-        order: [[0, "desc"]],
+        order: [[0,"desc"]],
         columns: [
-          { 
-            data: 'id',
-            visible: false 
-          },
+          { data:'id', visible:false },
           {
-            data: 'geom',
-            orderable: false,
-            searchable: false,
-            render: function(data, type, row) {
-              if (!data) {
-                return '<div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#ccc;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="3" x2="21" y2="21"/></svg></div>';
-              }
+            data:'geom', orderable:false, searchable:false,
+            render: function(data) {
+              if (!data) return '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="3" x2="21" y2="21"/></svg></div>';
               try {
-                const geojson = JSON.parse(data);
-                const svg = renderGeomSVG(geojson, 48, 4);
-                return svg
-                  ? `<div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#f9fafb;border:1px solid #e5e7eb;">${svg}</div>`
-                  : '-';
-              } catch(e) {
-                return '-';
-              }
+                const svg = renderGeomSVG(JSON.parse(data), 44, 4);
+                return svg ? `<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#f8fafc;border:1px solid #e2e8f0;">${svg}</div>` : '-';
+              } catch(e){ return '-'; }
             }
           },
-          { data: 'g_code' },
-          { data: 'gpsname' },
-          { 
-            data: 'area_in_me',
-            render: function(data, type, row) {
-              if (data === null || data === undefined) return '-';
-              return data.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            },
-            className: 'text-end'
-          },
-          { data: 'region' },
-          { data: 'district' },
-          { data: 'area' },
-          { 
-            data: null,
-            render: function(data, type, row) {
-              if (row.latitude && row.longitude) {
-                return `${row.latitude.toFixed(6)}, ${row.longitude.toFixed(6)}`;
-              }
-              return '-';
-            }
-          },
-          { 
-            data: 'created_at',
-            render: function(data, type, row) {
-              if (!data) return '-';
-              return data.split(' ')[0];
-            }
-          },
+          { data:'g_code' },
+          { data:'gpsname' },
+          { data:'area_in_me', className:'text-end',
+            render: function(d){ return d!=null ? parseFloat(d).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '-'; } },
+          { data:'region' },
+          { data:'district' },
+          { data:'area' },
+          { data:null, render: function(d,t,row){ return row.latitude&&row.longitude ? `${parseFloat(row.latitude).toFixed(5)}, ${parseFloat(row.longitude).toFixed(5)}` : '-'; } },
+          { data:'created_at', render: function(d){ return d ? d.split(' ')[0] : '-'; } },
           {
-            data: null,
-            orderable: false,
-            searchable: false,
-            render: function(data, type, row) {
-              return `
-                <div style="display: flex; gap: 5px; justify-content: center;">
-                  <button type="button" class="btn btn-sm btn-outline-primary view-property-btn" data-property-id="${row.id}" title="View Property">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-success edit-property-btn" data-property-id="${row.id}" title="Edit Property">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-danger delete-property-btn" data-property-id="${row.id}" data-property-name="${row.address}" title="Delete Property">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              `;
+            data:null, orderable:false, searchable:false,
+            render: function(d,t,row){
+              return `<div style="display:flex;gap:4px;justify-content:center;">
+                <button class="tbl-btn view-property-btn" data-property-id="${row.id}" title="View">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="tbl-btn edit-property-btn" data-property-id="${row.id}" title="Edit">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="tbl-btn danger delete-property-btn" data-property-id="${row.id}" data-property-name="${row.address||''}" title="Delete">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              </div>`;
             }
           }
         ]
       });
 
-      // Add Property button click
-      $('#addPropertyBtn').click(function() {
-        loadZoneOptions();
-        loadPropertyTypeOptions();
-        resetForm();
-        $('#propertyModalLabel').text('Add New Property');
+      // ── Event bindings ───────────────────────────────────────────────────
+      $('#addPropertyBtn').click(function(){
+        loadZoneOptions(); loadPropertyTypeOptions();
+        resetForm(); $('#propertyModalLabel').text('Add New Property');
         $('#propertyModal').modal('show');
       });
+      $('#savePropertyBtn').click(saveProperty);
 
-      // Save Property button click
-      $('#savePropertyBtn').click(function() {
-        saveProperty();
-      });
+      $(document).on('click','.view-property-btn', function(){ viewProperty($(this).data('property-id')); });
+      $(document).on('click','.edit-property-btn', function(){ editProperty($(this).data('property-id')); });
+      $(document).on('click','.delete-property-btn', function(){ deleteProperty($(this).data('property-id'), $(this).data('property-name')); });
 
-      // ── Shared geometry SVG renderer ─────────────────────────────────────────
-      // size: SVG canvas px, padding: inner padding px
-      function renderGeomSVG(geojson, size, padding) {
-        size    = size    || 48;
-        padding = padding || 4;
-
-        let rings = [];
-        if (geojson.type === 'Polygon')      rings = geojson.coordinates;
-        else if (geojson.type === 'MultiPolygon')
-          geojson.coordinates.forEach(poly => rings = rings.concat(poly));
-        else return null;
-
-        let allPoints = [];
-        rings.forEach(ring => ring.forEach(pt => allPoints.push(pt)));
-        if (!allPoints.length) return null;
-
-        const xs = allPoints.map(p => p[0]);
-        const ys = allPoints.map(p => p[1]);
-        const minX = Math.min(...xs), maxX = Math.max(...xs);
-        const minY = Math.min(...ys), maxY = Math.max(...ys);
-        const rangeX = maxX - minX || 1;
-        const rangeY = maxY - minY || 1;
-
-        // Preserve aspect ratio
-        const draw = size - padding * 2;
-        let scX = draw, scY = draw;
-        if (rangeX / rangeY > 1) scY = draw / (rangeX / rangeY);
-        else                     scX = draw * (rangeX / rangeY);
-        const offX = padding + (draw - scX) / 2;
-        const offY = padding + (draw - scY) / 2;
-
-        const sp = pt => {
-          const x = offX + ((pt[0] - minX) / rangeX) * scX;
-          const y = offY + ((maxY   - pt[1]) / rangeY) * scY;
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        };
-
-        const sw = size <= 60 ? 1.2 : 1.5;
-        const polygons = rings.map(ring =>
-          `<polygon points="${ring.map(sp).join(' ')}" fill="transparent" stroke="#374151" stroke-width="${sw}" stroke-linejoin="round"/>`
-        ).join('');
-
-        return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${polygons}</svg>`;
-      }
-      // ────────────────────────────────────────────────────────────────────────
-
-      // View Property button click
-      $(document).on('click', '.view-property-btn', function() {
-        const propertyId = $(this).data('property-id');
-        viewProperty(propertyId);
-      });
-
-      // Edit Property button click
-      $(document).on('click', '.edit-property-btn', function() {
-        const propertyId = $(this).data('property-id');
-        editProperty(propertyId);
-      });
-
-      // Edit from view modal button click
-      $('#editFromViewBtn').click(function() {
-        const propertyId = $(this).data('property-id');
+      $('#editFromViewBtn').click(function(){
+        const id=$(this).data('property-id');
         $('#viewPropertyModal').modal('hide');
-        setTimeout(() => {
-          editProperty(propertyId);
-        }, 300);
+        setTimeout(()=>editProperty(id), 300);
       });
 
-      // Delete Property button click
-      $(document).on('click', '.delete-property-btn', function() {
-        const propertyId = $(this).data('property-id');
-        const propertyName = $(this).data('property-name');
-        deleteProperty(propertyId, propertyName);
-      });
+      $('#propertyModal').on('hidden.bs.modal', resetForm);
 
-      // Reset form when modal is hidden
-      $('#propertyModal').on('hidden.bs.modal', function() {
-        resetForm();
-      });
-
-      // Helper function to get CSRF token
+      // ── Helpers ──────────────────────────────────────────────────────────
       function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-          const cookies = document.cookie.split(';');
-          for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-              break;
-            }
-          }
-        }
-        return cookieValue;
+        let val=null;
+        document.cookie.split(';').forEach(c=>{
+          c=c.trim();
+          if(c.startsWith(name+'=')) val=decodeURIComponent(c.slice(name.length+1));
+        });
+        return val;
       }
 
-      // Reset form
-      function resetForm() {
+      function resetForm(){
         $('#propertyForm')[0].reset();
         $('#propertyId').val('');
         $('#zone_id').empty().append('<option value="">Select Zone</option>');
@@ -546,572 +580,210 @@
         $('#propertyModalLabel').text('Add New Property');
       }
 
-      // Save property (create or update)
-      function saveProperty() {
-        const zoneId = $('#zone_id').val();
-        const propertyTypeId = $('#property_type_id').val();
-
-        
-
-        const formData = {
-          zone_id: zoneId,
-          property_type_id: propertyTypeId,
-          address: $('#address').val(),
-          g_code: $('#g_code').val(),
-          gpsname: $('#gpsname').val(),
-          region: $('#region').val(),
-          district: $('#district').val(),
-          postcode: $('#postcode').val(),
-          street: $('#street').val(),
-          addressv1: $('#addressv1').val(),
-          area_in_me: $('#area_in_me').val(),
-          area: $('#area').val(),
-          latitude: $('#latitude').val(),
-          longitude: $('#longitude').val(),
-          nlat: $('#nlat').val(),
-          slat: $('#slat').val(),
-          wlong: $('#wlong').val(),
-          elong: $('#elong').val(),
-          coordinates: $('#coordinates').val(),
+      // ── Save ──────────────────────────────────────────────────────────────
+      function saveProperty(){
+        const formData={
+          zone_id:$('#zone_id').val(), property_type_id:$('#property_type_id').val(),
+          address:$('#address').val(), g_code:$('#g_code').val(), gpsname:$('#gpsname').val(),
+          region:$('#region').val(), district:$('#district').val(), postcode:$('#postcode').val(),
+          street:$('#street').val(), addressv1:$('#addressv1').val(),
+          area_in_me:$('#area_in_me').val(), area:$('#area').val(),
+          latitude:$('#latitude').val(), longitude:$('#longitude').val(),
+          nlat:$('#nlat').val(), slat:$('#slat').val(), wlong:$('#wlong').val(), elong:$('#elong').val(),
+          coordinates:$('#coordinates').val()
         };
-
-        Object.keys(formData).forEach(key => {
-          if (formData[key] === '') delete formData[key];
-        });
-
-        const propertyId = $('#propertyId').val();
-        const isEdit = !!propertyId;
-
-        Swal.fire({
-          title: isEdit ? 'Updating...' : 'Creating...',
-          text: isEdit ? 'Please wait while the property is being updated.' : 'Please wait while the property is being created.',
-          allowOutsideClick: false,
-          didOpen: () => { Swal.showLoading(); }
-        });
-
-        const url    = isEdit ? `/api/properties/${propertyId}/update/` : '/api/properties/create/';
-        const method = isEdit ? 'PUT' : 'POST';
-
+        Object.keys(formData).forEach(k=>{ if(formData[k]==='') delete formData[k]; });
+        const propertyId=$('#propertyId').val(), isEdit=!!propertyId;
+        Swal.fire({ title:isEdit?'Updating...':'Creating...', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
         $.ajax({
-          url, type: method,
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+          url: isEdit?`/api/properties/${propertyId}/update/`:'/api/properties/create/',
+          type: isEdit?'PUT':'POST',
+          headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
           data: JSON.stringify(formData),
-          success: function(response) {
+          success: function(){ Swal.close(); $('#propertyModal').modal('hide'); showMessage('success', isEdit?'Property updated':'Property created'); table.ajax.reload(); },
+          error: function(xhr){
             Swal.close();
-            $('#propertyModal').modal('hide');
-            showMessage('success', isEdit ? 'Property updated successfully' : 'Property created successfully');
-            table.ajax.reload();
-          },
-          error: function(xhr) {
-            Swal.close();
-            let errorMsg = isEdit ? 'Error updating property' : 'Error creating property';
-            if (xhr.responseJSON && xhr.responseJSON.error) errorMsg = xhr.responseJSON.error;
-            else if (xhr.responseText) {
-              try { errorMsg = JSON.parse(xhr.responseText).error || errorMsg; } catch(e) {}
-            }
-            showMessage('error', errorMsg);
+            let msg=isEdit?'Error updating property':'Error creating property';
+            try{ msg=xhr.responseJSON?.error||JSON.parse(xhr.responseText).error||msg; }catch(e){}
+            showMessage('error',msg);
           }
         });
       }
 
-      // ── View property ────────────────────────────────────────────────────────
-      function viewProperty(propertyId) {
+      // ── View ──────────────────────────────────────────────────────────────
+      function viewProperty(id){
         $('#viewPropertyModal').modal('show');
-        $('#viewPropertyBody').html(`
-          <div class="text-center py-5">
-            <div class="spinner-border text-secondary" role="status"><span class="visually-hidden">Loading...</span></div>
-            <p class="mt-2 text-muted small">Loading property details...</p>
-          </div>`);
-
-        $('#editFromViewBtn').data('property-id', propertyId);
-
-        $.ajax({
-          url: `/api/properties/${propertyId}/`,
-          type: 'GET',
-          headers: { 'X-CSRFToken': getCookie('csrftoken') },
-          success: function(p) {
-
-            const dash    = v => (v !== null && v !== undefined && v !== '') ? v : null;
-            const fmtNum  = (n, d=2) => n != null ? parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : null;
-            const fmtDate = s => s ? s.split(' ')[0] : null;
-
-            // field renders a label + value row
-            const field = (label, value, opts={}) => {
-              const empty = !dash(value);
-              const mono  = opts.mono  ? ' vp-mono'  : '';
-              const full  = opts.full  ? ' vp-field-full' : '';
-              return `
-                <div class="vp-field${full}">
-                  <span class="vp-label">${label}</span>
-                  <span class="vp-value${empty ? ' vp-empty' : mono}">${empty ? '—' : value}</span>
-                </div>`;
-            };
-
-            const coordPill = (label, val) =>
-              `<span class="vp-coord-pill">
-                <span class="vp-coord-label">${label}</span>
-                <span class="vp-coord-val">${val || '—'}</span>
-              </span>`;
-
-            // ── shape SVGs ──
-            let heroShapeHtml = `
-              <div class="vp-shape-placeholder">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.2">
-                  <path d="M3 6l9-3 9 3v12l-9 3-9-3V6z"/>
-                </svg>
+        $('#viewPropertyBody').html(`<div class="text-center py-5"><div class="spinner-border text-secondary" role="status"></div><p class="mt-2 text-muted small">Loading…</p></div>`);
+        $('#editFromViewBtn').data('property-id',id);
+        $.ajax({ url:`/api/properties/${id}/`, type:'GET',
+          success: function(p){
+            const dash=v=>(v!==null&&v!==undefined&&v!=='');
+            const fmtNum=(n,d=2)=>n!=null?parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):null;
+            const fmtDate=s=>s?s.split(' ')[0]:null;
+            const field=(label,value,opts={})=>{
+              const empty=!dash(value);
+              return `<div class="vp-field${opts.full?' vp-field-full':''}">
+                <span class="vp-label">${label}</span>
+                <span class="vp-value${empty?' vp-empty':opts.mono?' vp-mono':''}">${empty?'—':value}</span>
               </div>`;
-            let detailShapeSection = '';
+            };
+            const coordPill=(lbl,v)=>`<span class="vp-coord-pill"><span class="vp-coord-label">${lbl}</span><span class="vp-coord-val">${v||'—'}</span></span>`;
 
-            if (p.geom) {
-              try {
-                const gj = JSON.parse(p.geom);
-                const heroSvg = renderGeomSVG(gj, 84, 7);
-                if (heroSvg) heroShapeHtml = `<div class="vp-shape-hero">${heroSvg}</div>`;
-                const bigSvg = renderGeomSVG(gj, 240, 14);
-                if (bigSvg) {
-                  detailShapeSection = `
-                    <div class="vp-section">
-                      <h6 class="vp-section-title">Boundary Shape</h6>
-                      <div class="vp-shape-detail">${bigSvg}</div>
-                    </div>`;
-                }
-              } catch(e) {}
+            let heroSvgHtml=`<div class="vp-shape-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2"><path d="M3 6l9-3 9 3v12l-9 3-9-3V6z"/></svg></div>`;
+            let detailShape='';
+            if(p.geom){
+              try{
+                const gj=JSON.parse(p.geom);
+                const s=renderGeomSVG(gj,80,7);
+                if(s) heroSvgHtml=`<div class="vp-shape-hero">${s}</div>`;
+                const big=renderGeomSVG(gj,220,14);
+                if(big) detailShape=`<div class="vp-section"><h6 class="vp-section-title">Boundary Shape</h6><div class="vp-shape-detail">${big}</div></div>`;
+              }catch(e){}
             }
+            const titleLine=p.g_code||`Property #${p.id}`;
+            const subLine=[p.district,p.region].filter(Boolean).join(', ')||p.address||'';
+            let chips='';
+            if(p.zone_name)          chips+=`<span class="vp-chip">${p.zone_name}${p.zone_code?' · '+p.zone_code:''}</span>`;
+            if(p.property_type_name) chips+=`<span class="vp-chip">${p.property_type_name}${p.property_type_code?' · '+p.property_type_code:''}</span>`;
+            if(p.gpsname)            chips+=`<span class="vp-chip">${p.gpsname}</span>`;
 
-            // ── hero identity ──
-            const titleLine = p.g_code || `Property #${p.id}`;
-            const subLine   = [p.district, p.region].filter(Boolean).join(', ') || p.address || '';
-
-            let chips = '';
-            if (p.zone_name)          chips += `<span class="vp-chip"><i class="fas fa-layer-group"></i> ${p.zone_name}${p.zone_code ? ' · '+p.zone_code : ''}</span>`;
-            if (p.property_type_name) chips += `<span class="vp-chip"><i class="fas fa-tag"></i> ${p.property_type_name}${p.property_type_code ? ' · '+p.property_type_code : ''}</span>`;
-            if (p.gpsname)            chips += `<span class="vp-chip"><i class="fas fa-satellite-dish"></i> ${p.gpsname}</span>`;
-
-            // ── assemble ──
-            const html = `
-              <div class="vp-wrap">
-
+            $('#viewPropertyBody').html(`
+              <div>
                 <div class="vp-hero">
-                  ${heroShapeHtml}
-                  <div class="vp-hero-info">
+                  ${heroSvgHtml}
+                  <div style="flex:1;min-width:0;">
                     <div class="vp-hero-title">${titleLine}</div>
-                    ${subLine ? `<div class="vp-hero-sub">${subLine}</div>` : ''}
-                    ${chips   ? `<div class="vp-chips">${chips}</div>` : ''}
+                    ${subLine?`<div class="vp-hero-sub">${subLine}</div>`:''}
+                    ${chips?`<div class="vp-chips">${chips}</div>`:''}
                   </div>
                 </div>
-
                 <div class="vp-body">
-
                   <div class="vp-section">
                     <h6 class="vp-section-title">Identification</h6>
                     <div class="vp-grid">
-                      ${field('G-Code',        p.g_code,             {mono:true})}
-                      ${field('GPS Name',       p.gpsname)}
-                      ${field('Zone',           p.zone_name ? `${p.zone_name}${p.zone_code ? ' ('+p.zone_code+')':''}` : null)}
-                      ${field('Property Type',  p.property_type_name ? `${p.property_type_name}${p.property_type_code ? ' ('+p.property_type_code+')':''}` : null)}
+                      ${field('G-Code',p.g_code,{mono:true})}
+                      ${field('GPS Name',p.gpsname)}
+                      ${field('Zone',p.zone_name?`${p.zone_name}${p.zone_code?' ('+p.zone_code+')':''}`:null)}
+                      ${field('Property Type',p.property_type_name?`${p.property_type_name}${p.property_type_code?' ('+p.property_type_code+')':''}`:null)}
                     </div>
                   </div>
-
                   <div class="vp-section">
                     <h6 class="vp-section-title">Address</h6>
-                    ${field('Full Address',         p.address,  {full:true})}
-                    ${field('Alternative Address',  p.addressv1,{full:true})}
+                    ${field('Full Address',p.address,{full:true})}
+                    ${field('Alternative Address',p.addressv1,{full:true})}
                     <div class="vp-grid">
-                      ${field('Street',      p.street)}
-                      ${field('Region',      p.region)}
-                      ${field('District',    p.district)}
-                      ${field('Postal Code', p.postcode)}
+                      ${field('Street',p.street)}${field('Region',p.region)}
+                      ${field('District',p.district)}${field('Postal Code',p.postcode)}
                     </div>
                   </div>
-
                   <div class="vp-section">
                     <h6 class="vp-section-title">Area</h6>
                     <div class="vp-grid">
-                      ${field('Area (m²)',    fmtNum(p.area_in_me) ? fmtNum(p.area_in_me)+' m²' : null)}
-                      ${field('Area (alt.)',  fmtNum(p.area))}
+                      ${field('Area (m²)',fmtNum(p.area_in_me)?fmtNum(p.area_in_me)+' m²':null)}
+                      ${field('Area (alt.)',fmtNum(p.area))}
                     </div>
                   </div>
-
                   <div class="vp-section">
                     <h6 class="vp-section-title">Coordinates</h6>
                     <div class="vp-coord-row mb-2">
-                      ${coordPill('LAT', p.latitude  ? parseFloat(p.latitude).toFixed(7)  : null)}
-                      ${coordPill('LNG', p.longitude ? parseFloat(p.longitude).toFixed(7) : null)}
+                      ${coordPill('LAT',p.latitude?parseFloat(p.latitude).toFixed(7):null)}
+                      ${coordPill('LNG',p.longitude?parseFloat(p.longitude).toFixed(7):null)}
                     </div>
                     <div class="vp-coord-row mb-2">
-                      ${coordPill('N', p.nlat)}
-                      ${coordPill('S', p.slat)}
-                      ${coordPill('W', p.wlong)}
-                      ${coordPill('E', p.elong)}
+                      ${coordPill('N',p.nlat)}${coordPill('S',p.slat)}
+                      ${coordPill('W',p.wlong)}${coordPill('E',p.elong)}
                     </div>
-                    ${p.coordinates ? `
-                      <p class="vp-label mb-1">JSON Coordinates</p>
-                      <pre class="vp-pre">${JSON.stringify(p.coordinates, null, 2)}</pre>` : ''}
+                    ${p.coordinates?`<p class="vp-label mb-1">JSON Coordinates</p><pre class="vp-pre">${JSON.stringify(p.coordinates,null,2)}</pre>`:''}
                   </div>
-
-                  ${detailShapeSection}
-
+                  ${detailShape}
                   <div class="vp-section vp-section-last">
                     <h6 class="vp-section-title">Metadata</h6>
                     <div class="vp-grid">
-                      ${field('Created',      fmtDate(p.created_at))}
-                      ${field('Last Updated', fmtDate(p.updated_at))}
+                      ${field('Created',fmtDate(p.created_at))}
+                      ${field('Last Updated',fmtDate(p.updated_at))}
                     </div>
                   </div>
-
                 </div>
-              </div>`;
-
-            $('#viewPropertyBody').html(html);
-          },
-          error: function(xhr) {
-            let errorMsg = 'Error loading property details';
-            if (xhr.responseJSON && xhr.responseJSON.error) errorMsg = xhr.responseJSON.error;
-            $('#viewPropertyBody').html(`
-              <div class="alert alert-danger m-3">
-                <i class="fas fa-exclamation-triangle me-2"></i>${errorMsg}
               </div>`);
+          },
+          error:function(xhr){
+            let msg='Error loading property details';
+            try{ msg=xhr.responseJSON?.error||msg; }catch(e){}
+            $('#viewPropertyBody').html(`<div style="padding:24px;"><div class="prop-alert error">${msg}</div></div>`);
           }
         });
       }
-      // ────────────────────────────────────────────────────────────────────────
 
-      // Edit property
-      function editProperty(propertyId) {
-        loadZoneOptions();
-        loadPropertyTypeOptions();
-        
+      // ── Edit ──────────────────────────────────────────────────────────────
+      function editProperty(id){
+        loadZoneOptions(); loadPropertyTypeOptions();
         $('#propertyModal').modal('show');
         $('#propertyModalLabel').text('Edit Property');
         $('#propertyForm').hide();
-        $('#propertyModal .modal-body').prepend(`
-          <div class="text-center py-5" id="edit-loading">
-            <div class="spinner-border text-secondary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2 text-muted small">Loading property data...</p>
-          </div>
-        `);
-
-        $.ajax({
-          url: `/api/properties/${propertyId}/`,
-          type: 'GET',
-          headers: { 'X-CSRFToken': getCookie('csrftoken') },
-          success: function(property) {
-            $('#edit-loading').remove();
-            $('#propertyForm').show();
-            
-            $('#propertyId').val(property.id);
-            setTimeout(() => {
-              $('#zone_id').val(property.zone_id);
-              $('#property_type_id').val(property.property_type_id);
-            }, 300);
-            $('#address').val(property.address || '');
-            $('#g_code').val(property.g_code || '');
-            $('#gpsname').val(property.gpsname || '');
-            $('#region').val(property.region || '');
-            $('#district').val(property.district || '');
-            $('#postcode').val(property.postcode || '');
-            $('#street').val(property.street || '');
-            $('#addressv1').val(property.addressv1 || '');
-            $('#area_in_me').val(property.area_in_me || '');
-            $('#area').val(property.area || '');
-            $('#latitude').val(property.latitude || '');
-            $('#longitude').val(property.longitude || '');
-            $('#nlat').val(property.nlat || '');
-            $('#slat').val(property.slat || '');
-            $('#wlong').val(property.wlong || '');
-            $('#elong').val(property.elong || '');
-            $('#coordinates').val(property.coordinates ? JSON.stringify(property.coordinates) : '');
+        $('#propertyModal .modal-body').prepend(`<div class="text-center py-5" id="edit-loading"><div class="spinner-border text-secondary" role="status"></div><p class="mt-2 text-muted small">Loading…</p></div>`);
+        $.ajax({ url:`/api/properties/${id}/`, type:'GET',
+          success:function(p){
+            $('#edit-loading').remove(); $('#propertyForm').show();
+            $('#propertyId').val(p.id);
+            setTimeout(()=>{ $('#zone_id').val(p.zone_id); $('#property_type_id').val(p.property_type_id); },300);
+            $('#address').val(p.address||''); $('#g_code').val(p.g_code||''); $('#gpsname').val(p.gpsname||'');
+            $('#region').val(p.region||''); $('#district').val(p.district||''); $('#postcode').val(p.postcode||'');
+            $('#street').val(p.street||''); $('#addressv1').val(p.addressv1||'');
+            $('#area_in_me').val(p.area_in_me||''); $('#area').val(p.area||'');
+            $('#latitude').val(p.latitude||''); $('#longitude').val(p.longitude||'');
+            $('#nlat').val(p.nlat||''); $('#slat').val(p.slat||''); $('#wlong').val(p.wlong||''); $('#elong').val(p.elong||'');
+            $('#coordinates').val(p.coordinates?JSON.stringify(p.coordinates):'');
           },
-          error: function(xhr) {
+          error:function(xhr){
             $('#edit-loading').remove();
-            let errorMsg = 'Error loading property data';
-            if (xhr.responseJSON && xhr.responseJSON.error) errorMsg = xhr.responseJSON.error;
-            showMessage('error', errorMsg);
-            $('#propertyModal').modal('hide');
+            let msg='Error loading property data';
+            try{ msg=xhr.responseJSON?.error||msg; }catch(e){}
+            showMessage('error',msg); $('#propertyModal').modal('hide');
           }
         });
       }
 
-      // Delete property
-      function deleteProperty(propertyId, propertyName) {
-        Swal.fire({
-          title: 'Delete Property?',
-          html: `Are you sure you want to delete property <strong>${propertyName || propertyId}</strong>?`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#3085d6',
-          confirmButtonText: 'Yes, delete it!',
-          cancelButtonText: 'Cancel'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            Swal.fire({
-              title: 'Deleting...',
-              text: 'Please wait while the property is being deleted.',
-              allowOutsideClick: false,
-              didOpen: () => { Swal.showLoading(); }
-            });
-
-            $.ajax({
-              url: `/api/properties/${propertyId}/delete/`,
-              type: 'DELETE',
-              headers: { 'X-CSRFToken': getCookie('csrftoken') },
-              success: function(response) {
-                Swal.close();
-                showMessage('success', 'Property deleted successfully');
-                table.ajax.reload();
-              },
-              error: function(xhr) {
-                Swal.close();
-                let errorMsg = 'Error deleting property';
-                if (xhr.responseJSON && xhr.responseJSON.error) errorMsg = xhr.responseJSON.error;
-                showMessage('error', errorMsg);
-              }
-            });
-          }
+      // ── Delete ───────────────────────────────────────────────────────────
+      function deleteProperty(id,name){
+        Swal.fire({ title:'Delete Property?', html:`Delete <strong>${name||id}</strong>?`, icon:'warning',
+          showCancelButton:true, confirmButtonColor:'#1e293b', cancelButtonColor:'#94a3b8',
+          confirmButtonText:'Delete', cancelButtonText:'Cancel'
+        }).then(r=>{
+          if(!r.isConfirmed) return;
+          Swal.fire({ title:'Deleting…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+          $.ajax({ url:`/api/properties/${id}/delete/`, type:'DELETE',
+            headers:{'X-CSRFToken':getCookie('csrftoken')},
+            success:function(){ Swal.close(); showMessage('success','Property deleted'); table.ajax.reload(); },
+            error:function(xhr){ Swal.close(); let msg='Error deleting'; try{ msg=xhr.responseJSON?.error||msg; }catch(e){} showMessage('error',msg); }
+          });
         });
       }
 
-      // Delete selected properties
-      function deleteSelectedProperties(dt) {
-        const selectedRows = dt.rows({ selected: true }).data();
-        
-        if (selectedRows.length === 0) {
-          showMessage('warning', 'Please select properties to delete');
-          return;
-        }
-
-        const propertyIds = selectedRows.map(row => row.id).toArray();
-
-        Swal.fire({
-          title: 'Delete Selected Properties?',
-          html: `Are you sure you want to delete <strong>${propertyIds.length}</strong> selected propert${propertyIds.length > 1 ? 'ies' : 'y'}?`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#3085d6',
-          confirmButtonText: 'Yes, delete them!',
-          cancelButtonText: 'Cancel'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            Swal.fire({
-              title: 'Deleting...',
-              text: 'Please wait while the properties are being deleted.',
-              allowOutsideClick: false,
-              didOpen: () => { Swal.showLoading(); }
-            });
-
-            $.ajax({
-              url: '/api/properties/bulk-delete/',
-              type: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-              data: JSON.stringify({ property_ids: propertyIds }),
-              success: function(response) {
-                Swal.close();
-                showMessage('success', response.message || `${propertyIds.length} properties deleted successfully`);
-                table.ajax.reload();
-              },
-              error: function(xhr) {
-                Swal.close();
-                let errorMsg = 'Error deleting properties';
-                if (xhr.responseJSON && xhr.responseJSON.error) errorMsg = xhr.responseJSON.error;
-                showMessage('error', errorMsg);
-              }
-            });
-          }
+      function deleteSelectedProperties(dt){
+        const rows=dt.rows({selected:true}).data();
+        if(!rows.length){ showMessage('warning','Please select properties to delete'); return; }
+        const ids=rows.map(r=>r.id).toArray();
+        Swal.fire({ title:'Delete Selected?', html:`Delete <strong>${ids.length}</strong> propert${ids.length>1?'ies':'y'}?`, icon:'warning',
+          showCancelButton:true, confirmButtonColor:'#1e293b', cancelButtonColor:'#94a3b8',
+          confirmButtonText:'Delete', cancelButtonText:'Cancel'
+        }).then(r=>{
+          if(!r.isConfirmed) return;
+          Swal.fire({ title:'Deleting…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+          $.ajax({ url:'/api/properties/bulk-delete/', type:'POST',
+            headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+            data:JSON.stringify({property_ids:ids}),
+            success:function(res){ Swal.close(); showMessage('success',res.message||`${ids.length} properties deleted`); table.ajax.reload(); },
+            error:function(xhr){ Swal.close(); let msg='Error deleting'; try{ msg=xhr.responseJSON?.error||msg; }catch(e){} showMessage('error',msg); }
+          });
         });
       }
+
     });
   }
-  
-  // Start initialization
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(initPropertiesTable, 500);
-    });
-  } else {
-    setTimeout(initPropertiesTable, 500);
-  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(initPropertiesTable,500));
+  else setTimeout(initPropertiesTable,500);
 })();
 </script>
-
-<style>
-  #propertiesTable tbody tr td {
-    vertical-align: middle;
-  }
-  
-  .btn-group .btn {
-    margin: 0 1px;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .btn-group {
-    flex-wrap: wrap;
-    gap: 2px;
-  }
-  
-  .badge {
-    font-size: 0.875rem;
-    padding: 0.35em 0.65em;
-  }
-  
-  .dataTables_wrapper .dt-buttons {
-    margin-bottom: 15px;
-  }
-  
-  .card-header.bg-primary, .card-header.bg-success, 
-  .card-header.bg-info, .card-header.bg-warning, 
-  .card-header.bg-secondary, .card-header.bg-dark {
-    padding: 0.75rem 1.25rem;
-  }
-  
-  .modal-xl {
-    max-width: 90%;
-  }
-  
-  @media (min-width: 1200px) {
-    .modal-xl {
-      max-width: 1140px;
-    }
-  }
-  
-  pre {
-    background-color: #f8f9fa;
-    padding: 10px;
-    border-radius: 4px;
-    max-height: 200px;
-    overflow: auto;
-  }
-
-  #propertiesTable tbody tr td:first-child {
-    padding: 6px;
-    text-align: center;
-    vertical-align: middle;
-  }
-
-  #propertiesTable tbody tr:hover svg polygon {
-    fill: rgba(0,0,0,.05);
-    transition: fill 0.15s ease;
-  }
-
-  /* ═══════════════════════════════════════════════════
-     View Property Modal — layout & field styles
-  ═══════════════════════════════════════════════════ */
-  .vp-wrap { font-size: 0.875rem; color: #1f2937; }
-
-  /* Hero row */
-  .vp-hero {
-    display: flex;
-    gap: 1.1rem;
-    align-items: flex-start;
-    padding: 1.25rem 1.5rem 1.1rem;
-    background: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  .vp-shape-hero {
-    flex-shrink: 0;
-    width: 88px; height: 88px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: #fff;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-  }
-  .vp-shape-placeholder {
-    flex-shrink: 0;
-    width: 88px; height: 88px;
-    border: 1px dashed #e5e7eb;
-    border-radius: 8px;
-    background: #f9fafb;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .vp-hero-info { flex: 1; min-width: 0; }
-  .vp-hero-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 3px;
-    font-family: 'SF Mono','Fira Code',ui-monospace,monospace;
-  }
-  .vp-hero-sub { font-size: 0.8rem; color: #6b7280; margin-bottom: 9px; }
-  .vp-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .vp-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 0.71rem; font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 20px;
-    background: #fff; border: 1px solid #e5e7eb;
-    color: #374151;
-  }
-  .vp-chip i { font-size: 0.62rem; color: #9ca3af; }
-
-  /* Body */
-  .vp-body { padding: 0 1.5rem 0.5rem; }
-
-  /* Sections */
-  .vp-section { padding: 0.9rem 0; border-bottom: 1px solid #f3f4f6; }
-  .vp-section-last { border-bottom: none; }
-  .vp-section-title {
-    font-size: 0.67rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .07em;
-    color: #9ca3af; margin-bottom: 0.7rem;
-  }
-
-  /* Responsive field grid */
-  .vp-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-    gap: 0.6rem 1.25rem;
-  }
-
-  /* Field */
-  .vp-field { display: flex; flex-direction: column; gap: 2px; }
-  .vp-field-full { margin-bottom: 0.5rem; }
-  .vp-label {
-    font-size: 0.67rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .05em;
-    color: #9ca3af;
-  }
-  .vp-value { font-size: 0.83rem; color: #111827; font-weight: 500; word-break: break-word; }
-  .vp-value.vp-empty  { color: #d1d5db; font-weight: 400; }
-  .vp-value.vp-mono {
-    font-family: 'SF Mono','Fira Code',ui-monospace,monospace;
-    font-size: 0.79rem;
-    background: #f3f4f6; border: 1px solid #e5e7eb;
-    border-radius: 4px; padding: 2px 6px; display: inline-block;
-  }
-
-  /* Coordinate pills */
-  .vp-coord-row { display: flex; flex-wrap: wrap; gap: 6px; }
-  .vp-coord-pill {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: #f3f4f6; border: 1px solid #e5e7eb;
-    border-radius: 5px; padding: 4px 10px;
-    font-size: 0.78rem; font-family: ui-monospace,monospace;
-  }
-  .vp-coord-label {
-    font-size: 0.6rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .06em; color: #9ca3af;
-  }
-  .vp-coord-val { color: #111827; }
-
-  /* Large shape preview */
-  .vp-shape-detail {
-    border: 1px solid #e5e7eb; border-radius: 8px;
-    background: #f9fafb; padding: 1rem;
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  /* JSON pre */
-  .vp-pre {
-    font-size: 0.74rem;
-    background: #f3f4f6; border: 1px solid #e5e7eb;
-    border-radius: 6px; padding: 8px 12px;
-    max-height: 120px; overflow: auto; margin: 0; color: #374151;
-  }
-</style>
 
 {% endblock %}

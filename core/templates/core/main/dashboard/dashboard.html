@@ -1,4 +1,3 @@
-<!-- templates/core/main/dashboard/field_collection_dashboard.html -->
 {% extends 'main/base.html' %}
 {% load i18n static %}
 
@@ -13,7 +12,7 @@
         background: #f5f7fa;
         min-height: 100vh;
     }
-    
+
     /* Stats Cards */
     .stat-card {
         background: white;
@@ -23,12 +22,12 @@
         border: 1px solid #e2e8f0;
         transition: all 0.2s ease;
     }
-    
+
     .stat-card:hover {
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         transform: translateY(-2px);
     }
-    
+
     .stat-label {
         font-size: 13px;
         font-weight: 600;
@@ -37,7 +36,7 @@
         letter-spacing: 0.5px;
         margin-bottom: 8px;
     }
-    
+
     .stat-value {
         font-size: 32px;
         font-weight: 700;
@@ -45,19 +44,19 @@
         line-height: 1.2;
         margin-bottom: 4px;
     }
-    
+
     .stat-sub {
         font-size: 12px;
         color: #94a3b8;
         margin-top: 8px;
     }
-    
+
     .stat-sub-value {
         font-size: 14px;
         font-weight: 500;
         color: #475569;
     }
-    
+
     /* Filter Bar */
     .filter-bar {
         background: white;
@@ -71,20 +70,20 @@
         flex-wrap: wrap;
         gap: 15px;
     }
-    
+
     .filter-group {
         display: flex;
         gap: 12px;
         align-items: center;
     }
-    
+
     .filter-group label {
         font-size: 13px;
         font-weight: 500;
         color: #475569;
         margin: 0;
     }
-    
+
     .filter-group select {
         padding: 8px 12px;
         border: 1px solid #cbd5e1;
@@ -94,12 +93,12 @@
         min-width: 180px;
         color: #1e293b;
     }
-    
+
     .filter-group select:focus {
         outline: none;
         border-color: #3b82f6;
     }
-    
+
     /* Chart Cards */
     .chart-card {
         background: white;
@@ -108,7 +107,7 @@
         margin-bottom: 24px;
         border: 1px solid #e2e8f0;
     }
-    
+
     .chart-header {
         display: flex;
         justify-content: space-between;
@@ -117,25 +116,26 @@
         padding-bottom: 12px;
         border-bottom: 1px solid #e2e8f0;
     }
-    
+
     .chart-title {
         font-size: 16px;
         font-weight: 600;
         color: #1e293b;
         margin: 0;
     }
-    
+
     .chart-subtitle {
         font-size: 12px;
         color: #64748b;
         margin-top: 4px;
+        margin-bottom: 0;
     }
-    
+
     .chart-actions {
         display: flex;
         gap: 8px;
     }
-    
+
     .chart-btn {
         padding: 6px 14px;
         border: 1px solid #cbd5e1;
@@ -147,18 +147,18 @@
         transition: all 0.2s;
         font-weight: 500;
     }
-    
+
     .chart-btn:hover {
         background: #f1f5f9;
         border-color: #94a3b8;
     }
-    
+
     .chart-btn.active {
         background: #1e293b;
         border-color: #1e293b;
         color: white;
     }
-    
+
     /* Progress Bar */
     .progress-bar-container {
         width: 100%;
@@ -168,14 +168,14 @@
         overflow: hidden;
         margin: 12px 0;
     }
-    
+
     .progress-bar-fill {
         height: 100%;
         background: #3b82f6;
         border-radius: 4px;
         transition: width 0.3s;
     }
-    
+
     /* Loading Spinner */
     .loading-spinner {
         display: flex;
@@ -183,7 +183,7 @@
         align-items: center;
         min-height: 200px;
     }
-    
+
     .spinner {
         width: 32px;
         height: 32px;
@@ -192,19 +192,19 @@
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
     }
-    
+
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
-    
+
     /* Table Styles */
     .data-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
     }
-    
+
     .data-table thead th {
         background: #f8fafc;
         padding: 12px 16px;
@@ -213,17 +213,17 @@
         color: #475569;
         border-bottom: 1px solid #e2e8f0;
     }
-    
+
     .data-table tbody td {
         padding: 12px 16px;
         border-bottom: 1px solid #f1f5f9;
         color: #334155;
     }
-    
+
     .data-table tbody tr:hover {
         background: #f8fafc;
     }
-    
+
     /* Badge Styles */
     .badge-status {
         display: inline-block;
@@ -232,57 +232,57 @@
         font-size: 11px;
         font-weight: 500;
     }
-    
+
     .badge-status.pending {
         background: #fff3e0;
         color: #e67e22;
     }
-    
+
     .badge-status.approved {
         background: #e8f5e9;
         color: #27ae60;
     }
-    
+
     .badge-status.rejected {
         background: #fee2e2;
         color: #e74c3c;
     }
-    
+
     .badge-status.complete {
         background: #e8f5e9;
         color: #27ae60;
     }
-    
+
     /* Responsive */
     @media (max-width: 768px) {
         .stat-value {
             font-size: 24px;
         }
-        
+
         .filter-bar {
             flex-direction: column;
             align-items: stretch;
         }
-        
+
         .filter-group {
             justify-content: space-between;
         }
-        
+
         .chart-actions {
             flex-wrap: wrap;
         }
     }
-    
+
     .row {
         margin-left: -10px;
         margin-right: -10px;
     }
-    
+
     .col-md-3, .col-md-4, .col-md-6, .col-md-12 {
         padding-left: 10px;
         padding-right: 10px;
     }
-    
+
     .btn-refresh {
         background: #f1f5f9;
         border: 1px solid #cbd5e1;
@@ -292,9 +292,95 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .btn-refresh:hover {
         background: #e2e8f0;
+    }
+
+    /* ── Projection Cards ───────────────────────────────────────────────── */
+    .projection-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+    }
+
+    .proj-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 16px 18px;
+        transition: box-shadow 0.2s, transform 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .proj-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        border-radius: 10px 10px 0 0;
+    }
+
+    .proj-card:hover {
+        box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+        transform: translateY(-2px);
+    }
+
+    .proj-card-month {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #3b82f6;
+        margin-bottom: 12px;
+    }
+
+    .proj-metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 7px;
+    }
+
+    .proj-metric:last-child {
+        margin-bottom: 0;
+    }
+
+    .proj-metric-label {
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .proj-metric-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .proj-metric-dot.properties { background: #3b82f6; }
+    .proj-metric-dot.bop        { background: #f97316; }
+    .proj-metric-dot.owners     { background: #22c55e; }
+
+    .proj-metric-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    /* skeleton pulse while loading */
+    .proj-skeleton {
+        animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
     }
 </style>
 
@@ -320,11 +406,10 @@
         </div>
         <div class="filter-group">
             <span id="lastUpdated" style="font-size:12px; color:#64748b;">Last updated: --</span>
-            <button class="btn-refresh" id="refreshBtn">
-                🔄 Refresh
-            </button>
+            <button class="btn-refresh" id="refreshBtn">🔄 Refresh</button>
         </div>
     </div>
+
     <!-- Collection Trend Chart -->
     <div class="row">
         <div class="col-12">
@@ -332,7 +417,7 @@
                 <div class="chart-header">
                     <div>
                         <h5 class="chart-title">Collection Trend</h5>
-                        <p class="chart-subtitle">Daily collection activity (last 30 days)</p>
+                        <p class="chart-subtitle">Daily collection activity</p>
                     </div>
                     <div class="chart-actions">
                         <button class="chart-btn active" data-chart="stacked">Stacked</button>
@@ -389,60 +474,83 @@
         <div class="col-md-4">
             <div class="stat-card">
                 <div class="stat-label">Pace (last 4 weeks)</div>
-                <div style="display: flex;justify-content: space-between;">
+                <div style="display: flex; justify-content: space-between;">
                     <div>
-                    <div class="stat-value" id="paceProperties" style="font-size: 28px;">--</div>
-                <div class="stat-sub">Properties/day</div>
+                        <div class="stat-value" id="paceProperties" style="font-size: 28px;">--</div>
+                        <div class="stat-sub">Properties/day</div>
+                    </div>
+                    <div>
+                        <div class="stat-value" id="paceBop" style="font-size: 22px; margin-top: 12px;">--</div>
+                        <div class="stat-sub">BOP/day</div>
+                    </div>
+                    <div>
+                        <div class="stat-value" id="paceOwners" style="font-size: 22px; margin-top: 12px;">--</div>
+                        <div class="stat-sub">Owners/day</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="stat-value" id="paceBop" style="font-size: 22px; margin-top: 12px;">--</div>
-                <div class="stat-sub">BOP/day</div>
-                </div>
-
-               <div>
-                 <div class="stat-value" id="paceOwners" style="font-size: 22px; margin-top: 12px;">--</div>
-                <div class="stat-sub">Owners/day</div>
-               </div>
-                </div>
-                
             </div>
         </div>
         <div class="col-md-4">
             <div class="stat-card">
                 <div class="stat-label">Collection Progress</div>
-                <div style="display: flex;">
-                    <div class="progress-bar-container">
-                    <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="progress-bar-container" style="flex: 1; margin: 0;">
+                        <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="stat-value" id="completionRate" style="font-size: 22px; white-space: nowrap;">--%</div>
                 </div>
-                <div class="stat-value" id="completionRate">--%</div>
-                </div>
-                <br>
-                
             </div>
         </div>
     </div>
 
-    
-
-    <!-- Projection & Snapshots -->
+    <!-- Projection Cards + Snapshot Chart -->
     <div class="row">
+        <!-- Projection: pace-based cards -->
         <div class="col-md-6">
             <div class="chart-card">
                 <div class="chart-header">
                     <div>
                         <h5 class="chart-title">Projection (pace from last 4 weeks)</h5>
-                        <p class="chart-subtitle">End of month projections</p>
+                        <p class="chart-subtitle">Cumulative totals projected to end of each month</p>
                     </div>
                 </div>
-                <div id="projectionChart" style="height: 350px;"></div>
+                <!-- Pace legend -->
+                <div style="display:flex; gap:18px; margin-bottom:16px; flex-wrap:wrap;">
+                    <span style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:5px;">
+                        <span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block;"></span> Properties
+                    </span>
+                    <span style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:5px;">
+                        <span style="width:10px;height:10px;border-radius:50%;background:#f97316;display:inline-block;"></span> BOP
+                    </span>
+                    <span style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:5px;">
+                        <span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;"></span> Owners
+                    </span>
+                </div>
+                <div class="projection-grid" id="projectionCards">
+                    <!-- skeleton placeholders -->
+                    <div class="proj-card proj-skeleton">
+                        <div class="proj-card-month" style="background:#e2e8f0;border-radius:4px;height:12px;width:60%;"></div>
+                    </div>
+                    <div class="proj-card proj-skeleton">
+                        <div class="proj-card-month" style="background:#e2e8f0;border-radius:4px;height:12px;width:60%;"></div>
+                    </div>
+                    <div class="proj-card proj-skeleton">
+                        <div class="proj-card-month" style="background:#e2e8f0;border-radius:4px;height:12px;width:60%;"></div>
+                    </div>
+                    <div class="proj-card proj-skeleton">
+                        <div class="proj-card-month" style="background:#e2e8f0;border-radius:4px;height:12px;width:60%;"></div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Snapshot Chart -->
         <div class="col-md-6">
             <div class="chart-card">
                 <div class="chart-header">
                     <div>
                         <h5 class="chart-title">Monthly Snapshots</h5>
-                        <p class="chart-subtitle">End of month collection targets</p>
+                        <p class="chart-subtitle">Actual end-of-month collection totals</p>
                     </div>
                 </div>
                 <div id="snapshotChart" style="height: 350px;"></div>
@@ -476,43 +584,40 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
 
 <script>
-// Global chart instances
-let trendChart, projectionChart, snapshotChart;
+let trendChart, snapshotChart;
 let activityDataTable = null;
 
-// Colors for charts
 const COLORS = {
-    properties: '#3b82f6',  // Blue
-    bop: '#f97316',         // Orange
-    passes: '#22c55e'       // Green
+    properties: '#3b82f6',
+    bop: '#f97316',
+    passes: '#22c55e',
+    owners: '#22c55e'
 };
 
-// Initialize dashboard
-$(document).ready(function() {
+$(document).ready(function () {
     loadDashboardData();
-    
-    $('#userFilter, #periodFilter').change(function() {
+
+    $('#userFilter, #periodFilter').change(function () {
         loadDashboardData();
     });
-    
-    $('#refreshBtn').click(function() {
+
+    $('#refreshBtn').click(function () {
         loadDashboardData();
     });
-    
-    $('.chart-btn').click(function() {
+
+    $('.chart-btn').click(function () {
         $('.chart-btn').removeClass('active');
         $(this).addClass('active');
-        const view = $(this).data('chart');
-        updateTrendChartView(view);
+        updateTrendChartView($(this).data('chart'));
     });
 });
 
 function loadDashboardData() {
     const userId = $('#userFilter').val();
     const days = $('#periodFilter').val();
-    
+
     showLoadingState();
-    
+
     Promise.all([
         loadFieldStats(userId, days),
         loadFieldTrend(userId, days),
@@ -532,30 +637,26 @@ function loadFieldStats(userId, days) {
         url: '/api/field-stats/',
         method: 'GET',
         data: { user_id: userId, days: days },
-        success: function(response) {
-            if (response.success) {
-                const stats = response.stats;
-                
-                $('#totalPasses').text((stats.total_passes || 0).toLocaleString());
-                $('#passedProperties').text((stats.passed_properties || 0).toLocaleString());
-                $('#incompleteProperties').text((stats.incomplete_properties || 0).toLocaleString());
-                $('#submittedProperties').text((stats.submitted_properties || 0).toLocaleString());
-                $('#bopCollected').text((stats.bop_collected || 0).toLocaleString());
-                $('#ownersCollected').text((stats.owners_collected || 0).toLocaleString());
-                
-                if (stats.pace) {
-                    $('#paceProperties').text((stats.pace.properties_per_day || 0).toFixed(1));
-                    $('#paceBop').text((stats.pace.bop_per_day || 0).toFixed(1));
-                    $('#paceOwners').text((stats.pace.owners_per_day || 0).toFixed(1));
-                }
-                
-                const completionRate = stats.completion_rate || 0;
-                $('#completionRate').text(completionRate + '%');
-                $('#progressBar').css('width', completionRate + '%');
+        success: function (response) {
+            if (!response.success) return;
+            const s = response.stats;
+
+            $('#totalPasses').text((s.total_passes || 0).toLocaleString());
+            $('#passedProperties').text((s.passed_properties || 0).toLocaleString());
+            $('#incompleteProperties').text((s.incomplete_properties || 0).toLocaleString());
+            $('#submittedProperties').text((s.submitted_properties || 0).toLocaleString());
+            $('#bopCollected').text((s.bop_collected || 0).toLocaleString());
+            $('#ownersCollected').text((s.owners_collected || 0).toLocaleString());
+
+            if (s.pace) {
+                $('#paceProperties').text((s.pace.properties_per_day || 0).toFixed(1));
+                $('#paceBop').text((s.pace.bop_per_day || 0).toFixed(1));
+                $('#paceOwners').text((s.pace.owners_per_day || 0).toFixed(1));
             }
-        },
-        error: function(xhr) {
-            console.error('Error loading stats:', xhr);
+
+            const rate = s.completion_rate || 0;
+            $('#completionRate').text(rate + '%');
+            $('#progressBar').css('width', rate + '%');
         }
     });
 }
@@ -565,13 +666,8 @@ function loadFieldTrend(userId, days) {
         url: '/api/field-trend/',
         method: 'GET',
         data: { user_id: userId, days: days },
-        success: function(response) {
-            if (response.success) {
-                updateTrendChart(response.trend_data);
-            }
-        },
-        error: function(xhr) {
-            console.error('Error loading trend:', xhr);
+        success: function (response) {
+            if (response.success) updateTrendChart(response.trend_data);
         }
     });
 }
@@ -581,13 +677,8 @@ function loadFieldActivities(userId) {
         url: '/api/field-activities/',
         method: 'GET',
         data: { user_id: userId, limit: 20 },
-        success: function(response) {
-            if (response.success) {
-                updateActivityTable(response.activities);
-            }
-        },
-        error: function(xhr) {
-            console.error('Error loading activities:', xhr);
+        success: function (response) {
+            if (response.success) updateActivityTable(response.activities);
         }
     });
 }
@@ -596,189 +687,163 @@ function loadFieldSnapshots() {
     return $.ajax({
         url: '/api/field-snapshots/',
         method: 'GET',
-        success: function(response) {
+        success: function (response) {
             if (response.success) {
-                updateProjectionAndSnapshot(response.projections, response.snapshots);
+                renderProjectionCards(response.projections);
+                updateSnapshotChart(response.snapshots);
             }
-        },
-        error: function(xhr) {
-            console.error('Error loading snapshots:', xhr);
         }
     });
 }
 
+/* ── Trend Chart ─────────────────────────────────────────────────────────── */
+
 function updateTrendChart(data) {
-    const dates = data.map(item => item.date);
-    const properties = data.map(item => item.properties || 0);
-    const bop = data.map(item => item.bop || 0);
-    const passes = data.map(item => item.passes || 0);
-    
-    if (trendChart) {
-        trendChart.dispose();
-    }
-    
+    const dates      = data.map(d => d.date);
+    const properties = data.map(d => d.properties || 0);
+    const bop        = data.map(d => d.bop || 0);
+    const passes     = data.map(d => d.passes || 0);
+
+    if (trendChart) trendChart.dispose();
     trendChart = echarts.init(document.getElementById('trendChart'));
-    
-    const option = {
+
+    trendChart.originalData = { dates, properties, bop, passes };
+
+    trendChart.setOption({
         tooltip: {
             trigger: 'axis',
             axisPointer: { type: 'shadow' },
-            formatter: function(params) {
-                let tooltip = `<strong>${params[0].axisValue}</strong><br/>`;
+            formatter: function (params) {
+                let tip = `<strong>${params[0].axisValue}</strong><br/>`;
                 let total = 0;
-                params.forEach(param => {
-                    tooltip += `${param.marker} ${param.seriesName}: ${param.value}<br/>`;
-                    total += param.value;
-                });
-                tooltip += `<strong>Total: ${total}</strong>`;
-                return tooltip;
+                params.forEach(p => { tip += `${p.marker} ${p.seriesName}: ${p.value}<br/>`; total += p.value; });
+                tip += `<strong>Total: ${total}</strong>`;
+                return tip;
             }
         },
-        legend: {
-            data: ['Properties', 'BOP', 'Passes'],
-            top: 0,
-            right: 0,
-            itemWidth: 25,
-            textStyle: { fontSize: 12, color: '#475569' }
-        },
-        grid: {
-            left: '3%',
-            right: '4%',
-            bottom: '3%',
-            top: '12%',
-            containLabel: true
-        },
+        legend: { data: ['Properties', 'BOP', 'Passes'], top: 0, right: 0, textStyle: { fontSize: 12, color: '#475569' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: '12%', containLabel: true },
         xAxis: {
-            type: 'category',
-            data: dates,
-            axisLabel: {
-                rotate: 45,
-                interval: Math.floor(dates.length / 10),
-                fontSize: 11
-            },
+            type: 'category', data: dates,
+            axisLabel: { rotate: 45, interval: Math.floor(dates.length / 10), fontSize: 11 },
             axisLine: { lineStyle: { color: '#cbd5e1' } }
         },
         yAxis: {
-            type: 'value',
-            name: 'Count',
+            type: 'value', name: 'Count',
             nameTextStyle: { fontSize: 12, color: '#64748b' },
             axisLabel: { fontSize: 11 },
             splitLine: { lineStyle: { color: '#e2e8f0', type: 'dashed' } }
         },
         series: [
-            {
-                name: 'Passes',
-                type: 'bar',
-                stack: 'total',
-                data: passes,
-                barWidth: '60%',
-                itemStyle: { color: COLORS.passes, borderRadius: [4, 4, 0, 0] }
-            },
-            {
-                name: 'BOP',
-                type: 'bar',
-                stack: 'total',
-                data: bop,
-                barWidth: '60%',
-                itemStyle: { color: COLORS.bop, borderRadius: [4, 4, 0, 0] }
-            },
-            {
-                name: 'Properties',
-                type: 'bar',
-                stack: 'total',
-                data: properties,
-                barWidth: '60%',
-                itemStyle: { color: COLORS.properties, borderRadius: [4, 4, 0, 0] }
-            }
+            { name: 'Passes',     type: 'bar', stack: 'total', data: passes,     barWidth: '60%', itemStyle: { color: COLORS.passes,     borderRadius: [4,4,0,0] } },
+            { name: 'BOP',        type: 'bar', stack: 'total', data: bop,         barWidth: '60%', itemStyle: { color: COLORS.bop,         borderRadius: [4,4,0,0] } },
+            { name: 'Properties', type: 'bar', stack: 'total', data: properties,  barWidth: '60%', itemStyle: { color: COLORS.properties,  borderRadius: [4,4,0,0] } }
         ]
-    };
-    
-    trendChart.originalData = { dates, properties, bop, passes };
-    trendChart.setOption(option);
+    });
 }
 
 function updateTrendChartView(view) {
     if (!trendChart || !trendChart.originalData) return;
-    
-    const data = trendChart.originalData;
-    let series = [];
-    let legend = [];
-    
-    if (view === 'stacked') {
-        series = [
-            { name: 'Passes', type: 'bar', stack: 'total', data: data.passes, itemStyle: { color: COLORS.passes, borderRadius: [4, 4, 0, 0] } },
-            { name: 'BOP', type: 'bar', stack: 'total', data: data.bop, itemStyle: { color: COLORS.bop, borderRadius: [4, 4, 0, 0] } },
-            { name: 'Properties', type: 'bar', stack: 'total', data: data.properties, itemStyle: { color: COLORS.properties, borderRadius: [4, 4, 0, 0] } }
-        ];
-        legend = ['Properties', 'BOP', 'Passes'];
-    } else if (view === 'properties') {
-        series = [{ name: 'Properties', type: 'bar', data: data.properties, itemStyle: { color: COLORS.properties, borderRadius: [4, 4, 0, 0] } }];
-        legend = ['Properties'];
-    } else if (view === 'bop') {
-        series = [{ name: 'BOP', type: 'bar', data: data.bop, itemStyle: { color: COLORS.bop, borderRadius: [4, 4, 0, 0] } }];
-        legend = ['BOP'];
-    } else if (view === 'passes') {
-        series = [{ name: 'Passes', type: 'bar', data: data.passes, itemStyle: { color: COLORS.passes, borderRadius: [4, 4, 0, 0] } }];
-        legend = ['Passes'];
-    }
-    
-    trendChart.setOption({ series: series, legend: { data: legend } });
+    const d = trendChart.originalData;
+    const seriesMap = {
+        stacked: {
+            legend: ['Properties', 'BOP', 'Passes'],
+            series: [
+                { name: 'Passes',     type: 'bar', stack: 'total', data: d.passes,    itemStyle: { color: COLORS.passes,    borderRadius: [4,4,0,0] } },
+                { name: 'BOP',        type: 'bar', stack: 'total', data: d.bop,        itemStyle: { color: COLORS.bop,        borderRadius: [4,4,0,0] } },
+                { name: 'Properties', type: 'bar', stack: 'total', data: d.properties, itemStyle: { color: COLORS.properties, borderRadius: [4,4,0,0] } }
+            ]
+        },
+        properties: { legend: ['Properties'], series: [{ name: 'Properties', type: 'bar', data: d.properties, itemStyle: { color: COLORS.properties, borderRadius: [4,4,0,0] } }] },
+        bop:        { legend: ['BOP'],         series: [{ name: 'BOP',        type: 'bar', data: d.bop,        itemStyle: { color: COLORS.bop,         borderRadius: [4,4,0,0] } }] },
+        passes:     { legend: ['Passes'],      series: [{ name: 'Passes',     type: 'bar', data: d.passes,     itemStyle: { color: COLORS.passes,      borderRadius: [4,4,0,0] } }] }
+    };
+    const cfg = seriesMap[view] || seriesMap.stacked;
+    trendChart.setOption({ series: cfg.series, legend: { data: cfg.legend } });
 }
 
-function updateProjectionAndSnapshot(projections, snapshots) {
-    const months = projections.map(p => p.month);
-    const properties = projections.map(p => p.properties);
-    const bop = projections.map(p => p.bop);
-    const passes = projections.map(p => p.passes || 0);
-    
-    // Projection Chart
-    if (projectionChart) projectionChart.dispose();
-    projectionChart = echarts.init(document.getElementById('projectionChart'));
-    
-    projectionChart.setOption({
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['Properties', 'BOP', 'Passes'], textStyle: { color: '#475569' } },
-        grid: { left: '8%', right: '5%', containLabel: true },
-        xAxis: { type: 'category', data: months, axisLabel: { rotate: 0 } },
-        yAxis: { type: 'value', name: 'Count' },
-        series: [
-            { name: 'Properties', type: 'line', data: properties, smooth: true, lineStyle: { color: COLORS.properties, width: 3 }, symbol: 'circle', symbolSize: 8 },
-            { name: 'BOP', type: 'line', data: bop, smooth: true, lineStyle: { color: COLORS.bop, width: 3 }, symbol: 'circle', symbolSize: 8 },
-            { name: 'Passes', type: 'line', data: passes, smooth: true, lineStyle: { color: COLORS.passes, width: 3 }, symbol: 'circle', symbolSize: 8 }
-        ]
-    });
-    
-    // Snapshot Chart
+/* ── Projection Cards ────────────────────────────────────────────────────── */
+
+function renderProjectionCards(projections) {
+    if (!projections || projections.length === 0) {
+        $('#projectionCards').html('<p style="color:#94a3b8; font-size:13px;">No projection data available.</p>');
+        return;
+    }
+
+    const html = projections.map(p => `
+        <div class="proj-card">
+            <div class="proj-card-month">${escapeHtml(p.month)}</div>
+            <div class="proj-metric">
+                <span class="proj-metric-label">
+                    <span class="proj-metric-dot properties"></span>Properties
+                </span>
+                <span class="proj-metric-value">${(p.properties || 0).toLocaleString()}</span>
+            </div>
+            <div class="proj-metric">
+                <span class="proj-metric-label">
+                    <span class="proj-metric-dot bop"></span>BOP
+                </span>
+                <span class="proj-metric-value">${(p.bop || 0).toLocaleString()}</span>
+            </div>
+            <div class="proj-metric">
+                <span class="proj-metric-label">
+                    <span class="proj-metric-dot owners"></span>Owners
+                </span>
+                <span class="proj-metric-value">${(p.owners || 0).toLocaleString()}</span>
+            </div>
+        </div>
+    `).join('');
+
+    $('#projectionCards').html(html);
+}
+
+/* ── Snapshot Chart ──────────────────────────────────────────────────────── */
+
+function updateSnapshotChart(snapshots) {
     if (snapshotChart) snapshotChart.dispose();
     snapshotChart = echarts.init(document.getElementById('snapshotChart'));
-    
+
+    const months     = snapshots.map(s => s.month);
+    const properties = snapshots.map(s => s.properties || 0);
+    const bop        = snapshots.map(s => s.bop || 0);
+    const owners     = snapshots.map(s => s.owners || 0);
+
     snapshotChart.setOption({
         tooltip: { trigger: 'axis' },
-        legend: { data: ['Properties', 'BOP', 'Passes'], textStyle: { color: '#475569' } },
+        legend: { data: ['Properties', 'BOP', 'Owners'], textStyle: { color: '#475569' } },
         grid: { left: '8%', right: '5%', containLabel: true },
-        xAxis: { type: 'category', data: months, axisLabel: { rotate: 0 } },
+        xAxis: { type: 'category', data: months },
         yAxis: { type: 'value', name: 'Count' },
         series: [
-            { name: 'Properties', type: 'bar', data: snapshots.map(s => s.properties), itemStyle: { color: COLORS.properties, borderRadius: [4, 4, 0, 0] }, barWidth: '25%' },
-            { name: 'BOP', type: 'bar', data: snapshots.map(s => s.bop), itemStyle: { color: COLORS.bop, borderRadius: [4, 4, 0, 0] }, barWidth: '25%' },
-            { name: 'Passes', type: 'bar', data: snapshots.map(s => s.passes || 0), itemStyle: { color: COLORS.passes, borderRadius: [4, 4, 0, 0] }, barWidth: '25%' }
+            { name: 'Properties', type: 'bar', data: properties, barWidth: '20%', itemStyle: { color: COLORS.properties, borderRadius: [4,4,0,0] } },
+            { name: 'BOP',        type: 'bar', data: bop,         barWidth: '20%', itemStyle: { color: COLORS.bop,        borderRadius: [4,4,0,0] } },
+            { name: 'Owners',     type: 'bar', data: owners,      barWidth: '20%', itemStyle: { color: COLORS.owners,     borderRadius: [4,4,0,0] } }
         ]
     });
 }
+
+/* ── Activity Table ──────────────────────────────────────────────────────── */
 
 function updateActivityTable(activities) {
     const container = $('#activityTable');
-    
+
     if (!activities || activities.length === 0) {
-        if (activityDataTable) {
-            activityDataTable.destroy();
-            activityDataTable = null;
-        }
+        if (activityDataTable) { activityDataTable.destroy(); activityDataTable = null; }
         container.html('<div class="text-center text-muted py-4">No recent activities</div>');
         return;
     }
-    
-    const tableHtml = `
+
+    const rows = activities.map(a => `
+        <tr>
+            <td>${escapeHtml(a.collector || 'N/A')}</td>
+            <td>${escapeHtml(a.property  || 'N/A')}</td>
+            <td>${escapeHtml(a.type      || 'N/A')}</td>
+            <td><span class="badge-status ${a.status === 'pending' ? 'pending' : a.status === 'approved' ? 'approved' : 'rejected'}">${escapeHtml(a.status_display || a.status || 'N/A')}</span></td>
+            <td>${escapeHtml(formatTime(a.time))}</td>
+        </tr>
+    `).join('');
+
+    container.html(`
         <table id="activityDataTable" class="data-table display" style="width:100%">
             <thead>
                 <tr>
@@ -789,78 +854,57 @@ function updateActivityTable(activities) {
                     <th>Visited At</th>
                 </tr>
             </thead>
-            <tbody>
-                ${activities.map(activity => `
-                    <tr>
-                        <td>${escapeHtml(activity.collector || 'N/A')}</td>
-                        <td>${escapeHtml(activity.property || 'N/A')}</td>
-                        <td>${escapeHtml(activity.type || 'N/A')}</td>
-                        <td><span class="badge-status ${activity.status === 'pending' ? 'pending' : (activity.status === 'approved' ? 'approved' : 'rejected')}">${escapeHtml(activity.status_display || activity.status || 'N/A')}</span></td>
-                        <td>${escapeHtml(formatTime(activity.time))}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
+            <tbody>${rows}</tbody>
         </table>
-    `;
-    
-    container.html(tableHtml);
-    
-    if (activityDataTable) {
-        activityDataTable.destroy();
-    }
-    
+    `);
+
+    if (activityDataTable) activityDataTable.destroy();
+
     activityDataTable = $('#activityDataTable').DataTable({
         pageLength: 10,
         ordering: true,
         order: [[4, 'desc']],
         language: {
-            search: "Search:",
-            lengthMenu: "Show _MENU_ entries",
+            search: "Search:", lengthMenu: "Show _MENU_ entries",
             info: "Showing _START_ to _END_ of _TOTAL_ entries",
             infoEmpty: "Showing 0 to 0 of 0 entries",
             zeroRecords: "No matching records found",
             paginate: { first: "First", last: "Last", next: "Next", previous: "Previous" }
         },
         columnDefs: [
-            { targets: 0, orderable: true },
-            { targets: 1, orderable: true },
-            { targets: 2, orderable: true },
-            { targets: 3, orderable: true, className: 'text-center' },
-            { targets: 4, orderable: true, className: 'text-nowrap' }
+            { targets: 3, className: 'text-center' },
+            { targets: 4, className: 'text-nowrap' }
         ]
     });
 }
 
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+
 function formatTime(time) {
     if (!time) return 'N/A';
     try {
-        const date = new Date(time);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-        return time;
-    }
+        const d = new Date(time);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return time; }
 }
 
 function escapeHtml(text) {
-    if (!text) return '';
+    if (text == null) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
 function showLoadingState() {
-    $('#refreshBtn').prop('disabled', true);
-    $('#refreshBtn').html('⏳ Loading...');
+    $('#refreshBtn').prop('disabled', true).html('⏳ Loading...');
 }
 
 function hideLoadingState() {
-    $('#refreshBtn').prop('disabled', false);
-    $('#refreshBtn').html('🔄 Refresh');
+    $('#refreshBtn').prop('disabled', false).html('🔄 Refresh');
 }
 
 function updateLastUpdated() {
-    const now = new Date();
-    $('#lastUpdated').text(`Last updated: ${now.toLocaleString()}`);
+    $('#lastUpdated').text('Last updated: ' + new Date().toLocaleString());
 }
 </script>
 {% endblock %}
