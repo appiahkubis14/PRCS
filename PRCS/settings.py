@@ -110,11 +110,11 @@ TEST_OTP_CODE = '000000'
 
 JAZZMIN_SETTINGS = {
     # Site identification (uncomment if needed)
-    "site_title": "AmpPortal Admin",
-    "site_header": "AmpPortal Admin Dashboard", 
+    "site_title": "GEMA Admin",
+    "site_header": "GEMA Admin Dashboard", 
     "site_brand": "AMP LOGISTICS",
-    "welcome_sign": "Welcome to AmpPortal Admin",
-    "copyright": "AmpPortal © 2025",
+    "welcome_sign": "Welcome to GEMA Admin",
+    "copyright": "GEMA © 2025",
     
     # Sidebar configuration
     "show_sidebar": True,
