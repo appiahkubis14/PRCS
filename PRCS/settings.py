@@ -101,7 +101,7 @@ EMAIL_PORT=465
 EMAIL_USE_SSL=True 
 EMAIL_HOST_USER='amplogisticsltd@gmail.com'
 EMAIL_HOST_PASSWORD='qesb odkc ykst nif'
-DEFAULT_FROM_EMAIL='AMP Logistics <noreply@amplogistics.com>'
+DEFAULT_FROM_EMAIL='GEMA <noreply@amplogistics.com>'
 
 # Test OTP bypass (for development only)
 ALLOW_TEST_OTP = os.environ.get('ALLOW_TEST_OTP', 'False') == 'True'
@@ -112,7 +112,7 @@ JAZZMIN_SETTINGS = {
     # Site identification (uncomment if needed)
     "site_title": "GEMA Admin",
     "site_header": "GEMA Admin Dashboard", 
-    "site_brand": "AMP LOGISTICS",
+    "site_brand": "GEMA",
     "welcome_sign": "Welcome to GEMA Admin",
     "copyright": "GEMA © 2025",
     
