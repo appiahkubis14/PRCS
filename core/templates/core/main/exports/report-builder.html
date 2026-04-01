@@ -1,784 +1,931 @@
 {% extends 'main/base.html' %}
 {% load i18n static %}
 
-{% block title %}Report Builder - Export Data{% endblock %}
+{% block title %}Report Builder{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h4 class="mb-0">
-                                <i class="fas fa-chart-bar me-2 text-primary"></i>
-                                Report Builder
-                            </h4>
-                            <p class="text-muted mb-0 mt-1">Select data, apply filters, and export in your preferred format</p>
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-outline-secondary me-2" id="resetFiltersBtn">
-                                <i class="fas fa-undo-alt me-1"></i> Reset
-                            </button>
-                            <button type="button" class="btn btn-primary" id="previewBtn">
-                                <i class="fas fa-eye me-1"></i> Preview
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="rb-root">
+
+  <!-- ══ TOP BAR ══ -->
+  <!-- <div class="rb-topbar">
+    <div class="rb-topbar-left">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <span class="rb-topbar-title">Report Builder</span>
+      <span class="rb-topbar-sub">Select data · Apply filters · Export</span>
+    </div>
+    <div class="rb-topbar-right">
+      <span id="recordCount" class="rb-badge">0 records</span>
+      <button id="resetBtn" class="rb-btn rb-btn-ghost">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Reset
+      </button>
+      <button id="previewBtn" class="rb-btn rb-btn-dark">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Preview
+      </button>
+      <button id="exportBtn" class="rb-btn rb-btn-blue" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+    </div>
+  </div> -->
+
+  <!-- ══ MAIN BODY ══ -->
+  <div class="rb-body">
+
+    <!-- ── LEFT PANEL ── -->
+    <div class="rb-panel rb-panel-left">
+
+      <!-- DATA SOURCE -->
+      <div class="rb-section">
+        <div class="rb-section-head">
+          <span class="rb-section-title">Data Source</span>
         </div>
+        <div class="rb-section-body">
+          <label class="rb-label">Model</label>
+          <select class="rb-select" id="modelSelect">
+            <option value="">— Choose model —</option>
+            <option value="business">Businesses</option>
+            <option value="bill">Bills</option>
+            <option value="payment">Payments</option>
+            <option value="polygon">Properties</option>
+            <option value="property_owner">Property Owners</option>
+            <option value="session">Collection Sessions</option>
+            <option value="pass_property">Passed Properties</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- FIELDS -->
+      <div class="rb-section rb-section-fields">
+        <div class="rb-section-head">
+          <span class="rb-section-title">Fields</span>
+          <div class="rb-field-actions">
+            <button id="selectAllBtn" class="rb-text-btn">All</button>
+            <span class="rb-dot">·</span>
+            <button id="clearAllBtn" class="rb-text-btn rb-muted">None</button>
+          </div>
+        </div>
+        <div id="fieldsContainer" class="rb-fields-list">
+          <div class="rb-empty">Choose a model</div>
+        </div>
+      </div>
+
+      <!-- EXPORT FORMAT -->
+      <div class="rb-section">
+        <div class="rb-section-head">
+          <span class="rb-section-title">Format &amp; Limit</span>
+        </div>
+        <div class="rb-section-body">
+          <label class="rb-label">Export Format</label>
+          <div class="rb-format-row">
+            <button class="rb-format-btn active" data-format="csv">CSV</button>
+            <button class="rb-format-btn" data-format="xlsx">Excel</button>
+          </div>
+          <label class="rb-label" style="margin-top:10px;">Max Records</label>
+          <input type="number" class="rb-input" id="limitInput" value="1000" min="1" max="10000">
+          <div class="rb-hint">Maximum 10,000 records</div>
+        </div>
+      </div>
+
     </div>
 
-    <div class="row">
-        <!-- Sidebar - Configuration Panel -->
-        <div class="col-lg-4 mb-4">
-            <!-- Model Selection Card -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0">
-                        <i class="fas fa-database me-2 text-primary"></i>
-                        Data Source
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Select Model</label>
-                        <select class="form-select" id="modelSelect">
-                            <option value="">-- Select a model --</option>
-                            <option value="business">Businesses</option>
-                            <option value="bill">Bills</option>
-                            <option value="payment">Payments</option>
-                            <option value="polygon">Properties</option>
-                            <option value="property_owner">Property Owners</option>
-                            <option value="session">Collection Sessions</option>
-                            <option value="pass_property">Passed Properties</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+    <!-- ── FILTER PANEL ── -->
+    <div class="rb-panel rb-panel-filters">
 
-            <!-- Field Selection Card -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-columns me-2 text-primary"></i>
-                        Fields to Export
-                    </h5>
-                    <div>
-                        <button type="button" class="btn btn-sm btn-link" id="selectAllFieldsBtn">Select All</button>
-                        <button type="button" class="btn btn-sm btn-link text-muted" id="deselectAllFieldsBtn">Clear</button>
-                    </div>
-                </div>
-                <div class="card-body" id="fieldsContainer" style="max-height: 300px; overflow-y: auto;">
-                    <div class="text-muted text-center py-4">
-                        <i class="fas fa-info-circle me-1"></i> Select a model to view available fields
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filter Card -->
-            <!-- <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-filter me-2 text-primary"></i>
-                        Filters
-                    </h5>
-                    <button type="button" class="btn btn-sm btn-outline-danger" id="clearFiltersBtn">
-                        <i class="fas fa-trash-alt me-1"></i> Clear All
-                    </button>
-                </div>
-                <div class="card-body" id="filtersContainer">
-                    <div class="text-muted text-center py-4" id="noFiltersMessage">
-                        <i class="fas fa-plus-circle me-1"></i> Click "Add Filter" to start filtering
-                    </div>
-                </div>
-                <div class="card-footer bg-white">
-                    <button type="button" class="btn btn-sm btn-outline-primary w-100" id="addFilterBtn">
-                        <i class="fas fa-plus me-1"></i> Add Filter
-                    </button>
-                </div>
-            </div> -->
-
-            <!-- Export Options Card -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0">
-                        <i class="fas fa-download me-2 text-primary"></i>
-                        Export Options
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Export Format</label>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <button type="button" class="btn btn-outline-success export-format-btn" data-format="csv">
-                                <i class="fas fa-file-csv me-1"></i> CSV
-                            </button>
-                            <button type="button" class="btn btn-outline-danger export-format-btn" data-format="xlsx">
-                                <i class="fas fa-file-excel me-1"></i> Excel
-                            </button>
-                            <!-- <button type="button" class="btn btn-outline-info export-format-btn" data-format="json">
-                                <i class="fas fa-code me-1"></i> JSON
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary export-format-btn" data-format="xml">
-                                <i class="fas fa-file-code me-1"></i> XML
-                            </button> -->
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Limit Results</label>
-                        <input type="number" class="form-control" id="limitInput" value="1000" min="1" max="10000">
-                        <div class="form-text">Maximum number of records to export (max 10,000)</div>
-                    </div>
-                    <hr>
-                    <button type="button" class="btn btn-primary w-100 py-2" id="exportBtn" disabled>
-                        <i class="fas fa-download me-2"></i> Export Data
-                    </button>
-                </div>
-            </div>
+      <div class="rb-section" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="rb-section-head">
+          <span class="rb-section-title">Filters</span>
+          <button id="addFilterBtn" class="rb-text-btn rb-blue" disabled>+ Add Filter</button>
         </div>
-
-        <!-- Main Content - Preview Area -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-table me-2 text-primary"></i>
-                        Data Preview
-                    </h5>
-                    <div class="text-muted small">
-                        <span id="recordCount">0</span> records found
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
-                        <table class="table table-hover table-sm mb-0" id="previewTable">
-                            <thead class="sticky-top bg-light">
-                                <tr id="previewHeaderRow">
-                                    <th class="text-muted">Select a model to preview data</th>
-                                </tr>
-                            </thead>
-                            <tbody id="previewBody">
-                                <tr>
-                                    <td class="text-center py-5 text-muted">
-                                        <i class="fas fa-chart-line fa-2x mb-2 d-block"></i>
-                                        Configure your report and click Preview to see results
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="badge bg-secondary" id="selectedFieldsBadge">No fields selected</span>
-                    </div>
-                    <div>
-                        <span class="text-muted small" id="previewStatus"></span>
-                    </div>
-                </div>
-            </div>
+        <div id="filtersContainer" class="rb-filters-list">
+          <div class="rb-empty rb-empty-filters">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.35;display:block;margin:0 auto 8px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Select a model to add filters
+          </div>
         </div>
+      </div>
+
+      <!-- DATE RANGE -->
+      <div class="rb-section" id="dateRangeSection" style="display:none;">
+        <div class="rb-section-head">
+          <span class="rb-section-title">Date Range</span>
+          <button id="clearDateBtn" class="rb-text-btn rb-muted" style="display:none;">Clear</button>
+        </div>
+        <div class="rb-section-body">
+          <label class="rb-label">Date Field</label>
+          <select class="rb-select" id="dateFieldSelect">
+            <option value="">— Select date field —</option>
+          </select>
+          <div class="rb-date-row">
+            <div>
+              <label class="rb-label">From</label>
+              <input type="date" class="rb-input" id="dateFrom">
+            </div>
+            <div>
+              <label class="rb-label">To</label>
+              <input type="date" class="rb-input" id="dateTo">
+            </div>
+          </div>
+          <!-- Quick picks -->
+          <div class="rb-quick-dates">
+            <button class="rb-quick-btn" data-range="today">Today</button>
+            <button class="rb-quick-btn" data-range="week">This Week</button>
+            <button class="rb-quick-btn" data-range="month">This Month</button>
+            <button class="rb-quick-btn" data-range="quarter">This Quarter</button>
+            <button class="rb-quick-btn" data-range="year">This Year</button>
+          </div>
+        </div>
+      </div>
+
     </div>
-</div>
+
+    <!-- ── PREVIEW PANEL ── -->
+    <div class="rb-panel rb-panel-preview">
+      <div class="rb-section" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="rb-section-head">
+          <span class="rb-section-title">Preview</span>
+          <div class="rb-topbar-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span class="rb-topbar-title">Report Builder</span>
+            <span class="rb-topbar-sub">Select data · Apply filters · Export</span>
+            </div>
+          <span id="previewStatus" class="rb-hint" style="margin:0;"></span>
+          <div class="rb-topbar-right">
+      <span id="recordCount" class="rb-badge">0 records</span>
+      <button id="resetBtn" class="rb-btn rb-btn-ghost">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset
+        </button>
+        <button id="previewBtn" class="rb-btn rb-btn-dark">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Preview
+        </button>
+        <button id="exportBtn" class="rb-btn rb-btn-blue" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+        </button>
+    </div>
+          
+        </div>
+        <div class="rb-table-wrap">
+          <table id="previewTable">
+            <thead><tr id="previewHead">
+              <th class="rb-th-placeholder">Configure &amp; Preview</th>
+            </tr></thead>
+            <tbody id="previewBody">
+              <tr><td class="rb-td-empty">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="display:block;margin:0 auto 10px;opacity:.25;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                Select a model, choose fields and click Preview
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="rb-table-footer">
+          <span id="selectedBadge" class="rb-hint" style="margin:0;">No fields selected</span>
+          <span id="pageInfo" class="rb-hint" style="margin:0;"></span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /rb-body -->
+
+</div><!-- /rb-root -->
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-    <div class="bg-white rounded p-4 text-center shadow-lg">
-        <div class="spinner-border text-primary mb-3" role="status"></div>
-        <h6 class="mb-0">Processing your request...</h6>
-    </div>
+<div id="loadingOverlay">
+  <div class="rb-spinner-box">
+    <div class="rb-spinner"></div>
+    <p>Processing…</p>
+  </div>
 </div>
 
 <style>
-    .sticky-top {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-    .filter-row {
-        background: #f8f9fa;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 12px;
-        position: relative;
-    }
-    .filter-row .remove-filter {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        cursor: pointer;
-        color: #dc3545;
-        font-size: 12px;
-    }
-    .filter-row .remove-filter:hover {
-        opacity: 0.7;
-    }
-    .export-format-btn.active {
-        background-color: #198754;
-        border-color: #198754;
-        color: white;
-    }
-    .table-responsive::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    .table-responsive::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-    }
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 4px;
-    }
-    .table-responsive::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
+/* ══ RESET & ROOT ══ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.rb-root {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 56px); /* adjust 56px to your nav height */
+  background: #f0f2f5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  color: #1e293b;
+  overflow: hidden;
+}
+
+/* ══ TOP BAR ══ */
+.rb-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  height: 52px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  gap: 12px;
+}
+.rb-topbar-left { display: flex; align-items: center; gap: 10px; }
+.rb-topbar-title { font-size: 14px; font-weight: 700; color: #0f172a; }
+.rb-topbar-sub { font-size: 11px; color: #94a3b8; border-left: 1px solid #e2e8f0; padding-left: 10px; margin-left: 2px; }
+.rb-topbar-right { display: flex; align-items: center; gap: 8px; }
+
+.rb-badge {
+  font-size: 11px; font-weight: 600; color: #475569;
+  background: #f1f5f9; border: 1px solid #e2e8f0;
+  padding: 3px 10px; border-radius: 20px;
+}
+
+/* ══ BUTTONS ══ */
+.rb-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px; border-radius: 7px; font-size: 12px;
+  font-weight: 600; cursor: pointer; border: none; transition: all .15s;
+  white-space: nowrap;
+}
+.rb-btn-ghost { background: #fff; border: 1px solid #cbd5e1; color: #475569; }
+.rb-btn-ghost:hover { background: #f8fafc; }
+.rb-btn-dark { background: #1e293b; color: #fff; }
+.rb-btn-dark:hover { background: #0f172a; }
+.rb-btn-blue { background: #2563eb; color: #fff; }
+.rb-btn-blue:hover:not(:disabled) { background: #1d4ed8; }
+.rb-btn-blue:disabled { opacity: .4; cursor: not-allowed; }
+
+.rb-text-btn { background: none; border: none; font-size: 11px; font-weight: 600; color: #3b82f6; cursor: pointer; padding: 2px 4px; }
+.rb-text-btn:hover { opacity: .7; }
+.rb-text-btn.rb-muted { color: #94a3b8; }
+.rb-text-btn.rb-blue { color: #2563eb; }
+.rb-text-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ══ BODY LAYOUT ══ */
+.rb-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+  padding: 14px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+/* ══ PANELS ══ */
+.rb-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+.rb-panel-left { width: 210px; flex-shrink: 0; }
+.rb-panel-filters { width: 289px; flex-shrink: 0; }
+.rb-panel-preview { flex: 1; min-width: 0; }
+
+/* ══ SECTIONS (cards) ══ */
+.rb-section {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.rb-section-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+.rb-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
+.rb-section-body { padding: 12px 14px; }
+.rb-section-fields { flex: 1; min-height: 0; }
+
+/* ══ FORM ELEMENTS ══ */
+.rb-label { display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+.rb-select, .rb-input {
+  width: 100%; padding: 7px 9px;
+  border: 1px solid #cbd5e1; border-radius: 7px;
+  font-size: 12px; color: #1e293b; background: #fff;
+  outline: none; transition: border-color .15s;
+  appearance: none;
+}
+.rb-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 26px; }
+.rb-select:focus, .rb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+.rb-hint { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+
+/* ══ FIELDS LIST ══ */
+.rb-fields-list { flex: 1; overflow-y: auto; padding: 8px 14px; }
+.rb-field-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 0;
+  border-bottom: 1px solid #f8fafc;
+  cursor: pointer;
+}
+.rb-field-row:last-child { border-bottom: none; }
+.rb-field-row input[type=checkbox] { width: 13px; height: 13px; accent-color: #2563eb; cursor: pointer; flex-shrink: 0; }
+.rb-field-row label { font-size: 12px; color: #334155; cursor: pointer; flex: 1; }
+.rb-field-tag { font-size: 9px; color: #94a3b8; background: #f8fafc; border: 1px solid #e9edf2; border-radius: 3px; padding: 1px 4px; flex-shrink: 0; }
+
+/* ══ FORMAT BUTTONS ══ */
+.rb-format-row { display: flex; gap: 6px; }
+.rb-format-btn {
+  flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 7px;
+  font-size: 11px; font-weight: 600; color: #475569; background: #fff; cursor: pointer; transition: all .15s;
+  text-align: center;
+}
+.rb-format-btn:hover { background: #f1f5f9; }
+.rb-format-btn.active { background: #1e293b; border-color: #1e293b; color: #fff; }
+
+/* ══ FILTERS ══ */
+.rb-filters-list { flex: 1; overflow-y: auto; padding: 8px 14px; }
+.rb-empty-filters { text-align: center; padding: 20px 10px; color: #94a3b8; font-size: 12px; }
+
+.rb-filter-item {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 9px 10px; margin-bottom: 8px; position: relative;
+}
+.rb-filter-row { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.rb-filter-select {
+  flex: 1; min-width: 70px; padding: 5px 7px;
+  border: 1px solid #cbd5e1; border-radius: 6px;
+  font-size: 11px; color: #334155; background: #fff; outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center; padding-right: 20px;
+}
+.rb-filter-select:focus { border-color: #3b82f6; }
+.rb-filter-input {
+  flex: 1; min-width: 70px; padding: 5px 7px;
+  border: 1px solid #cbd5e1; border-radius: 6px;
+  font-size: 11px; color: #334155; background: #fff; outline: none;
+}
+.rb-filter-input:focus { border-color: #3b82f6; }
+.rb-filter-remove {
+  background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 16px; line-height: 1;
+  padding: 0 2px; flex-shrink: 0;
+}
+.rb-filter-remove:hover { color: #ef4444; }
+
+/* ══ DATE RANGE ══ */
+.rb-date-row { display: flex; gap: 6px; margin-top: 8px; }
+.rb-date-row > div { flex: 1; }
+.rb-quick-dates { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.rb-quick-btn {
+  padding: 3px 8px; border: 1px solid #e2e8f0; border-radius: 5px;
+  font-size: 10px; font-weight: 600; color: #64748b; background: #fff; cursor: pointer;
+  transition: all .15s;
+}
+.rb-quick-btn:hover, .rb-quick-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.rb-dot { color: #cbd5e1; font-size: 12px; line-height: 28px; }
+
+/* ══ PREVIEW TABLE ══ */
+.rb-table-wrap {
+  flex: 1; overflow: auto; min-height: 0;
+  border-top: 1px solid #f1f5f9;
+}
+#previewTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+#previewTable thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: #f8fafc; padding: 9px 12px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #64748b; border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap; text-align: left;
+}
+.rb-th-placeholder { font-size: 11px; text-transform: none; letter-spacing: 0; color: #94a3b8; font-weight: 500; }
+#previewTable tbody td {
+  padding: 8px 12px; border-bottom: 1px solid #f1f5f9;
+  color: #334155; white-space: nowrap; max-width: 200px;
+  overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+}
+#previewTable tbody tr:hover td { background: #f8fafc; }
+#previewTable tbody tr:last-child td { border-bottom: none; }
+.rb-td-empty { text-align: center; padding: 60px 20px !important; color: #94a3b8; white-space: normal !important; font-size: 12px; }
+.rb-table-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 14px; border-top: 1px solid #e2e8f0; flex-shrink: 0;
+}
+
+/* ══ EMPTY STATE ══ */
+.rb-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 16px 0; }
+
+/* ══ LOADING ══ */
+#loadingOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,23,42,.3); z-index: 9999;
+  justify-content: center; align-items: center;
+}
+#loadingOverlay.show { display: flex; }
+.rb-spinner-box {
+  background: #fff; border-radius: 12px; padding: 28px 36px;
+  text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.12);
+  border: 1px solid #e2e8f0;
+}
+.rb-spinner {
+  width: 32px; height: 32px; border: 3px solid #e2e8f0;
+  border-top-color: #2563eb; border-radius: 50%;
+  animation: rbspin .7s linear infinite; margin: 0 auto 12px;
+}
+.rb-spinner-box p { font-size: 12px; font-weight: 600; color: #475569; }
+@keyframes rbspin { to { transform: rotate(360deg); } }
+
+/* ══ STATUS CHIPS ══ */
+.rb-chip {
+  display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 700;
+}
+.rb-chip-paid, .rb-chip-success, .rb-chip-approved, .rb-chip-complete, .rb-chip-assessed { background: #dcfce7; color: #166534; }
+.rb-chip-unpaid, .rb-chip-pending, .rb-chip-unassessed { background: #fef9c3; color: #854d0e; }
+.rb-chip-overdue, .rb-chip-failed, .rb-chip-rejected { background: #fee2e2; color: #991b1b; }
+.rb-chip-partial, .rb-chip-partially_paid { background: #dbeafe; color: #1e40af; }
+
+/* ══ SCROLLBARS ══ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 
 <script>
-    // Model field definitions
-    const modelFields = {
-        business: {
-            name: 'Businesses',
-            fields: [
-                { value: 'account_number', label: 'Account Number', type: 'text' },
-                { value: 'business_name', label: 'Business Name', type: 'text' },
-                { value: 'owner_name', label: 'Owner Name', type: 'text' },
-                { value: 'email', label: 'Email', type: 'text' },
-                { value: 'phone_number', label: 'Phone Number', type: 'text' },
-                { value: 'location', label: 'Location', type: 'text' },
-                { value: 'street_name', label: 'Street Name', type: 'text' },
-                { value: 'house_number', label: 'House Number', type: 'text' },
-                { value: 'digital_address', label: 'Digital Address', type: 'text' },
-                { value: 'flat_rate', label: 'Flat Rate', type: 'number' },
-                { value: 'created_at', label: 'Created At', type: 'date' },
-                { value: 'updated_at', label: 'Updated At', type: 'date' }
-            ]
-        },
-        bill: {
-            name: 'Bills',
-            fields: [
-                { value: 'bill_number', label: 'Bill Number', type: 'text' },
-                { value: 'billing_year', label: 'Billing Year', type: 'number' },
-                { value: 'bill_type', label: 'Bill Type', type: 'text' },
-                { value: 'owner_name', label: 'Owner Name', type: 'text' },
-                { value: 'owner_email', label: 'Owner Email', type: 'text' },
-                { value: 'amount', label: 'Amount', type: 'number' },
-                { value: 'total_due', label: 'Total Due', type: 'number' },
-                { value: 'amount_paid', label: 'Amount Paid', type: 'number' },
-                { value: 'status', label: 'Status', type: 'text' },
-                { value: 'due_date', label: 'Due Date', type: 'date' },
-                { value: 'issued_at', label: 'Issued At', type: 'date' }
-            ]
-        },
-        payment: {
-            name: 'Payments',
-            fields: [
-                { value: 'amount', label: 'Amount', type: 'number' },
-                { value: 'method', label: 'Payment Method', type: 'text' },
-                { value: 'reference', label: 'Reference', type: 'text' },
-                { value: 'receipt_number', label: 'Receipt Number', type: 'text' },
-                { value: 'status', label: 'Status', type: 'text' },
-                { value: 'paid_at', label: 'Paid At', type: 'date' },
-                { value: 'created_at', label: 'Created At', type: 'date' }
-            ]
-        },
-        polygon: {
-            name: 'Properties',
-            fields: [
-                { value: 'division', label: 'Division', type: 'number' },
-                { value: 'block', label: 'Block', type: 'number' },
-                { value: 'property', label: 'Property Number', type: 'number' },
-                { value: 'g_code', label: 'G-Code', type: 'text' },
-                { value: 'district', label: 'District', type: 'text' },
-                { value: 'region', label: 'Region', type: 'text' },
-                { value: 'street', label: 'Street', type: 'text' },
-                { value: 'address', label: 'Address', type: 'text' },
-                { value: 'status', label: 'Status', type: 'text' },
-                { value: 'area_in_me', label: 'Area (sqm)', type: 'number' }
-            ]
-        },
-        property_owner: {
-            name: 'Property Owners',
-            fields: [
-                { value: 'title', label: 'Title', type: 'text' },
-                { value: 'owner_name', label: 'Owner Name', type: 'text' },
-                { value: 'contact_number', label: 'Contact Number', type: 'text' },
-                { value: 'email', label: 'Email', type: 'text' },
-                { value: 'ghana_card_number', label: 'Ghana Card Number', type: 'text' },
-                { value: 'location', label: 'Location', type: 'text' },
-                { value: 'property_type', label: 'Property Type', type: 'text' },
-                { value: 'occupier', label: 'Occupier Type', type: 'text' },
-                { value: 'payment_method', label: 'Payment Method', type: 'text' },
-                { value: 'is_verified', label: 'Verified', type: 'boolean' }
-            ]
-        },
-        session: {
-            name: 'Collection Sessions',
-            fields: [
-                { value: 'status', label: 'Status', type: 'text' },
-                { value: 'submitted_at', label: 'Submitted At', type: 'date' },
-                { value: 'reviewed_at', label: 'Reviewed At', type: 'date' },
-                { value: 'location_lat', label: 'Location Latitude', type: 'number' },
-                { value: 'location_lng', label: 'Location Longitude', type: 'number' }
-            ]
-        },
-        pass_property: {
-            name: 'Passed Properties',
-            fields: [
-                { value: 'reason', label: 'Reason', type: 'text' },
-                { value: 'notes', label: 'Notes', type: 'text' },
-                { value: 'passed_at', label: 'Passed At', type: 'date' },
-                { value: 'created_at', label: 'Created At', type: 'date' }
-            ]
-        }
-    };
+/* ══════════════════════════════════════════
+   MODEL FIELD DEFINITIONS
+══════════════════════════════════════════ */
+const MODEL_FIELDS = {
+  business: {
+    name: 'Businesses',
+    fields: [
+      {value:'account_number',label:'Account Number',type:'text'},
+      {value:'business_name', label:'Business Name', type:'text'},
+      {value:'owner_name',    label:'Owner Name',    type:'text'},
+      {value:'email',         label:'Email',         type:'text'},
+      {value:'phone_number',  label:'Phone Number',  type:'text'},
+      {value:'location',      label:'Location',      type:'text'},
+      {value:'street_name',   label:'Street Name',   type:'text'},
+      {value:'house_number',  label:'House Number',  type:'text'},
+      {value:'digital_address',label:'Digital Address',type:'text'},
+      {value:'flat_rate',     label:'Flat Rate',     type:'number'},
+      {value:'created_at',    label:'Created At',    type:'date'},
+      {value:'updated_at',    label:'Updated At',    type:'date'},
+    ]
+  },
+  bill: {
+    name: 'Bills',
+    fields: [
+      {value:'bill_number',  label:'Bill Number',  type:'text'},
+      {value:'billing_year', label:'Billing Year', type:'number'},
+      {value:'bill_type',    label:'Bill Type',    type:'text'},
+      {value:'owner_name',   label:'Owner Name',   type:'text'},
+      {value:'owner_email',  label:'Owner Email',  type:'text'},
+      {value:'amount',       label:'Amount',       type:'number'},
+      {value:'total_due',    label:'Total Due',    type:'number'},
+      {value:'amount_paid',  label:'Amount Paid',  type:'number'},
+      {value:'status',       label:'Status',       type:'text'},
+      {value:'due_date',     label:'Due Date',     type:'date'},
+      {value:'issued_at',    label:'Issued At',    type:'date'},
+    ]
+  },
+  payment: {
+    name: 'Payments',
+    fields: [
+      {value:'amount',         label:'Amount',         type:'number'},
+      {value:'method',         label:'Payment Method', type:'text'},
+      {value:'reference',      label:'Reference',      type:'text'},
+      {value:'receipt_number', label:'Receipt Number', type:'text'},
+      {value:'status',         label:'Status',         type:'text'},
+      {value:'paid_at',        label:'Paid At',        type:'date'},
+      {value:'created_at',     label:'Created At',     type:'date'},
+    ]
+  },
+  polygon: {
+    name: 'Properties',
+    fields: [
+      {value:'division',   label:'Division',         type:'number'},
+      {value:'block',      label:'Block',            type:'number'},
+      {value:'property',   label:'Property Number',  type:'number'},
+      {value:'g_code',     label:'G-Code',           type:'text'},
+      {value:'district',   label:'District',         type:'text'},
+      {value:'region',     label:'Region',           type:'text'},
+      {value:'street',     label:'Street',           type:'text'},
+      {value:'address',    label:'Address',          type:'text'},
+      {value:'status',     label:'Status',           type:'text'},
+      {value:'area_in_me', label:'Area (sqm)',       type:'number'},
+    ]
+  },
+  property_owner: {
+    name: 'Property Owners',
+    fields: [
+      {value:'title',             label:'Title',             type:'text'},
+      {value:'owner_name',        label:'Owner Name',        type:'text'},
+      {value:'contact_number',    label:'Contact Number',    type:'text'},
+      {value:'email',             label:'Email',             type:'text'},
+      {value:'ghana_card_number', label:'Ghana Card Number', type:'text'},
+      {value:'location',          label:'Location',          type:'text'},
+      {value:'property_type',     label:'Property Type',     type:'text'},
+      {value:'occupier',          label:'Occupier Type',     type:'text'},
+      {value:'payment_method',    label:'Payment Method',    type:'text'},
+      {value:'is_verified',       label:'Verified',          type:'boolean'},
+    ]
+  },
+  session: {
+    name: 'Collection Sessions',
+    fields: [
+      {value:'status',       label:'Status',             type:'text'},
+      {value:'submitted_at', label:'Submitted At',       type:'date'},
+      {value:'reviewed_at',  label:'Reviewed At',        type:'date'},
+      {value:'location_lat', label:'Location Latitude',  type:'number'},
+      {value:'location_lng', label:'Location Longitude', type:'number'},
+    ]
+  },
+  pass_property: {
+    name: 'Passed Properties',
+    fields: [
+      {value:'reason',     label:'Reason',     type:'text'},
+      {value:'notes',      label:'Notes',      type:'text'},
+      {value:'passed_at',  label:'Passed At',  type:'date'},
+      {value:'created_at', label:'Created At', type:'date'},
+    ]
+  }
+};
 
-    // State management
-    let selectedModel = '';
-    let selectedFields = [];
-    let filters = [];
-    let exportFormat = 'csv';
-    let previewData = null;
+const OPERATORS = {
+  text:    [{v:'contains',l:'Contains'},{v:'equals',l:'Equals'},{v:'starts_with',l:'Starts with'},{v:'ends_with',l:'Ends with'},{v:'not_equals',l:'Not equals'}],
+  number:  [{v:'equals',l:'='},{v:'gt',l:'>'},{v:'gte',l:'>='},{v:'lt',l:'<'},{v:'lte',l:'<='}],
+  boolean: [{v:'equals',l:'Is'}],
+  date:    [{v:'equals',l:'On'},{v:'gt',l:'After'},{v:'gte',l:'On or after'},{v:'lt',l:'Before'},{v:'lte',l:'On or before'}],
+};
 
-    // DOM Elements
-    const modelSelect = document.getElementById('modelSelect');
-    const fieldsContainer = document.getElementById('fieldsContainer');
-    const filtersContainer = document.getElementById('filtersContainer');
-    const previewTable = document.getElementById('previewTable');
-    const previewBody = document.getElementById('previewBody');
-    const previewHeaderRow = document.getElementById('previewHeaderRow');
-    const exportBtn = document.getElementById('exportBtn');
-    const previewBtn = document.getElementById('previewBtn');
-    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
-    const addFilterBtn = document.getElementById('addFilterBtn');
-    const selectAllFieldsBtn = document.getElementById('selectAllFieldsBtn');
-    const deselectAllFieldsBtn = document.getElementById('deselectAllFieldsBtn');
-    const recordCountSpan = document.getElementById('recordCount');
-    const selectedFieldsBadge = document.getElementById('selectedFieldsBadge');
-    const limitInput = document.getElementById('limitInput');
-    const loadingOverlay = document.getElementById('loadingOverlay');
+/* ══ STATE ══ */
+let selectedModel  = '';
+let selectedFields = [];
+let exportFormat   = 'csv';
+let filters        = [];
+let dateRange      = { field: '', from: '', to: '' };
 
-    // Initialize event listeners
-    document.addEventListener('DOMContentLoaded', function() {
-        modelSelect.addEventListener('change', onModelChange);
-        previewBtn.addEventListener('click', onPreview);
-        exportBtn.addEventListener('click', onExport);
-        resetFiltersBtn.addEventListener('click', resetAll);
-        clearFiltersBtn.addEventListener('click', clearAllFilters);
-        addFilterBtn.addEventListener('click', () => addFilterRow());
-        selectAllFieldsBtn.addEventListener('click', selectAllFields);
-        deselectAllFieldsBtn.addEventListener('click', deselectAllFields);
+/* ══ REFS ══ */
+const modelSelect        = document.getElementById('modelSelect');
+const fieldsContainer    = document.getElementById('fieldsContainer');
+const exportBtn          = document.getElementById('exportBtn');
+const previewBtn         = document.getElementById('previewBtn');
+const resetBtn           = document.getElementById('resetBtn');
+const selectAllBtn       = document.getElementById('selectAllBtn');
+const clearAllBtn        = document.getElementById('clearAllBtn');
+const addFilterBtn       = document.getElementById('addFilterBtn');
+const filtersContainer   = document.getElementById('filtersContainer');
+const dateRangeSection   = document.getElementById('dateRangeSection');
+const dateFieldSelect    = document.getElementById('dateFieldSelect');
+const dateFrom           = document.getElementById('dateFrom');
+const dateTo             = document.getElementById('dateTo');
+const clearDateBtn       = document.getElementById('clearDateBtn');
+const limitInput         = document.getElementById('limitInput');
+const loadingOverlay     = document.getElementById('loadingOverlay');
+const recordCountSpan    = document.getElementById('recordCount');
+const selectedBadge      = document.getElementById('selectedBadge');
+const previewStatus      = document.getElementById('previewStatus');
+const previewHead        = document.getElementById('previewHead');
+const previewBody        = document.getElementById('previewBody');
 
-        // Export format buttons
-        document.querySelectorAll('.export-format-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.export-format-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                exportFormat = this.dataset.format;
-            });
-            if (btn.dataset.format === 'csv') btn.classList.add('active');
-        });
+/* ══ INIT ══ */
+document.addEventListener('DOMContentLoaded', () => {
+  modelSelect.addEventListener('change', onModelChange);
+  previewBtn.addEventListener('click', onPreview);
+  exportBtn.addEventListener('click', onExport);
+  resetBtn.addEventListener('click', resetAll);
+  selectAllBtn.addEventListener('click', selectAll);
+  clearAllBtn.addEventListener('click', clearAll);
+  addFilterBtn.addEventListener('click', addFilter);
+
+  document.querySelectorAll('.rb-format-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.rb-format-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      exportFormat = this.dataset.format;
     });
+  });
 
-    function onModelChange() {
-        selectedModel = modelSelect.value;
-        if (selectedModel && modelFields[selectedModel]) {
-            renderFields();
-            selectedFields = [];
-            filters = [];
-            renderFilters();
-            clearPreview();
-            exportBtn.disabled = true;
-        } else {
-            fieldsContainer.innerHTML = '<div class="text-muted text-center py-4"><i class="fas fa-info-circle me-1"></i> Select a model to view available fields</div>';
-            selectedFieldsBadge.textContent = 'No fields selected';
-            exportBtn.disabled = true;
+  dateFieldSelect.addEventListener('change', () => { dateRange.field = dateFieldSelect.value; updateClearDateBtn(); });
+  dateFrom.addEventListener('change', () => { dateRange.from = dateFrom.value; clearQuickBtns(); updateClearDateBtn(); });
+  dateTo.addEventListener('change', () => { dateRange.to = dateTo.value; clearQuickBtns(); updateClearDateBtn(); });
+  clearDateBtn.addEventListener('click', clearDateRange);
+
+  document.querySelectorAll('.rb-quick-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.rb-quick-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      applyQuickDate(this.dataset.range);
+    });
+  });
+});
+
+/* ══ MODEL CHANGE ══ */
+function onModelChange() {
+  selectedModel  = modelSelect.value;
+  selectedFields = [];
+  filters        = [];
+  dateRange      = { field: '', from: '', to: '' };
+  clearFiltersUI();
+  clearDateRange();
+  updateExportBtn();
+  clearPreview();
+
+  if (selectedModel && MODEL_FIELDS[selectedModel]) {
+    renderFields();
+    addFilterBtn.disabled = false;
+    dateRangeSection.style.display = 'block';
+    populateDateFields();
+  } else {
+    fieldsContainer.innerHTML = '<div class="rb-empty">Choose a model</div>';
+    selectedBadge.textContent = 'No fields selected';
+    addFilterBtn.disabled = true;
+    dateRangeSection.style.display = 'none';
+  }
+}
+
+/* ══ FIELDS ══ */
+function renderFields() {
+  const m = MODEL_FIELDS[selectedModel];
+  fieldsContainer.innerHTML = m.fields.map(f => `
+    <div class="rb-field-row">
+      <input class="field-cb" type="checkbox" value="${f.value}" id="f_${f.value}">
+      <label for="f_${f.value}">${f.label}</label>
+      <span class="rb-field-tag">${f.type}</span>
+    </div>`).join('');
+
+  document.querySelectorAll('.field-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      selectedFields = [...document.querySelectorAll('.field-cb:checked')].map(c => c.value);
+      updateBadge();
+      updateExportBtn();
+    });
+  });
+  updateBadge();
+}
+
+function updateBadge() {
+  if (!selectedFields.length) { selectedBadge.textContent = 'No fields selected'; return; }
+  if (selectedFields.length <= 4) {
+    const m = MODEL_FIELDS[selectedModel];
+    selectedBadge.textContent = selectedFields.map(v => m?.fields.find(f=>f.value===v)?.label||v).join(', ');
+  } else {
+    selectedBadge.textContent = `${selectedFields.length} fields selected`;
+  }
+}
+
+function selectAll() {
+  if (!selectedModel) return;
+  selectedFields = MODEL_FIELDS[selectedModel].fields.map(f => f.value);
+  document.querySelectorAll('.field-cb').forEach(cb => cb.checked = true);
+  updateBadge(); updateExportBtn();
+}
+
+function clearAll() {
+  selectedFields = [];
+  document.querySelectorAll('.field-cb').forEach(cb => cb.checked = false);
+  updateBadge(); updateExportBtn();
+}
+
+/* ══ FILTERS ══ */
+function addFilter() {
+  if (!selectedModel) return;
+  const id = Date.now();
+  filters.push({ id, field: '', operator: '', value: '' });
+  renderFilters();
+}
+
+function renderFilters() {
+  if (!filters.length) {
+    filtersContainer.innerHTML = '<div class="rb-empty-filters"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.35;display:block;margin:0 auto 8px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>No filters added</div>';
+    return;
+  }
+  const m = MODEL_FIELDS[selectedModel];
+  filtersContainer.innerHTML = filters.map((f, i) => {
+    const fieldOpts = m.fields.map(mf => `<option value="${mf.value}" ${mf.value===f.field?'selected':''}>${mf.label}</option>`).join('');
+    const fieldInfo = m.fields.find(mf => mf.value === f.field);
+    const opType = fieldInfo ? fieldInfo.type : 'text';
+    const ops = OPERATORS[opType] || OPERATORS.text;
+    const opOpts = ops.map(op => `<option value="${op.v}" ${op.v===f.operator?'selected':''}>${op.l}</option>`).join('');
+    return `
+    <div class="rb-filter-item">
+      <div class="rb-filter-row">
+        <select class="rb-filter-select" onchange="updateFilter(${i},'field',this.value)">
+          <option value="">Field…</option>${fieldOpts}
+        </select>
+        <button class="rb-filter-remove" onclick="removeFilter(${i})">×</button>
+      </div>
+      <div class="rb-filter-row" style="margin-top:5px;">
+        <select class="rb-filter-select" onchange="updateFilter(${i},'operator',this.value)">
+          <option value="">Op…</option>${opOpts}
+        </select>
+        ${opType === 'boolean'
+          ? `<select class="rb-filter-select" onchange="updateFilter(${i},'value',this.value)"><option value="">—</option><option value="true" ${f.value==='true'?'selected':''}>Yes</option><option value="false" ${f.value==='false'?'selected':''}>No</option></select>`
+          : `<input class="rb-filter-input" type="${opType==='number'?'number':'text'}" placeholder="Value…" value="${escHtml(String(f.value||''))}" oninput="updateFilter(${i},'value',this.value)">`
         }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateFilter(i, key, val) {
+  filters[i][key] = val;
+  if (key === 'field') renderFilters(); // re-render to update operators
+}
+
+function removeFilter(i) {
+  filters.splice(i, 1);
+  renderFilters();
+}
+
+function clearFiltersUI() {
+  filters = [];
+  filtersContainer.innerHTML = '<div class="rb-empty-filters"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.35;display:block;margin:0 auto 8px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Select a model to add filters</div>';
+}
+
+/* ══ DATE RANGE ══ */
+function populateDateFields() {
+  const m = MODEL_FIELDS[selectedModel];
+  const dateFields = m.fields.filter(f => f.type === 'date');
+  dateFieldSelect.innerHTML = '<option value="">— Select date field —</option>' +
+    dateFields.map(f => `<option value="${f.value}">${f.label}</option>`).join('');
+}
+
+function applyQuickDate(range) {
+  const now = new Date();
+  let from, to;
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+  if (range === 'today') {
+    from = to = fmt(now);
+  } else if (range === 'week') {
+    const d = new Date(now); d.setDate(d.getDate() - d.getDay());
+    from = fmt(d); to = fmt(now);
+  } else if (range === 'month') {
+    from = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
+    to = fmt(now);
+  } else if (range === 'quarter') {
+    const q = Math.floor(now.getMonth() / 3);
+    from = fmt(new Date(now.getFullYear(), q*3, 1));
+    to = fmt(now);
+  } else if (range === 'year') {
+    from = fmt(new Date(now.getFullYear(), 0, 1));
+    to = fmt(now);
+  }
+  dateFrom.value = from; dateTo.value = to;
+  dateRange.from = from; dateRange.to = to;
+  updateClearDateBtn();
+}
+
+function clearQuickBtns() { document.querySelectorAll('.rb-quick-btn').forEach(b => b.classList.remove('active')); }
+
+function clearDateRange() {
+  dateFieldSelect.value = '';
+  dateFrom.value = ''; dateTo.value = '';
+  dateRange = { field: '', from: '', to: '' };
+  clearQuickBtns();
+  updateClearDateBtn();
+}
+
+function updateClearDateBtn() {
+  const hasDate = dateRange.field || dateRange.from || dateRange.to;
+  clearDateBtn.style.display = hasDate ? 'block' : 'none';
+}
+
+/* ══ STATE HELPERS ══ */
+function updateExportBtn() {
+  const ready = selectedFields.length > 0 && !!selectedModel;
+  exportBtn.disabled = !ready;
+}
+
+function buildPayload(limit) {
+  const activeFilters = filters.filter(f => f.field && f.operator && f.value !== '');
+  if (dateRange.field && (dateRange.from || dateRange.to)) {
+    if (dateRange.from) activeFilters.push({ field: dateRange.field, operator: 'gte', value: dateRange.from });
+    if (dateRange.to)   activeFilters.push({ field: dateRange.field, operator: 'lte', value: dateRange.to });
+  }
+  return { model: selectedModel, fields: selectedFields, filters: activeFilters, limit };
+}
+
+/* ══ PREVIEW ══ */
+async function onPreview() {
+  if (!selectedModel) { alert('Please select a data model'); return; }
+  if (!selectedFields.length) { alert('Please select at least one field'); return; }
+
+  showLoading(true);
+  previewStatus.textContent = 'Loading…';
+
+  try {
+    const res = await fetch('/api/reports/preview/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify(buildPayload(40))
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      renderPreview(data.data);
+      recordCountSpan.textContent = `${data.total_count || data.data.length} records`;
+      previewStatus.textContent = `Showing ${data.data.length} of ${data.total_count || data.data.length}`;
+    } else {
+      alert(data.error || 'Preview failed');
+      previewStatus.textContent = 'Preview failed';
     }
+  } catch (e) {
+    console.error(e); alert('Error loading preview.');
+    previewStatus.textContent = 'Error';
+  } finally { showLoading(false); }
+}
 
-    function renderFields() {
-        const model = modelFields[selectedModel];
-        if (!model) return;
+function renderPreview(data) {
+  if (!data || !data.length) {
+    previewHead.innerHTML = '<th class="rb-th-placeholder">No data found</th>';
+    previewBody.innerHTML = `<tr><td class="rb-td-empty"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 10px;opacity:.25;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>No records match your criteria</td></tr>`;
+    return;
+  }
 
-        let html = '<div class="row">';
-        model.fields.forEach(field => {
-            const isChecked = selectedFields.includes(field.value);
-            html += `
-                <div class="col-12 mb-2">
-                    <div class="form-check">
-                        <input class="form-check-input field-checkbox" type="checkbox" value="${field.value}" id="field_${field.value}" ${isChecked ? 'checked' : ''}>
-                        <label class="form-check-label" for="field_${field.value}">
-                            ${field.label}
-                            <small class="text-muted">(${field.type})</small>
-                        </label>
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
+  const fields = Object.keys(data[0]);
+  const m = MODEL_FIELDS[selectedModel];
 
-        fieldsContainer.innerHTML = html;
+  previewHead.innerHTML = fields.map(f => {
+    const label = m?.fields.find(fl => fl.value===f)?.label || f;
+    return `<th>${label}</th>`;
+  }).join('');
 
-        // Add event listeners to checkboxes
-        document.querySelectorAll('.field-checkbox').forEach(cb => {
-            cb.addEventListener('change', function() {
-                if (this.checked) {
-                    if (!selectedFields.includes(this.value)) {
-                        selectedFields.push(this.value);
-                    }
-                } else {
-                    selectedFields = selectedFields.filter(f => f !== this.value);
-                }
-                updateSelectedFieldsBadge();
-                if (selectedFields.length > 0 && selectedModel) {
-                    exportBtn.disabled = false;
-                } else {
-                    exportBtn.disabled = true;
-                }
-            });
-        });
-    }
+  previewBody.innerHTML = data.map(row => `<tr>${
+    fields.map(f => {
+      let v = row[f];
+      if (v === null || v === undefined) return '<td style="color:#cbd5e1;">—</td>';
+      if (typeof v === 'object') v = JSON.stringify(v);
+      const vStr = String(v);
+      // Status chip
+      const statusFields = ['status'];
+      if (statusFields.includes(f)) {
+        const key = vStr.toLowerCase().replace(/\s+/g,'_');
+        return `<td><span class="rb-chip rb-chip-${key}">${vStr}</span></td>`;
+      }
+      // Boolean
+      if (typeof row[f] === 'boolean') {
+        return `<td><span class="rb-chip ${row[f] ? 'rb-chip-approved' : 'rb-chip-rejected'}">${row[f] ? 'Yes' : 'No'}</span></td>`;
+      }
+      // Date
+      if ((f.includes('_at') || f.includes('_date') || f.includes('date')) && vStr.includes('T')) {
+        try { v = new Date(vStr).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}); } catch(e){}
+      }
+      return `<td title="${escHtml(vStr)}">${escHtml(String(v))}</td>`;
+    }).join('')
+  }</tr>`).join('');
+}
 
-    function updateSelectedFieldsBadge() {
-        if (selectedFields.length === 0) {
-            selectedFieldsBadge.textContent = 'No fields selected';
-        } else if (selectedFields.length <= 3) {
-            const fieldLabels = selectedFields.map(f => {
-                const field = modelFields[selectedModel]?.fields.find(fld => fld.value === f);
-                return field ? field.label : f;
-            }).join(', ');
-            selectedFieldsBadge.textContent = fieldLabels;
-        } else {
-            selectedFieldsBadge.textContent = `${selectedFields.length} fields selected`;
-        }
-    }
+/* ══ EXPORT ══ */
+async function onExport() {
+  if (!selectedModel) { alert('Please select a model'); return; }
+  if (!selectedFields.length) { alert('Please select at least one field'); return; }
+  const limit = parseInt(limitInput.value) || 1000;
+  if (limit > 10000) { alert('Maximum 10,000 records'); return; }
 
-    function selectAllFields() {
-        if (!selectedModel) return;
-        selectedFields = modelFields[selectedModel].fields.map(f => f.value);
-        document.querySelectorAll('.field-checkbox').forEach(cb => {
-            cb.checked = true;
-        });
-        updateSelectedFieldsBadge();
-        exportBtn.disabled = false;
-    }
+  showLoading(true);
+  try {
+    const res = await fetch('/api/reports/export/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ ...buildPayload(limit), format: exportFormat })
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition');
+      let fn = `export_${selectedModel}_${new Date().toISOString().slice(0,10)}.${exportFormat}`;
+      if (cd) { const m = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/); if (m?.[1]) fn = m[1].replace(/['"]/g,''); }
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: fn });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else { const e = await res.json(); alert(e.error || 'Export failed'); }
+  } catch (e) { console.error(e); alert('Export error'); }
+  finally { showLoading(false); }
+}
 
-    function deselectAllFields() {
-        selectedFields = [];
-        document.querySelectorAll('.field-checkbox').forEach(cb => {
-            cb.checked = false;
-        });
-        updateSelectedFieldsBadge();
-        exportBtn.disabled = true;
-    }
+/* ══ RESET ══ */
+function resetAll() {
+  modelSelect.value = ''; selectedModel = ''; selectedFields = []; filters = [];
+  fieldsContainer.innerHTML = '<div class="rb-empty">Choose a model</div>';
+  selectedBadge.textContent = 'No fields selected';
+  addFilterBtn.disabled = true;
+  clearFiltersUI();
+  clearDateRange();
+  dateRangeSection.style.display = 'none';
+  updateExportBtn();
+  clearPreview();
+}
 
-    function addFilterRow(field = '', operator = 'contains', value = '') {
-        if (!selectedModel) {
-            alert('Please select a model first');
-            return;
-        }
+function clearPreview() {
+  previewHead.innerHTML = '<th class="rb-th-placeholder">Configure &amp; Preview</th>';
+  previewBody.innerHTML = `<tr><td class="rb-td-empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="display:block;margin:0 auto 10px;opacity:.25;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Select a model, choose fields and click Preview</td></tr>`;
+  recordCountSpan.textContent = '0 records';
+  previewStatus.textContent = '';
+}
 
-        const model = modelFields[selectedModel];
-        const filterId = Date.now();
-
-        let html = `
-            <div class="filter-row" id="filter_${filterId}">
-                <span class="remove-filter" onclick="removeFilter(${filterId})">
-                    <i class="fas fa-times-circle"></i>
-                </span>
-                <div class="row g-2">
-                    <div class="col-md-5">
-                        <select class="form-select form-select-sm filter-field" data-filter-id="${filterId}">
-                            <option value="">-- Select field --</option>
-        `;
-
-        model.fields.forEach(f => {
-            html += `<option value="${f.value}" data-type="${f.type}" ${f.value === field ? 'selected' : ''}>${f.label}</option>`;
-        });
-
-        html += `
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select form-select-sm filter-operator" data-filter-id="${filterId}">
-                            <option value="contains" ${operator === 'contains' ? 'selected' : ''}>Contains</option>
-                            <option value="equals" ${operator === 'equals' ? 'selected' : ''}>Equals</option>
-                            <option value="starts_with" ${operator === 'starts_with' ? 'selected' : ''}>Starts with</option>
-                            <option value="ends_with" ${operator === 'ends_with' ? 'selected' : ''}>Ends with</option>
-                            <option value="gt" ${operator === 'gt' ? 'selected' : ''}>Greater than</option>
-                            <option value="lt" ${operator === 'lt' ? 'selected' : ''}>Less than</option>
-                            <option value="gte" ${operator === 'gte' ? 'selected' : ''}>Greater or equal</option>
-                            <option value="lte" ${operator === 'lte' ? 'selected' : ''}>Less or equal</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" class="form-control form-control-sm filter-value" data-filter-id="${filterId}" placeholder="Value" value="${value.replace(/"/g, '&quot;')}">
-                    </div>
-                </div>
-            </div>
-        `;
-
-        filtersContainer.insertAdjacentHTML('beforeend', html);
-        document.getElementById('noFiltersMessage')?.remove();
-
-        // Store filter
-        filters.push({ id: filterId, field, operator, value });
-
-        // Add event listeners for this filter
-        const fieldSelect = document.querySelector(`.filter-field[data-filter-id="${filterId}"]`);
-        const operatorSelect = document.querySelector(`.filter-operator[data-filter-id="${filterId}"]`);
-        const valueInput = document.querySelector(`.filter-value[data-filter-id="${filterId}"]`);
-
-        fieldSelect.addEventListener('change', function(e) {
-            updateFilter(filterId, 'field', e.target.value);
-        });
-        operatorSelect.addEventListener('change', function(e) {
-            updateFilter(filterId, 'operator', e.target.value);
-        });
-        valueInput.addEventListener('input', function(e) {
-            updateFilter(filterId, 'value', e.target.value);
-        });
-    }
-
-    function updateFilter(filterId, key, newValue) {
-        const filterIndex = filters.findIndex(f => f.id === filterId);
-        if (filterIndex !== -1) {
-            filters[filterIndex][key] = newValue;
-        }
-    }
-
-    function removeFilter(filterId) {
-        const filterElement = document.getElementById(`filter_${filterId}`);
-        if (filterElement) filterElement.remove();
-        filters = filters.filter(f => f.id !== filterId);
-        if (filters.length === 0) {
-            filtersContainer.innerHTML = '<div class="text-muted text-center py-4" id="noFiltersMessage"><i class="fas fa-plus-circle me-1"></i> Click "Add Filter" to start filtering</div>';
-        }
-    }
-
-    function clearAllFilters() {
-        filtersContainer.innerHTML = '<div class="text-muted text-center py-4" id="noFiltersMessage"><i class="fas fa-plus-circle me-1"></i> Click "Add Filter" to start filtering</div>';
-        filters = [];
-    }
-
-    function resetAll() {
-        modelSelect.value = '';
-        selectedModel = '';
-        selectedFields = [];
-        filters = [];
-        clearAllFilters();
-        renderFields();
-        clearPreview();
-        exportBtn.disabled = true;
-        selectedFieldsBadge.textContent = 'No fields selected';
-    }
-
-    function clearPreview() {
-        previewHeaderRow.innerHTML = '<th class="text-muted">Select a model to preview data</th>';
-        previewBody.innerHTML = '<tr><td class="text-center py-5 text-muted"><i class="fas fa-chart-line fa-2x mb-2 d-block"></i>Configure your report and click Preview to see results</td></tr>';
-        recordCountSpan.textContent = '0';
-    }
-
-    async function onPreview() {
-        if (!selectedModel) {
-            alert('Please select a data model');
-            return;
-        }
-
-        if (selectedFields.length === 0) {
-            alert('Please select at least one field to export');
-            return;
-        }
-
-        showLoading(true);
-        previewStatus.innerHTML = 'Loading preview...';
-
-        try {
-            const response = await fetch('/api/reports/preview/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    model: selectedModel,
-                    fields: selectedFields,
-                    filters: filters.filter(f => f.field && f.value),
-                    limit: 40  // Preview limited to 20 records
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                renderPreview(data.data);
-                recordCountSpan.textContent = data.total_count || data.data.length;
-                previewStatus.innerHTML = `Showing ${data.data.length} of ${data.total_count || data.data.length} records`;
-            } else {
-                alert(data.error || 'Failed to load preview');
-                previewStatus.innerHTML = 'Preview failed';
-            }
-        } catch (error) {
-            console.error('Preview error:', error);
-            alert('Error loading preview. Please try again.');
-            previewStatus.innerHTML = 'Error loading preview';
-        } finally {
-            showLoading(false);
-        }
-    }
-
-    function renderPreview(data) {
-        if (!data || data.length === 0) {
-            previewHeaderRow.innerHTML = '<th class="text-muted">No data found</th>';
-            previewBody.innerHTML = '<tr><td class="text-center py-5 text-muted"><i class="fas fa-inbox fa-2x mb-2 d-block"></i>No records match your criteria</td></tr>';
-            return;
-        }
-
-        // Build header
-        const fields = Object.keys(data[0]);
-        let headerHtml = '';
-        fields.forEach(field => {
-            const label = modelFields[selectedModel]?.fields.find(f => f.value === field)?.label || field;
-            headerHtml += `<th class="text-nowrap">${label}</th>`;
-        });
-        previewHeaderRow.innerHTML = headerHtml;
-
-        // Build body
-        let bodyHtml = '';
-        data.forEach(row => {
-            bodyHtml += '<tr>';
-            fields.forEach(field => {
-                let value = row[field];
-                if (value === null || value === undefined) value = '-';
-                if (typeof value === 'object') value = JSON.stringify(value);
-                if (field.includes('date') && value) {
-                    value = new Date(value).toLocaleDateString();
-                }
-                bodyHtml += `<td class="text-nowrap" style="max-width: 300px; overflow-x: auto;">${escapeHtml(String(value))}</td>`;
-            });
-            bodyHtml += '</tr>';
-        });
-        previewBody.innerHTML = bodyHtml;
-    }
-
-    async function onExport() {
-        if (!selectedModel) {
-            alert('Please select a data model');
-            return;
-        }
-
-        if (selectedFields.length === 0) {
-            alert('Please select at least one field to export');
-            return;
-        }
-
-        const limit = parseInt(limitInput.value) || 1000;
-        if (limit > 10000) {
-            alert('Maximum export limit is 10,000 records');
-            return;
-        }
-
-        showLoading(true);
-
-        try {
-            const response = await fetch('/api/reports/export/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    model: selectedModel,
-                    fields: selectedFields,
-                    filters: filters.filter(f => f.field && f.value),
-                    format: exportFormat,
-                    limit: limit
-                })
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const contentDisposition = response.headers.get('Content-Disposition');
-                let filename = `export_${selectedModel}_${new Date().toISOString().slice(0, 19)}`;
-                
-                if (contentDisposition) {
-                    const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                    if (match && match[1]) {
-                        filename = match[1].replace(/['"]/g, '');
-                    }
-                } else {
-                    filename += `.${exportFormat}`;
-                }
-
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            } else {
-                const error = await response.json();
-                alert(error.error || 'Export failed. Please try again.');
-            }
-        } catch (error) {
-            console.error('Export error:', error);
-            alert('Error exporting data. Please try again.');
-        } finally {
-            showLoading(false);
-        }
-    }
-
-    function showLoading(show) {
-        loadingOverlay.style.display = show ? 'flex' : 'none';
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    // Make removeFilter globally accessible for inline onclick
-    window.removeFilter = removeFilter;
+/* ══ UTILS ══ */
+function showLoading(show) { loadingOverlay.classList.toggle('show', show); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => { c=c.trim(); if(c.startsWith(name+'=')) v=decodeURIComponent(c.slice(name.length+1)); });
+  return v;
+}
 </script>
-
-<!-- Backend API endpoints need to be implemented -->
-<!-- 
-    Expected API endpoints:
-    
-    POST /api/reports/preview/
-    Request: { model, fields, filters, limit }
-    Response: { success, data, total_count }
-    
-    POST /api/reports/export/
-    Request: { model, fields, filters, format, limit }
-    Response: File download (CSV, XLSX, JSON, XML)
--->
 {% endblock %}
